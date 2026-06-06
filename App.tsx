@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface AwardDetails {
   points_required: number;
@@ -6,10 +6,318 @@ interface AwardDetails {
   transfer_partners: string[];
 }
 
-function PersonIcon() {
+function ChevronDownIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+
+interface FilterDropdownProps<T extends string | number> {
+  value: T;
+  onChange: (value: T) => void;
+  options: { value: T; label: string }[];
+  ariaLabel: string;
+  minTriggerWidth?: number;
+}
+
+function FilterDropdown<T extends string | number>({
+  value,
+  onChange,
+  options,
+  ariaLabel,
+  minTriggerWidth,
+}: FilterDropdownProps<T>) {
+  const [open, setOpen] = useState(false);
+  const [hoveredOption, setHoveredOption] = useState<T | null>(null);
+  const [triggerHovered, setTriggerHovered] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const selectedLabel = options.find((option) => option.value === value)?.label ?? '';
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setOpen(false);
+        triggerRef.current?.blur();
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+        triggerRef.current?.blur();
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [open]);
+
+  const selectOption = (next: T) => {
+    onChange(next);
+    setOpen(false);
+    setHoveredOption(null);
+    triggerRef.current?.blur();
+  };
+
+  return (
+    <div ref={rootRef} style={styles.filterDropdown}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="filter-trigger"
+        style={{
+          ...styles.filterTrigger,
+          ...(open ? styles.filterTriggerOpen : triggerHovered ? styles.filterTriggerHover : {}),
+          ...(minTriggerWidth ? { minWidth: minTriggerWidth } : {}),
+        }}
+        onMouseEnter={() => setTriggerHovered(true)}
+        onMouseLeave={() => setTriggerHovered(false)}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => setOpen((prev) => {
+          if (prev) setHoveredOption(null);
+          return !prev;
+        })}
+        aria-label={ariaLabel}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        <span style={styles.filterTriggerLabel}>{selectedLabel}</span>
+        <span style={{ ...styles.filterChevron, ...(open ? styles.filterChevronOpen : triggerHovered ? styles.filterChevronHover : {}) }}>
+          <ChevronDownIcon />
+        </span>
+      </button>
+      {open && (
+        <ul style={styles.filterMenu} role="listbox" aria-label={ariaLabel}>
+          {options.map((option) => (
+            <li key={String(option.value)} role="none">
+              <button
+                type="button"
+                role="option"
+                className="filter-option"
+                aria-selected={option.value === value}
+                style={{
+                  ...styles.filterOption,
+                  ...(hoveredOption === option.value ? styles.filterOptionHover : {}),
+                }}
+                onMouseEnter={() => setHoveredOption(option.value)}
+                onMouseLeave={() => setHoveredOption(null)}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => selectOption(option.value)}
+              >
+                {option.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+interface PassengerDropdownProps {
+  adults: number;
+  childCount: number;
+  onChange: (adults: number, childCount: number) => void;
+}
+
+function PassengerDropdown({ adults, childCount, onChange }: PassengerDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const [triggerHovered, setTriggerHovered] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const total = adults + childCount;
+  const label = `${total} Passenger${total === 1 ? '' : 's'}`;
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setOpen(false);
+        triggerRef.current?.blur();
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+        triggerRef.current?.blur();
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [open]);
+
+  const adjustAdults = (delta: number) => {
+    const nextAdults = adults + delta;
+    if (nextAdults < 1 || nextAdults > 9 || nextAdults + childCount > 9) return;
+    onChange(nextAdults, childCount);
+  };
+
+  const adjustChildren = (delta: number) => {
+    const nextChildren = childCount + delta;
+    if (nextChildren < 0 || nextChildren > 8 || adults + nextChildren > 9) return;
+    onChange(adults, nextChildren);
+  };
+
+  return (
+    <div ref={rootRef} style={styles.filterDropdown}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="filter-trigger"
+        style={{
+          ...styles.filterTrigger,
+          ...styles.passengerTrigger,
+          ...(open ? styles.filterTriggerOpen : triggerHovered ? styles.filterTriggerHover : {}),
+        }}
+        onMouseEnter={() => setTriggerHovered(true)}
+        onMouseLeave={() => setTriggerHovered(false)}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => setOpen((prev) => !prev)}
+        aria-label="Passengers"
+        aria-expanded={open}
+        aria-haspopup="dialog"
+      >
+        <span style={styles.filterTriggerLabel}>{label}</span>
+        <span style={{ ...styles.filterChevron, ...(open ? styles.filterChevronOpen : triggerHovered ? styles.filterChevronHover : {}) }}>
+          <ChevronDownIcon />
+        </span>
+      </button>
+      {open && (
+        <div style={styles.passengerMenu} role="dialog" aria-label="Passenger selection">
+          <div style={styles.passengerRow}>
+            <div style={styles.passengerRowLabel}>
+              <span style={styles.passengerLabel}>Adults:</span>
+            </div>
+            <div style={styles.stepper}>
+              <button
+                type="button"
+                className="stepper-btn"
+                style={{
+                  ...styles.stepperBtn,
+                  ...(adults <= 1 ? styles.stepperBtnDisabled : {}),
+                }}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => adjustAdults(-1)}
+                disabled={adults <= 1}
+                aria-label="Decrease adults"
+              >
+                −
+              </button>
+              <span style={styles.stepperValue}>{adults}</span>
+              <button
+                type="button"
+                className="stepper-btn"
+                style={{
+                  ...styles.stepperBtn,
+                  ...(adults + childCount >= 9 ? styles.stepperBtnDisabled : {}),
+                }}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => adjustAdults(1)}
+                disabled={adults + childCount >= 9}
+                aria-label="Increase adults"
+              >
+                +
+              </button>
+            </div>
+          </div>
+          <div style={{ ...styles.passengerRow, ...styles.passengerRowLast }}>
+            <div style={styles.passengerRowLabel}>
+              <span style={styles.passengerLabel}>Children:</span>
+              <span style={styles.passengerSublabel}>(Aged 2-11)</span>
+            </div>
+            <div style={styles.stepper}>
+              <button
+                type="button"
+                className="stepper-btn"
+                style={{
+                  ...styles.stepperBtn,
+                  ...(childCount <= 0 ? styles.stepperBtnDisabled : {}),
+                }}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => adjustChildren(-1)}
+                disabled={childCount <= 0}
+                aria-label="Decrease children"
+              >
+                −
+              </button>
+              <span style={styles.stepperValue}>{childCount}</span>
+              <button
+                type="button"
+                className="stepper-btn"
+                style={{
+                  ...styles.stepperBtn,
+                  ...(childCount >= 8 || adults + childCount >= 9 ? styles.stepperBtnDisabled : {}),
+                }}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => adjustChildren(1)}
+                disabled={childCount >= 8 || adults + childCount >= 9}
+                aria-label="Increase children"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DepartIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 00-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+    </svg>
+  );
+}
+
+function ArriveIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M2 16v-2l8-5V3.5a1.5 1.5 0 013 0V9l8 5v2l-8-2.5V19l2 1.5V22l-3.5-1-3.5 1v-1.5L11 19v-5.5L2 16z" />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V10h14v10z" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </svg>
+  );
+}
+
+function SwapIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+      <path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12M17 20l4-4M17 20l-4-4" />
     </svg>
   );
 }
@@ -28,7 +336,9 @@ interface Flight {
 }
 
 export default function App() {
-  const [passengers, setPassengers] = useState(1);
+  const [adults, setAdults] = useState(1);
+  const [childrenCount, setChildrenCount] = useState(0);
+  const passengers = adults + childrenCount;
   const [tripType, setTripType] = useState<'one-way' | 'round-trip'>('round-trip');
   const [cabinClass, setCabinClass] = useState('economy');
   const [origin, setOrigin] = useState('');
@@ -39,6 +349,11 @@ export default function App() {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [loading, setLoading] = useState(false);
   const [validationWarning, setValidationWarning] = useState<string | null>(null);
+
+  const swapRoute = () => {
+    setOrigin(destination);
+    setDestination(origin);
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +381,8 @@ export default function App() {
         departure_date: date,
         search_type: searchType,
         passengers: String(passengers),
+        adults: String(adults),
+        children: String(childrenCount),
         trip_type: tripType,
         cabin_class: cabinClass,
       });
@@ -92,129 +409,125 @@ export default function App() {
       {/* Search Panel */}
       <div style={styles.searchPanel}>
         <form onSubmit={handleSearch} style={styles.form}>
-          <div style={styles.optionsRow}>
-            <div style={{ ...styles.inputGroup, ...styles.passengerGroup }}>
-              <div style={{ ...styles.label, ...styles.passengerLabel }} title="Passengers">
-                <PersonIcon />
-              </div>
-              <select
-                value={passengers}
-                onChange={(e) => setPassengers(Number(e.target.value))}
-                style={{ ...styles.select, ...styles.passengerSelect }}
-                aria-label="Passengers"
-              >
-                {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Trip</label>
-              <select
-                value={tripType}
-                onChange={(e) => {
-                  const value = e.target.value as 'one-way' | 'round-trip';
-                  setTripType(value);
-                  if (value === 'one-way') setReturnDate('');
-                }}
-                style={styles.select}
-              >
-                <option value="round-trip">Round trip</option>
-                <option value="one-way">One way</option>
-              </select>
-            </div>
-
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Class</label>
-              <select
-                value={cabinClass}
-                onChange={(e) => setCabinClass(e.target.value)}
-                style={styles.select}
-              >
-                <option value="economy">Economy</option>
-                <option value="premium-economy">Premium economy</option>
-                <option value="business">Business</option>
-                <option value="first">First</option>
-              </select>
-            </div>
-          </div>
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>From</label>
-            <input 
-              type="text" 
-              placeholder="e.g. JFK" 
-              value={origin} 
-              onChange={(e) => setOrigin(e.target.value)} 
-              style={styles.input}
-            />
-          </div>
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>To</label>
-            <input 
-              type="text" 
-              placeholder="e.g. LAX" 
-              value={destination} 
-              onChange={(e) => setDestination(e.target.value)} 
-              style={styles.input}
-            />
-          </div>
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Depart</label>
-            <input 
-              type="date" 
-              value={date} 
-              onChange={(e) => {
-                setDate(e.target.value);
-                if (returnDate && e.target.value && returnDate < e.target.value) {
-                  setReturnDate('');
-                }
+          <div style={styles.filterBar}>
+            <FilterDropdown
+              value={tripType}
+              onChange={(value) => {
+                setTripType(value);
+                if (value === 'one-way') setReturnDate('');
               }}
-              style={styles.input}
+              options={[
+                { value: 'round-trip', label: 'Round trip' },
+                { value: 'one-way', label: 'One way' },
+              ]}
+              ariaLabel="Trip type"
+              minTriggerWidth={120}
+            />
+
+            <PassengerDropdown
+              adults={adults}
+              childCount={childrenCount}
+              onChange={(nextAdults, nextChildren) => {
+                setAdults(nextAdults);
+                setChildrenCount(nextChildren);
+              }}
+            />
+
+            <FilterDropdown
+              value={cabinClass}
+              onChange={setCabinClass}
+              options={[
+                { value: 'economy', label: 'Economy' },
+                { value: 'premium-economy', label: 'Premium economy' },
+                { value: 'business', label: 'Business' },
+                { value: 'first', label: 'First class' },
+              ]}
+              ariaLabel="Cabin class"
+              minTriggerWidth={168}
+            />
+
+            <FilterDropdown
+              value={searchType}
+              onChange={setSearchType}
+              options={[
+                { value: 'cash', label: 'Cash fares' },
+                { value: 'points', label: 'Points' },
+              ]}
+              ariaLabel="Search mode"
+              minTriggerWidth={88}
             />
           </div>
 
-          {tripType === 'round-trip' && (
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Return</label>
+          <div style={styles.mainBar}>
+            <div style={styles.routeBlock}>
+              <div style={styles.routeField}>
+                <span style={styles.fieldIcon}><DepartIcon /></span>
+                <input
+                  type="text"
+                  placeholder="From (e.g. JFK)"
+                  value={origin}
+                  onChange={(e) => setOrigin(e.target.value)}
+                  style={styles.routeInput}
+                  aria-label="Origin"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={swapRoute}
+                style={styles.swapBtn}
+                aria-label="Swap origin and destination"
+                title="Swap airports"
+              >
+                <SwapIcon />
+              </button>
+
+              <div style={styles.routeField}>
+                <span style={styles.fieldIcon}><ArriveIcon /></span>
+                <input
+                  type="text"
+                  placeholder="To (e.g. LAX)"
+                  value={destination}
+                  onChange={(e) => setDestination(e.target.value)}
+                  style={styles.routeInput}
+                  aria-label="Destination"
+                />
+              </div>
+            </div>
+
+            <div style={styles.dateBlock}>
+              <span style={styles.fieldIcon}><CalendarIcon /></span>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => {
+                  setDate(e.target.value);
+                  if (returnDate && e.target.value && returnDate < e.target.value) {
+                    setReturnDate('');
+                  }
+                }}
+                style={styles.dateInput}
+                aria-label="Departure date"
+              />
+              <span style={{ ...styles.dateArrow, ...(tripType === 'one-way' ? styles.dateHidden : {}) }}>→</span>
               <input
                 type="date"
                 value={returnDate}
                 min={date || undefined}
                 onChange={(e) => setReturnDate(e.target.value)}
-                style={styles.input}
+                style={{ ...styles.dateInput, ...(tripType === 'one-way' ? styles.dateHidden : {}) }}
+                disabled={tripType === 'one-way'}
+                tabIndex={tripType === 'one-way' ? -1 : 0}
+                aria-label="Return date"
+                aria-hidden={tripType === 'one-way'}
               />
             </div>
-          )}
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Search Mode</label>
-            <div style={styles.toggleGroup}>
-              <button 
-                type="button"
-                onClick={() => setSearchType('cash')}
-                style={{...styles.toggleBtn, ...(searchType === 'cash' ? styles.activeToggle : {})}}
-              >
-                💵 Cash
-              </button>
-              <button 
-                type="button"
-                onClick={() => setSearchType('points')}
-                style={{...styles.toggleBtn, ...(searchType === 'points' ? styles.activeToggle : {})}}
-              >
-                💳 Points
-              </button>
-            </div>
+            <button type="submit" style={styles.searchBtn} disabled={loading}>
+              <SearchIcon />
+              {loading ? 'Searching...' : 'Search'}
+            </button>
           </div>
-
-          <button type="submit" style={styles.searchBtn}>
-            {loading ? 'Searching...' : 'Search'}
-          </button>
         </form>
       </div>
 
@@ -296,7 +609,7 @@ export default function App() {
 
 const fieldFont: React.CSSProperties = {
   fontFamily: "'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-  fontSize: '14px',
+  fontSize: '16px',
   fontWeight: 400,
   color: '#3c4043',
   letterSpacing: '0.01em',
@@ -305,65 +618,284 @@ const fieldFont: React.CSSProperties = {
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     fontFamily: "'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    maxWidth: '1000px',
+    maxWidth: '1100px',
     margin: '0 auto',
     padding: '20px',
     color: '#3c4043',
   },
-  header: { textAlign: 'center', marginBottom: '40px' },
+  header: { textAlign: 'center', marginBottom: '32px' },
   searchPanel: {
-    background: 'rgba(255, 255, 255, 0.88)',
-    backdropFilter: 'blur(10px)',
-    WebkitBackdropFilter: 'blur(10px)',
-    padding: '24px',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.9)',
-    boxShadow: '0 4px 24px rgba(26, 115, 232, 0.08), 0 1px 3px rgba(60, 64, 67, 0.06)',
-  },
-  form: { display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end', width: '100%' },
-  optionsRow: { display: 'flex', gap: '16px', flexWrap: 'wrap', width: '100%', marginBottom: '4px', alignItems: 'flex-end' },
-  inputGroup: { display: 'flex', flexDirection: 'column', flex: '1', minWidth: '150px' },
-  label: { fontSize: '12px', fontWeight: 500, marginBottom: '6px', color: '#5f6368', letterSpacing: '0.02em' },
-  input: {
-    ...fieldFont,
-    padding: '10px 12px',
-    borderRadius: '8px',
-    border: '1px solid #dadce0',
     background: '#fff',
-    height: '42px',
+    borderRadius: '14px',
+    border: '1px solid #c7d2fe',
+    boxShadow: '0 4px 20px rgba(99, 102, 241, 0.12), 0 1px 4px rgba(60, 64, 67, 0.06)',
   },
-  select: {
-    ...fieldFont,
-    padding: '10px 12px',
-    borderRadius: '8px',
-    border: '1px solid #dadce0',
-    background: '#fff',
-    height: '42px',
+  form: { display: 'flex', flexDirection: 'column', width: '100%' },
+  filterBar: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: '6px 28px',
+    padding: '14px 24px 6px',
+    borderBottom: '1px solid #f0f0f0',
+  },
+  filterDropdown: {
+    position: 'relative',
+  },
+  filterTrigger: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '8px',
+    border: 'none',
+    background: 'transparent',
+    padding: '8px 4px',
     cursor: 'pointer',
+    fontSize: '16px',
+    fontWeight: 500,
+    color: '#3c4043',
+    outline: 'none',
+    boxShadow: 'none',
+    fontFamily: 'inherit',
+    whiteSpace: 'nowrap',
+    transition: 'color 0.12s ease',
   },
-  passengerGroup: { flex: '0 0 auto', minWidth: '72px' },
-  passengerLabel: { display: 'flex', alignItems: 'center', color: '#888' },
-  passengerSelect: {
-    width: '72px',
-    minWidth: '72px',
-    padding: '10px 24px 10px 12px',
+  filterTriggerLabel: {
+    whiteSpace: 'nowrap',
+  },
+  filterTriggerHover: {
+    color: '#6b7280',
+  },
+  passengerTrigger: {
+    minWidth: 132,
+  },
+  filterTriggerOpen: {
+    color: '#6366f1',
+  },
+  filterChevron: {
+    display: 'flex',
+    color: '#9ca3af',
+    transition: 'transform 0.15s ease, color 0.15s ease',
+  },
+  filterChevronHover: {
+    color: '#b8bcc4',
+  },
+  filterChevronOpen: {
+    transform: 'rotate(180deg)',
+    color: '#6366f1',
+  },
+  filterMenu: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    marginTop: '6px',
+    minWidth: '100%',
+    width: 'max-content',
+    background: '#fff',
+    borderRadius: '8px',
+    boxShadow: '0 8px 30px rgba(99, 102, 241, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06)',
+    padding: 0,
+    listStyle: 'none',
+    margin: 0,
+    zIndex: 20,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+  },
+  filterOption: {
+    display: 'block',
+    width: '100%',
+    border: 'none',
+    background: '#fff',
+    textAlign: 'left',
+    padding: '12px 16px',
+    borderRadius: 0,
+    cursor: 'pointer',
+    fontSize: '15px',
+    color: '#3c4043',
+    fontFamily: 'inherit',
+    outline: 'none',
+    boxShadow: 'none',
+    whiteSpace: 'nowrap',
+    transition: 'background-color 0.12s ease',
+  },
+  filterOptionHover: {
+    background: '#ececec',
+  },
+  passengerMenu: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    marginTop: '6px',
+    minWidth: '280px',
+    background: '#fff',
+    borderRadius: '12px',
+    boxShadow: '0 8px 30px rgba(99, 102, 241, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06)',
+    padding: '18px 20px',
+    zIndex: 20,
+  },
+  passengerRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '20px',
+    marginBottom: '14px',
+  },
+  passengerRowLast: {
+    marginBottom: 0,
+  },
+  passengerRowLabel: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+  },
+  passengerLabel: {
+    fontSize: '15px',
+    fontWeight: 500,
+    color: '#3c4043',
+    whiteSpace: 'nowrap',
+  },
+  passengerSublabel: {
+    fontSize: '13px',
+    color: '#888',
+    whiteSpace: 'nowrap',
+  },
+  stepper: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    flexShrink: 0,
+  },
+  stepperBtn: {
+    width: '34px',
+    height: '34px',
+    borderRadius: '6px',
+    border: '1px solid #ddd',
+    background: '#f5f5f5',
+    color: '#666',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '20px',
+    lineHeight: 1,
+    padding: 0,
+    outline: 'none',
+    boxShadow: 'none',
+  },
+  stepperBtnDisabled: {
+    opacity: 0.35,
+    cursor: 'not-allowed',
+  },
+  stepperValue: {
+    minWidth: '24px',
     textAlign: 'center',
-    boxSizing: 'border-box',
+    fontSize: '15px',
+    fontWeight: 500,
+    color: '#3c4043',
   },
-  toggleGroup: { display: 'flex', border: '1px solid #dadce0', borderRadius: '8px', overflow: 'hidden' },
-  toggleBtn: { ...fieldFont, flex: 1, padding: '10px', border: 'none', background: '#fff', cursor: 'pointer', fontWeight: 500 },
-  activeToggle: { background: '#1a73e8', color: '#fff' },
+  mainBar: {
+    display: 'flex',
+    alignItems: 'stretch',
+    gap: '12px',
+    padding: '8px 24px 20px',
+    flexWrap: 'wrap',
+  },
+  routeBlock: {
+    display: 'flex',
+    alignItems: 'center',
+    flex: '2 1 300px',
+    minWidth: '260px',
+    background: '#f5f5f5',
+    borderRadius: '10px',
+    padding: '6px 8px',
+    gap: '4px',
+  },
+  routeField: {
+    display: 'flex',
+    alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
+    gap: '8px',
+    padding: '0 8px',
+  },
+  fieldIcon: {
+    display: 'flex',
+    alignItems: 'center',
+    color: '#888',
+    flexShrink: 0,
+  },
+  routeInput: {
+    ...fieldFont,
+    flex: 1,
+    minWidth: 0,
+    border: 'none',
+    background: 'transparent',
+    padding: '12px 0',
+    outline: 'none',
+    height: '48px',
+  },
+  swapBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    border: '1px solid #ddd',
+    background: '#fff',
+    color: '#666',
+    cursor: 'pointer',
+    flexShrink: 0,
+    padding: 0,
+  },
+  dateBlock: {
+    display: 'flex',
+    alignItems: 'center',
+    flex: '1 1 300px',
+    minWidth: '300px',
+    background: '#f5f5f5',
+    borderRadius: '10px',
+    padding: '6px 14px',
+    gap: '10px',
+  },
+  dateInput: {
+    ...fieldFont,
+    border: 'none',
+    background: 'transparent',
+    padding: '12px 0',
+    outline: 'none',
+    height: '48px',
+    flex: 1,
+    minWidth: 0,
+    colorScheme: 'light',
+  },
+  dateArrow: {
+    color: '#999',
+    fontSize: '16px',
+    flexShrink: 0,
+  },
+  dateHidden: {
+    visibility: 'hidden',
+    pointerEvents: 'none',
+  },
   searchBtn: {
     ...fieldFont,
-    background: '#1a73e8',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '10px',
+    background: 'linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%)',
     color: '#fff',
     border: 'none',
-    padding: '12px 28px',
-    borderRadius: '8px',
-    fontSize: '14px',
+    padding: '0 36px',
+    borderRadius: '10px',
+    fontSize: '16px',
     fontWeight: 500,
     cursor: 'pointer',
-    height: '42px',
+    minHeight: '56px',
+    minWidth: '148px',
+    flexShrink: 0,
+    alignSelf: 'stretch',
+    marginLeft: 'auto',
   },
   resultsContainer: { marginTop: '30px' },
   flightCard: {
@@ -375,7 +907,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '8px',
     border: '1px solid rgba(218, 220, 224, 0.8)',
     marginBottom: '12px',
-    boxShadow: '0 2px 12px rgba(26, 115, 232, 0.06)',
+    boxShadow: '0 2px 12px rgba(99, 102, 241, 0.08)',
   },
   flightInfo: { display: 'flex', gap: '20px', alignItems: 'center' },
   carrierBadge: { background: '#eef2f7', padding: '8px 12px', borderRadius: '6px', fontWeight: 600, fontSize: '14px' },
@@ -383,9 +915,9 @@ const styles: { [key: string]: React.CSSProperties } = {
   subtext: { fontSize: '13px', color: '#666' },
   pricingSection: { display: 'flex', alignItems: 'center' },
   priceText: { fontSize: '24px', fontWeight: 500, color: '#2e7d32' },
-  pointsText: { fontSize: '22px', fontWeight: 500, color: '#1a73e8' },
+  pointsText: { fontSize: '22px', fontWeight: 500, color: '#6366f1' },
   partnerContainer: { display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '6px', justifyContent: 'flex-end' },
-  partnerTag: { fontSize: '10px', background: '#e1f5fe', color: '#0288d1', padding: '2px 6px', borderRadius: '4px', fontWeight: 500 },
+  partnerTag: { fontSize: '10px', background: '#ede9fe', color: '#6d28d9', padding: '2px 6px', borderRadius: '4px', fontWeight: 500 },
   emptyState: { textAlign: 'center', padding: '40px', color: '#888' },
   modalOverlay: {
     position: 'fixed',
@@ -409,7 +941,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   modalMessage: { margin: '0 0 20px', lineHeight: 1.5, color: '#444' },
   modalBtn: {
     ...fieldFont,
-    background: '#1a73e8',
+    background: 'linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%)',
     color: '#fff',
     border: 'none',
     padding: '10px 24px',
