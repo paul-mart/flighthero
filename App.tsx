@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 interface AwardDetails {
   points_required: number;
@@ -20,6 +20,7 @@ interface FilterDropdownProps<T extends string | number> {
   options: { value: T; label: string }[];
   ariaLabel: string;
   minTriggerWidth?: number;
+  disabled?: boolean;
 }
 
 function FilterDropdown<T extends string | number>({
@@ -28,6 +29,7 @@ function FilterDropdown<T extends string | number>({
   options,
   ariaLabel,
   minTriggerWidth,
+  disabled = false,
 }: FilterDropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const [hoveredOption, setHoveredOption] = useState<T | null>(null);
@@ -38,7 +40,11 @@ function FilterDropdown<T extends string | number>({
   const selectedLabel = options.find((option) => option.value === value)?.label ?? '';
 
   useEffect(() => {
-    if (!open) return;
+    if (disabled) setOpen(false);
+  }, [disabled]);
+
+  useEffect(() => {
+    if (!open || disabled) return;
 
     const handlePointerDown = (event: MouseEvent) => {
       if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
@@ -77,19 +83,25 @@ function FilterDropdown<T extends string | number>({
         className="filter-trigger"
         style={{
           ...styles.filterTrigger,
-          ...(open ? styles.filterTriggerOpen : triggerHovered ? styles.filterTriggerHover : {}),
+          ...(disabled ? styles.filterTriggerDisabled : {}),
+          ...(open && !disabled ? styles.filterTriggerOpen : triggerHovered && !disabled ? styles.filterTriggerHover : {}),
           ...(minTriggerWidth ? { minWidth: minTriggerWidth } : {}),
         }}
-        onMouseEnter={() => setTriggerHovered(true)}
+        onMouseEnter={() => !disabled && setTriggerHovered(true)}
         onMouseLeave={() => setTriggerHovered(false)}
         onMouseDown={(e) => e.preventDefault()}
-        onClick={() => setOpen((prev) => {
-          if (prev) setHoveredOption(null);
-          return !prev;
-        })}
+        onClick={() => {
+          if (disabled) return;
+          setOpen((prev) => {
+            if (prev) setHoveredOption(null);
+            return !prev;
+          });
+        }}
+        disabled={disabled}
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="listbox"
+        aria-disabled={disabled}
       >
         <span style={styles.filterTriggerLabel}>{selectedLabel}</span>
         <span style={{ ...styles.filterChevron, ...(open ? styles.filterChevronOpen : triggerHovered ? styles.filterChevronHover : {}) }}>
@@ -323,16 +335,63 @@ function SwapIcon() {
 }
 
 interface Flight {
-  id: number;
+  id: number | string;
   origin: string;
   destination: string;
   departure_date: string;
+  departure_time?: string;
+  arrival_time?: string;
   carrier: string;
   flight_number: string;
   duration: string;
+  duration_minutes?: number;
   stops: number;
   cash_price: number;
   award_details?: AwardDetails;
+}
+
+type StopsFilter = 'nonstop' | '1-or-fewer' | '2-or-fewer';
+type SortOption = 'price-asc' | 'price-desc' | 'duration-asc' | 'duration-desc';
+
+function matchesStopsFilter(stops: number, filter: StopsFilter): boolean {
+  if (filter === 'nonstop') return stops === 0;
+  if (filter === '1-or-fewer') return stops <= 1;
+  return stops <= 2;
+}
+
+function getSortPrice(flight: Flight, searchType: 'cash' | 'points'): number {
+  if (searchType === 'points' && flight.award_details) {
+    return flight.award_details.points_required;
+  }
+  return flight.cash_price;
+}
+
+function getDurationMinutes(flight: Flight): number {
+  if (flight.duration_minutes != null) return flight.duration_minutes;
+  const match = flight.duration.match(/(?:(\d+)h)?\s*(?:(\d+)m)?/i);
+  if (!match) return 0;
+  return parseInt(match[1] || '0', 10) * 60 + parseInt(match[2] || '0', 10);
+}
+
+function sortFlights(flights: Flight[], sortOption: SortOption, searchType: 'cash' | 'points'): Flight[] {
+  const sorted = [...flights];
+  sorted.sort((a, b) => {
+    if (sortOption === 'price-asc') {
+      return getSortPrice(a, searchType) - getSortPrice(b, searchType);
+    }
+    if (sortOption === 'price-desc') {
+      return getSortPrice(b, searchType) - getSortPrice(a, searchType);
+    }
+    if (sortOption === 'duration-asc') {
+      return getDurationMinutes(a) - getDurationMinutes(b);
+    }
+    return getDurationMinutes(b) - getDurationMinutes(a);
+  });
+  return sorted;
+}
+
+function formatPrice(amount: number): string {
+  return `$${Math.round(amount).toLocaleString()}`;
 }
 
 export default function App() {
@@ -348,7 +407,25 @@ export default function App() {
   const [searchType, setSearchType] = useState<'cash' | 'points'>('cash');
   const [flights, setFlights] = useState<Flight[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [stopsFilter, setStopsFilter] = useState<StopsFilter>('2-or-fewer');
+  const [sortOption, setSortOption] = useState<SortOption>('price-asc');
+  const [advancedEnabled, setAdvancedEnabled] = useState(false);
   const [validationWarning, setValidationWarning] = useState<string | null>(null);
+  const [modalTitle, setModalTitle] = useState('Missing information');
+
+  const showDialog = (title: string, message: string) => {
+    setModalTitle(title);
+    setValidationWarning(message);
+  };
+
+  const displayedFlights = useMemo(() => {
+    if (!advancedEnabled) {
+      return sortFlights(flights, 'price-asc', searchType);
+    }
+    const filtered = flights.filter((flight) => matchesStopsFilter(flight.stops, stopsFilter));
+    return sortFlights(filtered, sortOption, searchType);
+  }, [flights, stopsFilter, sortOption, searchType, advancedEnabled]);
 
   const swapRoute = () => {
     setOrigin(destination);
@@ -367,13 +444,15 @@ export default function App() {
     if (tripType === 'round-trip' && !returnDate) missing.push('Return date');
 
     if (missing.length > 0) {
-      setValidationWarning(
+      showDialog(
+        'Missing information',
         `Please complete all required fields before searching.\n\nMissing: ${missing.join(', ')}`
       );
       return;
     }
 
     setLoading(true);
+    setFlights([]);
     try {
       const params = new URLSearchParams({
         origin: trimmedOrigin,
@@ -391,10 +470,30 @@ export default function App() {
       }
       const response = await fetch(`http://localhost:8000/api/search?${params}`);
       const data = await response.json();
+      if (!response.ok) {
+        const detail = typeof data.detail === 'string'
+          ? data.detail
+          : Array.isArray(data.detail)
+            ? data.detail.map((item: { msg?: string }) => item.msg).filter(Boolean).join(', ')
+            : 'Flight search failed.';
+        showDialog('Search error', detail);
+        return;
+      }
       setFlights(data);
+      if (Array.isArray(data) && data.length === 0) {
+        showDialog(
+          'No flights found',
+          'No flights were found for your search. Try different dates or airports.'
+        );
+      }
     } catch (error) {
       console.error("Error fetching flights:", error);
+      showDialog(
+        'Connection error',
+        'Could not reach the flight search server. Make sure the Python backend is running.'
+      );
     } finally {
+      setHasSearched(true);
       setLoading(false);
     }
   };
@@ -529,31 +628,100 @@ export default function App() {
             </button>
           </div>
         </form>
+
+        {hasSearched && (
+          <div style={styles.advancedSection}>
+            <label style={styles.advancedToggle}>
+              <input
+                type="checkbox"
+                checked={advancedEnabled}
+                onChange={(e) => setAdvancedEnabled(e.target.checked)}
+                style={styles.advancedCheckbox}
+              />
+              <span>Advanced settings</span>
+            </label>
+
+            <div style={styles.advancedControlsRow}>
+              <div style={styles.advancedControlItem}>
+                <span style={{
+                  ...styles.advancedControlLabel,
+                  ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
+                }}>
+                  Stops:
+                </span>
+                <FilterDropdown
+                  value={stopsFilter}
+                  onChange={setStopsFilter}
+                  options={[
+                    { value: 'nonstop', label: 'Nonstop' },
+                    { value: '1-or-fewer', label: '1 stop or fewer' },
+                    { value: '2-or-fewer', label: '2 stops or fewer' },
+                  ]}
+                  ariaLabel="Stops"
+                  disabled={!advancedEnabled}
+                />
+              </div>
+
+              <div style={styles.advancedControlItem}>
+                <span style={{
+                  ...styles.advancedControlLabel,
+                  ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
+                }}>
+                  Sort by:
+                </span>
+                <FilterDropdown
+                  value={sortOption}
+                  onChange={setSortOption}
+                  options={[
+                    { value: 'price-asc', label: 'Price: low to high' },
+                    { value: 'price-desc', label: 'Price: high to low' },
+                    { value: 'duration-asc', label: 'Duration: shortest first' },
+                    { value: 'duration-desc', label: 'Duration: longest first' },
+                  ]}
+                  ariaLabel="Sort by"
+                  disabled={!advancedEnabled}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Results Section */}
       <main style={styles.resultsContainer}>
-        {flights.length > 0 ? (
-          flights.map((flight) => (
+        {hasSearched && flights.length > 0 && (
+          <p style={styles.resultsCount}>
+            Showing {displayedFlights.length} of {flights.length} flight{flights.length === 1 ? '' : 's'}
+          </p>
+        )}
+        {displayedFlights.length > 0 ? (
+          displayedFlights.map((flight) => (
             <div key={flight.id} style={styles.flightCard}>
               <div style={styles.flightInfo}>
                 <div style={styles.carrierBadge}>{flight.carrier}</div>
                 <div style={styles.routeDetails}>
                   <strong>{flight.origin} → {flight.destination}</strong>
-                  <span style={styles.subtext}>{flight.duration} • {flight.stops === 0 ? 'Nonstop' : `${flight.stops} stop`}</span>
+                  {flight.departure_time && flight.arrival_time && (
+                    <span style={styles.timeText}>
+                      {flight.departure_time} – {flight.arrival_time}
+                    </span>
+                  )}
+                  <span style={styles.subtext}>
+                    {flight.flight_number} • {flight.duration} • {flight.stops === 0 ? 'Nonstop' : `${flight.stops} stop${flight.stops > 1 ? 's' : ''}`}
+                  </span>
                 </div>
               </div>
 
               <div style={styles.pricingSection}>
                 {searchType === 'cash' ? (
-                  <div style={styles.priceText}>${flight.cash_price}</div>
+                  <div style={styles.priceText}>{formatPrice(flight.cash_price)}</div>
                 ) : (
                   flight.award_details && (
                     <div style={{ textAlign: 'right' }}>
                       <div style={styles.pointsText}>
                         {flight.award_details.points_required.toLocaleString()} pts
                       </div>
-                      <div style={styles.subtext}>+ ${flight.award_details.taxes_and_fees} fees</div>
+                      <div style={styles.subtext}>+ {formatPrice(flight.award_details.taxes_and_fees)} fees</div>
                       <div style={styles.partnerContainer}>
                         {flight.award_details.transfer_partners.map((p, i) => (
                           <span key={i} style={styles.partnerTag}>{p}</span>
@@ -565,8 +733,12 @@ export default function App() {
               </div>
             </div>
           ))
+        ) : loading ? null : hasSearched && flights.length === 0 ? (
+          <div style={styles.emptyState}>No flights were found for your search. Try different dates or airports.</div>
+        ) : hasSearched && flights.length > 0 ? (
+          <div style={styles.emptyState}>No flights match your advanced filters. Try allowing more stops.</div>
         ) : (
-          !loading && <div style={styles.emptyState}>Enter your route details above to explore options.</div>
+          !hasSearched && <div style={styles.emptyState}>Enter your route details above to explore options.</div>
         )}
       </main>
 
@@ -583,7 +755,7 @@ export default function App() {
             aria-describedby="validation-message"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 id="validation-title" style={styles.modalTitle}>Missing information</h2>
+            <h2 id="validation-title" style={styles.modalTitle}>{modalTitle}</h2>
             <p id="validation-message" style={styles.modalMessage}>
               {validationWarning.split('\n\n').map((part, i) => (
                 <span key={i}>
@@ -630,6 +802,52 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: '1px solid #c7d2fe',
     boxShadow: '0 4px 20px rgba(99, 102, 241, 0.12), 0 1px 4px rgba(60, 64, 67, 0.06)',
   },
+  advancedSection: {
+    borderTop: '1px solid #f0f0f0',
+    padding: '16px 24px 20px',
+  },
+  advancedToggle: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    marginBottom: '14px',
+    cursor: 'pointer',
+    fontSize: '15px',
+    fontWeight: 500,
+    color: '#3c4043',
+    userSelect: 'none',
+  },
+  advancedCheckbox: {
+    width: '16px',
+    height: '16px',
+    cursor: 'pointer',
+    accentColor: '#6366f1',
+  },
+  advancedControlsRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '56px',
+    flexWrap: 'wrap',
+  },
+  advancedControlItem: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: '8px',
+    flexShrink: 0,
+  },
+  advancedControlLabel: {
+    fontSize: '16px',
+    fontWeight: 500,
+    color: '#3c4043',
+    fontFamily: 'inherit',
+    whiteSpace: 'nowrap',
+  },
+  advancedControlLabelDisabled: {
+    color: '#b0b0b0',
+  },
   form: { display: 'flex', flexDirection: 'column', width: '100%' },
   filterBar: {
     display: 'flex',
@@ -670,6 +888,10 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   filterTriggerOpen: {
     color: '#6366f1',
+  },
+  filterTriggerDisabled: {
+    color: '#b0b0b0',
+    cursor: 'not-allowed',
   },
   filterChevron: {
     display: 'flex',
@@ -898,6 +1120,12 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginLeft: 'auto',
   },
   resultsContainer: { marginTop: '30px' },
+  resultsCount: {
+    margin: '0 0 12px',
+    fontSize: '14px',
+    color: '#666',
+    fontWeight: 500,
+  },
   flightCard: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -912,6 +1140,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   flightInfo: { display: 'flex', gap: '20px', alignItems: 'center' },
   carrierBadge: { background: '#eef2f7', padding: '8px 12px', borderRadius: '6px', fontWeight: 600, fontSize: '14px' },
   routeDetails: { display: 'flex', flexDirection: 'column', gap: '4px' },
+  timeText: { fontSize: '15px', fontWeight: 500, color: '#1f2937' },
   subtext: { fontSize: '13px', color: '#666' },
   pricingSection: { display: 'flex', alignItems: 'center' },
   priceText: { fontSize: '24px', fontWeight: 500, color: '#2e7d32' },
