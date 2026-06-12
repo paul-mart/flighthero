@@ -632,6 +632,10 @@ interface Flight {
   duration_minutes?: number;
   stops: number;
   cash_price: number;
+  return_departure_time?: string;
+  return_arrival_time?: string;
+  return_flight_number?: string;
+  return_stops?: number;
   award_details?: AwardDetails;
 }
 
@@ -990,6 +994,19 @@ export default function App() {
                   <span style={styles.subtext}>
                     {flight.flight_number} • {flight.duration} • {flight.stops === 0 ? 'Nonstop' : `${flight.stops} stop${flight.stops > 1 ? 's' : ''}`}
                   </span>
+                  {tripType === 'round-trip' && flight.return_flight_number && (
+                    <>
+                      <strong style={styles.returnLabel}>{flight.destination} → {flight.origin}</strong>
+                      {flight.return_departure_time && flight.return_arrival_time && (
+                        <span style={styles.timeText}>
+                          {flight.return_departure_time} – {flight.return_arrival_time}
+                        </span>
+                      )}
+                      <span style={styles.subtext}>
+                        {flight.return_flight_number} • {(flight.return_stops ?? 0) === 0 ? 'Nonstop' : `${flight.return_stops} stop${(flight.return_stops ?? 0) > 1 ? 's' : ''}`}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -1532,6 +1549,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   flightInfo: { display: 'flex', gap: '20px', alignItems: 'center' },
   carrierBadge: { background: '#eef2f7', padding: '8px 12px', borderRadius: '6px', fontWeight: 600, fontSize: '14px' },
   routeDetails: { display: 'flex', flexDirection: 'column', gap: '4px' },
+  returnLabel: { fontSize: '14px', marginTop: '8px' },
   timeText: { fontSize: '15px', fontWeight: 500, color: '#1f2937' },
   subtext: { fontSize: '13px', color: '#666' },
   pricingSection: { display: 'flex', alignItems: 'center' },

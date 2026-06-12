@@ -8,13 +8,15 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from duffel_client import (
-    DuffelAPIError,
-    DuffelConfigError,
+from airport_places import data_available as airport_data_available
+from airport_places import search_place_suggestions as airport_place_suggestions
+from serpapi_client import (
     ENV_PATH,
-    credentials_configured,
+    SerpAPIConfigError,
+    SerpAPIError,
+    credentials_configured as serpapi_configured,
     search_flight_offers,
-    search_place_suggestions,
+    search_place_suggestions as serpapi_place_suggestions,
 )
 
 app = FastAPI(title="PointsFlight Finder API")
@@ -50,7 +52,9 @@ def calculate_points_estimate(cash_price: float, airline: str) -> dict:
 def health():
     return {
         "status": "ok",
-        "duffel_configured": credentials_configured(),
+        "serpapi_configured": serpapi_configured(),
+        "airport_data_available": airport_data_available(),
+        "places_provider": "local" if airport_data_available() else "serpapi",
         "env_file_exists": ENV_PATH.exists(),
     }
 
@@ -77,12 +81,14 @@ def search_flights(
             return_date=return_date if trip_type == "round-trip" else None,
             cabin_class=cabin_class,
         )
-    except DuffelConfigError as exc:
+    except SerpAPIConfigError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except DuffelAPIError as exc:
-        status = exc.status_code if exc.status_code and exc.status_code < 500 else 502
+    except SerpAPIError as exc:
+        status = 502 if exc.status_code in (400, 410, 429) else (
+            exc.status_code if exc.status_code and exc.status_code < 500 else 502
+        )
         raise HTTPException(status_code=status, detail=str(exc)) from exc
 
     if search_type == "points":
@@ -97,11 +103,17 @@ def search_flights(
 
 @app.get("/api/places/suggestions")
 def place_suggestions(q: str = Query("", min_length=0)):
+    if airport_data_available():
+        try:
+            return airport_place_suggestions(q)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+
     try:
-        return search_place_suggestions(q)
-    except DuffelConfigError as exc:
+        return serpapi_place_suggestions(q)
+    except SerpAPIConfigError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except DuffelAPIError as exc:
+    except SerpAPIError as exc:
         status = exc.status_code if exc.status_code and exc.status_code < 500 else 502
         raise HTTPException(status_code=status, detail=str(exc)) from exc
 
