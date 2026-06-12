@@ -226,7 +226,7 @@ A single SerpAPI `google_flights` request with `type=2`.
 ### Round-trip
 
 1. **Outbound search** — SerpAPI request with `type=1`, `outbound_date`, and `return_date`.
-2. **Return leg details** — For up to 15 outbound options, a follow-up request uses each option's `departure_token` (with route parameters) to fetch return flight times and numbers.
+2. **Return leg details** — For up to 15 outbound options, follow-up requests use each option's `departure_token` (with route parameters) to fetch return flight times and numbers. These run **in parallel** (up to 6 at a time) instead of one-by-one.
 3. **Deduping** — Identical itineraries are merged, keeping the lowest price.
 4. **Sorting** — Results are sorted by `cash_price` ascending.
 

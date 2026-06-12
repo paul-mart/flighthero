@@ -1,6 +1,7 @@
 import os
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,7 @@ _PLACE_CACHE: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 _PLACE_CACHE_TTL_SECONDS = 600
 _PLACE_CACHE_MAX_ENTRIES = 256
 _RETURN_DETAIL_LIMIT = 15
+_RETURN_FETCH_WORKERS = 6
 _http_client: httpx.Client | None = None
 
 TRAVEL_CLASS_MAP = {
@@ -146,7 +148,7 @@ def _raise_for_serpapi_error(payload: dict[str, Any], http_status: int, fallback
     raise SerpAPIError(detail, status_code=status_code)
 
 
-def _serpapi_search(params: dict[str, Any]) -> dict[str, Any]:
+def _serpapi_search(params: dict[str, Any], *, client: httpx.Client | None = None) -> dict[str, Any]:
     settings = _get_settings()
     if not settings["api_key"]:
         raise SerpAPIConfigError(
@@ -161,7 +163,8 @@ def _serpapi_search(params: dict[str, Any]) -> dict[str, Any]:
         **params,
     }
 
-    client = _get_http_client()
+    if client is None:
+        client = _get_http_client()
     response = client.get(SERPAPI_URL, params=query)
 
     try:
@@ -189,6 +192,15 @@ def _segment_carrier_names(segments: list[dict[str, Any]]) -> list[str]:
         if name and name not in names:
             names.append(name)
     return names
+
+
+def _segment_carrier_logos(segments: list[dict[str, Any]]) -> list[str]:
+    logos: list[str] = []
+    for segment in segments:
+        logo = (segment.get("airline_logo") or "").strip()
+        if logo and logo not in logos:
+            logos.append(logo)
+    return logos
 
 
 def _format_carrier_label(names: list[str]) -> str:
@@ -225,6 +237,7 @@ def _parse_leg(segments: list[dict[str, Any]], origin_fallback: str, destination
         "departure_time": format_local_time(departure.get("time", "")),
         "arrival_time": format_local_time(arrival.get("time", "")),
         "carrier": _format_carrier_label(_segment_carrier_names(segments)),
+        "carrier_logos": _segment_carrier_logos(segments),
         "flight_number": _format_flight_numbers(segments),
         "duration": format_duration_minutes(duration_minutes),
         "duration_minutes": duration_minutes,
@@ -245,7 +258,12 @@ def _fetch_return_leg(
     destination_code: str,
     departure_date: str,
     return_date: str,
+    *,
+    client: httpx.Client | None = None,
 ) -> dict[str, Any] | None:
+    owns_client = client is None
+    if owns_client:
+        client = httpx.Client(timeout=90.0)
     try:
         payload = _serpapi_search(
             {
@@ -256,10 +274,14 @@ def _fetch_return_leg(
                 "return_date": return_date,
                 "type": "1",
                 "departure_token": departure_token,
-            }
+            },
+            client=client,
         )
     except SerpAPIError:
         return None
+    finally:
+        if owns_client:
+            client.close()
 
     options = _collect_flight_options(payload)
     if not options:
@@ -275,14 +297,55 @@ def _fetch_return_leg(
         return None
 
 
+def _fetch_return_legs_parallel(
+    departure_tokens: list[str],
+    origin_code: str,
+    destination_code: str,
+    departure_date: str,
+    return_date: str,
+) -> dict[str, dict[str, Any] | None]:
+    if not departure_tokens:
+        return {}
+
+    cache: dict[str, dict[str, Any] | None] = {}
+    workers = min(_RETURN_FETCH_WORKERS, len(departure_tokens))
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {
+            executor.submit(
+                _fetch_return_leg,
+                token,
+                origin_code,
+                destination_code,
+                departure_date,
+                return_date,
+            ): token
+            for token in departure_tokens
+        }
+        for future in as_completed(futures):
+            token = futures[future]
+            try:
+                cache[token] = future.result()
+            except Exception:
+                cache[token] = None
+
+    return cache
+
+
+def _attach_return_leg(flight: dict[str, Any], inbound: dict[str, Any]) -> None:
+    flight["return_departure_time"] = inbound["departure_time"]
+    flight["return_arrival_time"] = inbound["arrival_time"]
+    flight["return_flight_number"] = inbound["flight_number"]
+    flight["return_carrier"] = inbound["carrier"]
+    flight["return_stops"] = inbound["stops"]
+    flight["duration_minutes"] += inbound["duration_minutes"]
+
+
 def _parse_flight_option(
     option: dict[str, Any],
     origin_code: str,
     destination_code: str,
     departure_date: str,
-    return_date: str | None,
-    return_cache: dict[str, dict[str, Any] | None],
-    return_fetch_count: list[int],
+    return_cache: dict[str, dict[str, Any] | None] | None = None,
 ) -> dict[str, Any] | None:
     segments = option.get("flights") or []
     if not segments:
@@ -301,6 +364,8 @@ def _parse_flight_option(
         "departure_time": outbound["departure_time"],
         "arrival_time": outbound["arrival_time"],
         "carrier": outbound["carrier"],
+        "carrier_logos": outbound["carrier_logos"]
+        or ([option["airline_logo"]] if option.get("airline_logo") else []),
         "flight_number": outbound["flight_number"],
         "duration": outbound["duration"],
         "duration_minutes": int(option.get("total_duration") or outbound["duration_minutes"]),
@@ -308,33 +373,11 @@ def _parse_flight_option(
         "cash_price": round(float(price), 2),
     }
 
-    if not return_date:
-        return result
-
     departure_token = option.get("departure_token")
-    if not departure_token:
-        return result
-
-    if departure_token not in return_cache:
-        if return_fetch_count[0] < _RETURN_DETAIL_LIMIT:
-            return_cache[departure_token] = _fetch_return_leg(
-                departure_token,
-                origin_code,
-                destination_code,
-                departure_date,
-                return_date,
-            )
-            return_fetch_count[0] += 1
-        else:
-            return_cache[departure_token] = None
-
-    inbound = return_cache.get(departure_token)
-    if inbound:
-        result["return_departure_time"] = inbound["departure_time"]
-        result["return_arrival_time"] = inbound["arrival_time"]
-        result["return_flight_number"] = inbound["flight_number"]
-        result["return_stops"] = inbound["stops"]
-        result["duration_minutes"] += inbound["duration_minutes"]
+    if return_cache and departure_token:
+        inbound = return_cache.get(departure_token)
+        if inbound:
+            _attach_return_leg(result, inbound)
 
     return result
 
@@ -396,20 +439,37 @@ def search_flight_offers(
         params["return_date"] = return_date
 
     payload = _serpapi_search(params)
+    options = _collect_flight_options(payload)
+
     return_cache: dict[str, dict[str, Any] | None] = {}
-    return_fetch_count = [0]
+    if return_date:
+        tokens_to_fetch: list[str] = []
+        seen_tokens: set[str] = set()
+        for option in options:
+            token = option.get("departure_token")
+            if not token or token in seen_tokens:
+                continue
+            seen_tokens.add(token)
+            tokens_to_fetch.append(token)
+            if len(tokens_to_fetch) >= _RETURN_DETAIL_LIMIT:
+                break
+        return_cache = _fetch_return_legs_parallel(
+            tokens_to_fetch,
+            origin_code,
+            destination_code,
+            departure_date,
+            return_date,
+        )
 
     parsed: list[dict[str, Any]] = []
-    for option in _collect_flight_options(payload):
+    for option in options:
         try:
             flight = _parse_flight_option(
                 option,
                 origin_code,
                 destination_code,
                 departure_date,
-                return_date,
                 return_cache,
-                return_fetch_count,
             )
             if flight:
                 parsed.append(flight)

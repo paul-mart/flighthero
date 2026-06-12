@@ -619,6 +619,36 @@ function SwapIcon() {
   );
 }
 
+function CarrierBadge({ carrier, logos }: { carrier: string; logos?: string[] }) {
+  const [failed, setFailed] = useState(false);
+  const visibleLogos = (logos ?? []).filter(Boolean).slice(0, 2);
+
+  if (!failed && visibleLogos.length > 0) {
+    return (
+      <div style={styles.carrierLogoGroup} aria-label={carrier} title={carrier}>
+        {visibleLogos.map((logo) => (
+          <img
+            key={logo}
+            src={logo}
+            alt=""
+            style={styles.carrierLogo}
+            onError={() => setFailed(true)}
+          />
+        ))}
+        {(logos?.length ?? 0) > 2 && (
+          <span style={styles.carrierLogoOverflow}>+{(logos?.length ?? 0) - 2}</span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.carrierBadge} aria-label={carrier} title={carrier}>
+      {carrier}
+    </div>
+  );
+}
+
 interface Flight {
   id: number | string;
   origin: string;
@@ -627,6 +657,7 @@ interface Flight {
   departure_time?: string;
   arrival_time?: string;
   carrier: string;
+  carrier_logos?: string[];
   flight_number: string;
   duration: string;
   duration_minutes?: number;
@@ -635,6 +666,7 @@ interface Flight {
   return_departure_time?: string;
   return_arrival_time?: string;
   return_flight_number?: string;
+  return_carrier?: string;
   return_stops?: number;
   award_details?: AwardDetails;
 }
@@ -983,7 +1015,7 @@ export default function App() {
           displayedFlights.map((flight) => (
             <div key={flight.id} style={styles.flightCard}>
               <div style={styles.flightInfo}>
-                <div style={styles.carrierBadge}>{flight.carrier}</div>
+                <CarrierBadge carrier={flight.carrier} logos={flight.carrier_logos} />
                 <div style={styles.routeDetails}>
                   <strong>{flight.origin} → {flight.destination}</strong>
                   {flight.departure_time && flight.arrival_time && (
@@ -992,7 +1024,7 @@ export default function App() {
                     </span>
                   )}
                   <span style={styles.subtext}>
-                    {flight.flight_number} • {flight.duration} • {flight.stops === 0 ? 'Nonstop' : `${flight.stops} stop${flight.stops > 1 ? 's' : ''}`}
+                    {flight.carrier} {flight.flight_number} • {flight.duration} • {flight.stops === 0 ? 'Nonstop' : `${flight.stops} stop${flight.stops > 1 ? 's' : ''}`}
                   </span>
                   {tripType === 'round-trip' && flight.return_flight_number && (
                     <>
@@ -1003,7 +1035,7 @@ export default function App() {
                         </span>
                       )}
                       <span style={styles.subtext}>
-                        {flight.return_flight_number} • {(flight.return_stops ?? 0) === 0 ? 'Nonstop' : `${flight.return_stops} stop${(flight.return_stops ?? 0) > 1 ? 's' : ''}`}
+                        {(flight.return_carrier ?? flight.carrier)} {flight.return_flight_number} • {(flight.return_stops ?? 0) === 0 ? 'Nonstop' : `${flight.return_stops} stop${(flight.return_stops ?? 0) > 1 ? 's' : ''}`}
                       </span>
                     </>
                   )}
@@ -1547,7 +1579,21 @@ const styles: { [key: string]: React.CSSProperties } = {
     boxShadow: '0 2px 12px rgba(99, 102, 241, 0.08)',
   },
   flightInfo: { display: 'flex', gap: '20px', alignItems: 'center' },
-  carrierBadge: { background: '#eef2f7', padding: '8px 12px', borderRadius: '6px', fontWeight: 600, fontSize: '14px' },
+  carrierLogoGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    flexShrink: 0,
+  },
+  carrierBadge: {
+    background: '#eef2f7',
+    padding: '8px 12px',
+    borderRadius: '6px',
+    fontWeight: 600,
+    fontSize: '14px',
+  },
+  carrierLogo: { height: '32px', width: 'auto', maxWidth: '80px', objectFit: 'contain', display: 'block' },
+  carrierLogoOverflow: { fontSize: '12px', color: '#666', fontWeight: 500 },
   routeDetails: { display: 'flex', flexDirection: 'column', gap: '4px' },
   returnLabel: { fontSize: '14px', marginTop: '8px' },
   timeText: { fontSize: '15px', fontWeight: 500, color: '#1f2937' },
