@@ -27,7 +27,7 @@ class ReturnLegsRequest(BaseModel):
     destination: str
     departure_date: str
     return_date: str
-    departure_tokens: list[str] = Field(..., max_length=15)
+    departure_tokens: list[str] = Field(..., max_length=50)
 
 app = FastAPI(title="PointsFlight Finder API")
 

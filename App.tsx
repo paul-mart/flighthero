@@ -774,6 +774,41 @@ function formatPrice(amount: number): string {
   return `$${Math.round(amount).toLocaleString()}`;
 }
 
+const RETURN_LEG_BATCH_SIZE = 12;
+
+async function fetchReturnLegBatches(
+  tokens: string[],
+  route: {
+    origin: string;
+    destination: string;
+    departureDate: string;
+    returnDate: string;
+  },
+  onBatch: (returnData: Record<string, ReturnLegFields>) => void,
+  isCancelled: () => boolean,
+): Promise<void> {
+  for (let index = 0; index < tokens.length; index += RETURN_LEG_BATCH_SIZE) {
+    if (isCancelled()) return;
+
+    const batch = tokens.slice(index, index + RETURN_LEG_BATCH_SIZE);
+    const response = await fetch('http://localhost:8000/api/search/return-legs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        origin: route.origin,
+        destination: route.destination,
+        departure_date: route.departureDate,
+        return_date: route.returnDate,
+        departure_tokens: batch,
+      }),
+    });
+    const returnData = await response.json();
+    if (!response.ok || isCancelled()) return;
+
+    onBatch(returnData as Record<string, ReturnLegFields>);
+  }
+}
+
 export default function App() {
   const [adults, setAdults] = useState(1);
   const [childrenCount, setChildrenCount] = useState(0);
@@ -873,34 +908,31 @@ export default function App() {
       } else if (tripType === 'round-trip') {
         const tokens = [...new Set(
           results.map((flight) => flight.departure_token).filter((token): token is string => Boolean(token))
-        )].slice(0, 15);
+        )];
         if (tokens.length > 0) {
           setLoadingReturnDetails(true);
           void (async () => {
             try {
-              const returnResponse = await fetch('http://localhost:8000/api/search/return-legs', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+              await fetchReturnLegBatches(
+                tokens,
+                {
                   origin: trimmedOrigin,
                   destination: trimmedDestination,
-                  departure_date: date,
-                  return_date: returnDate,
-                  departure_tokens: tokens,
-                }),
-              });
-              const returnData = await returnResponse.json();
-              if (!returnResponse.ok || searchSeq !== searchSeqRef.current) {
-                return;
-              }
-              setFlights((prev) =>
-                prev.map((flight) => {
-                  const token = flight.departure_token;
-                  if (!token || !returnData[token]) {
-                    return flight;
-                  }
-                  return applyReturnLeg(flight, returnData[token] as ReturnLegFields);
-                })
+                  departureDate: date,
+                  returnDate,
+                },
+                (returnData) => {
+                  setFlights((prev) =>
+                    prev.map((flight) => {
+                      const token = flight.departure_token;
+                      if (!token || !returnData[token]) {
+                        return flight;
+                      }
+                      return applyReturnLeg(flight, returnData[token]);
+                    })
+                  );
+                },
+                () => searchSeq !== searchSeqRef.current,
               );
             } catch (returnError) {
               console.error('Error loading return legs:', returnError);
@@ -1149,6 +1181,8 @@ export default function App() {
                         </>
                       ) : loadingReturnDetails && flight.departure_token ? (
                         <span style={styles.returnLoading}>Loading return flight…</span>
+                      ) : flight.departure_token ? (
+                        <span style={styles.returnLoading}>Return details unavailable</span>
                       ) : null}
                     </>
                   )}
@@ -1157,7 +1191,12 @@ export default function App() {
 
               <div style={styles.pricingSection}>
                 {searchType === 'cash' ? (
-                  <div style={styles.priceText}>{formatPrice(flight.cash_price)}</div>
+                  <>
+                    {tripType === 'round-trip' && (
+                      <div style={styles.priceHint}>Round trip</div>
+                    )}
+                    <div style={styles.priceText}>{formatPrice(flight.cash_price)}</div>
+                  </>
                 ) : (
                   flight.award_details && (
                     <div style={{ textAlign: 'right' }}>
@@ -1712,8 +1751,9 @@ const styles: { [key: string]: React.CSSProperties } = {
   returnLoading: { fontSize: '13px', color: '#6b7280', fontStyle: 'italic' },
   timeText: { fontSize: '15px', fontWeight: 500, color: '#1f2937' },
   subtext: { fontSize: '13px', color: '#666' },
-  pricingSection: { display: 'flex', alignItems: 'center' },
+  pricingSection: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' },
   priceText: { fontSize: '24px', fontWeight: 500, color: '#2e7d32' },
+  priceHint: { fontSize: '12px', color: '#6b7280', marginBottom: '2px', textAlign: 'right' },
   pointsText: { fontSize: '22px', fontWeight: 500, color: '#6366f1' },
   partnerContainer: { display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '6px', justifyContent: 'flex-end' },
   partnerTag: { fontSize: '10px', background: '#ede9fe', color: '#6d28d9', padding: '2px 6px', borderRadius: '4px', fontWeight: 500 },

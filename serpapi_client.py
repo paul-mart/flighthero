@@ -14,7 +14,7 @@ SERPAPI_URL = "https://serpapi.com/search.json"
 _PLACE_CACHE: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 _PLACE_CACHE_TTL_SECONDS = 600
 _PLACE_CACHE_MAX_ENTRIES = 256
-_RETURN_DETAIL_LIMIT = 15
+_RETURN_DETAIL_LIMIT = 50
 _RETURN_FETCH_WORKERS = 6
 _http_client: httpx.Client | None = None
 
