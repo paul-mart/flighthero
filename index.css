@@ -113,3 +113,220 @@ textarea {
     transform: rotate(360deg);
   }
 }
+
+/* ── Mobile / responsive ── */
+
+html {
+  overflow-x: hidden;
+}
+
+.app-header h1 {
+  margin: 0 0 8px;
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  font-weight: 500;
+}
+
+.app-header p {
+  margin: 0;
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
+  color: #5f6368;
+  line-height: 1.45;
+  padding: 0 8px;
+}
+
+@media (max-width: 768px) {
+  body {
+    background-attachment: scroll;
+  }
+
+  .app-container {
+    padding: 12px 12px 24px !important;
+    padding-left: max(12px, env(safe-area-inset-left)) !important;
+    padding-right: max(12px, env(safe-area-inset-right)) !important;
+    padding-bottom: max(24px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .app-header {
+    margin-bottom: 20px !important;
+  }
+
+  .filter-bar {
+    gap: 4px 16px !important;
+    padding: 12px 16px 8px !important;
+    justify-content: flex-start;
+  }
+
+  .filter-bar .filter-trigger {
+    min-width: 0 !important;
+    font-size: 15px !important;
+    padding: 10px 2px !important;
+  }
+
+  .filter-bar .passenger-trigger {
+    min-width: 0 !important;
+  }
+
+  .main-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 8px 16px 16px !important;
+  }
+
+  .route-block {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    padding: 8px !important;
+    gap: 0 !important;
+  }
+
+  .route-block .route-field {
+    width: 100%;
+    padding: 0 10px !important;
+  }
+
+  .route-block .swap-btn {
+    align-self: center;
+    margin: 4px 0;
+    width: 44px !important;
+    height: 44px !important;
+    transform: rotate(90deg);
+  }
+
+  .date-block {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    width: 100%;
+    padding: 6px 12px !important;
+  }
+
+  .search-btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    min-height: 52px !important;
+    padding: 0 24px !important;
+  }
+
+  .advanced-section {
+    padding: 14px 16px 16px !important;
+  }
+
+  .advanced-controls-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .advanced-controls-row .advanced-control-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+  }
+
+  .advanced-controls-row .filter-trigger {
+    min-width: 0 !important;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .advanced-controls-row .filter-dropdown {
+    width: 100%;
+  }
+
+  .advanced-controls-row .filter-menu {
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .flight-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+    padding: 16px !important;
+  }
+
+  .flight-info {
+    align-items: flex-start !important;
+    gap: 14px !important;
+  }
+
+  .flight-info .route-details {
+    min-width: 0;
+  }
+
+  .flight-info .route-details strong,
+  .flight-info .subtext {
+    word-break: break-word;
+  }
+
+  .pricing-section {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    border-top: 1px solid #eef2f7;
+    padding-top: 12px;
+    width: 100%;
+  }
+
+  .pricing-section .price-hint,
+  .pricing-section .price-text {
+    text-align: left !important;
+  }
+
+  .pricing-section > div {
+    text-align: left !important;
+  }
+
+  .pricing-section .partner-container {
+    justify-content: flex-start !important;
+  }
+
+  .filter-menu,
+  .passenger-menu {
+    max-width: calc(100vw - 32px);
+  }
+
+  .modal-overlay {
+    padding: 16px !important;
+    align-items: flex-end !important;
+  }
+
+  .app-modal {
+    max-width: none !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    margin-bottom: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .filter-bar {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px !important;
+  }
+
+  .date-block {
+    flex-wrap: wrap;
+  }
+
+  .date-block input[type='date'] {
+    flex: 1 1 120px;
+    min-width: 0;
+  }
+
+  .carrier-logo {
+    max-width: 64px !important;
+    height: 28px !important;
+  }
+
+  .stepper-btn {
+    width: 44px !important;
+    height: 44px !important;
+  }
+}

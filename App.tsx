@@ -76,7 +76,7 @@ function FilterDropdown<T extends string | number>({
   };
 
   return (
-    <div ref={rootRef} style={styles.filterDropdown}>
+    <div ref={rootRef} className="filter-dropdown" style={styles.filterDropdown}>
       <button
         ref={triggerRef}
         type="button"
@@ -109,7 +109,7 @@ function FilterDropdown<T extends string | number>({
         </span>
       </button>
       {open && (
-        <ul style={styles.filterMenu} role="listbox" aria-label={ariaLabel}>
+        <ul className="filter-menu" style={styles.filterMenu} role="listbox" aria-label={ariaLabel}>
           {options.map((option) => (
             <li key={String(option.value)} role="none">
               <button
@@ -474,11 +474,11 @@ function PassengerDropdown({ adults, childCount, onChange }: PassengerDropdownPr
   };
 
   return (
-    <div ref={rootRef} style={styles.filterDropdown}>
+    <div ref={rootRef} className="filter-dropdown" style={styles.filterDropdown}>
       <button
         ref={triggerRef}
         type="button"
-        className="filter-trigger"
+        className="filter-trigger passenger-trigger"
         style={{
           ...styles.filterTrigger,
           ...styles.passengerTrigger,
@@ -498,7 +498,7 @@ function PassengerDropdown({ adults, childCount, onChange }: PassengerDropdownPr
         </span>
       </button>
       {open && (
-        <div style={styles.passengerMenu} role="dialog" aria-label="Passenger selection">
+        <div className="passenger-menu" style={styles.passengerMenu} role="dialog" aria-label="Passenger selection">
           <div style={styles.passengerRow}>
             <div style={styles.passengerRowLabel}>
               <span style={styles.passengerLabel}>Adults:</span>
@@ -632,6 +632,7 @@ function CarrierBadge({ carrier, logos }: { carrier: string; logos?: string[] })
             src={logo}
             alt=""
             style={styles.carrierLogo}
+            className="carrier-logo"
             onError={() => setFailed(true)}
           />
         ))}
@@ -957,16 +958,16 @@ export default function App() {
   };
 
   return (
-    <div style={styles.container}>
-      <header style={styles.header}>
+    <div className="app-container" style={styles.container}>
+      <header className="app-header" style={styles.header}>
         <h1>✈️ FlightHero</h1>
         <p>Find the best routes using cash or credit card transfer points</p>
       </header>
 
       {/* Search Panel */}
-      <div style={styles.searchPanel}>
+      <div className="search-panel" style={styles.searchPanel}>
         <form onSubmit={handleSearch} style={styles.form}>
-          <div style={styles.filterBar}>
+          <div className="filter-bar" style={styles.filterBar}>
             <FilterDropdown
               value={tripType}
               onChange={(value) => {
@@ -1015,9 +1016,9 @@ export default function App() {
             />
           </div>
 
-          <div style={styles.mainBar}>
-            <div style={styles.routeBlock}>
-              <div style={styles.routeField}>
+          <div className="main-bar" style={styles.mainBar}>
+            <div className="route-block" style={styles.routeBlock}>
+              <div style={styles.routeField} className="route-field">
                 <span style={styles.fieldIcon}><DepartIcon /></span>
                 <AirportAutocomplete
                   value={origin}
@@ -1030,6 +1031,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={swapRoute}
+                className="swap-btn"
                 style={styles.swapBtn}
                 aria-label="Swap origin and destination"
                 title="Swap airports"
@@ -1037,7 +1039,7 @@ export default function App() {
                 <SwapIcon />
               </button>
 
-              <div style={styles.routeField}>
+              <div style={styles.routeField} className="route-field">
                 <span style={styles.fieldIcon}><ArriveIcon /></span>
                 <AirportAutocomplete
                   value={destination}
@@ -1048,7 +1050,7 @@ export default function App() {
               </div>
             </div>
 
-            <div style={styles.dateBlock}>
+            <div className="date-block" style={styles.dateBlock}>
               <span style={styles.fieldIcon}><CalendarIcon /></span>
               <input
                 type="date"
@@ -1076,7 +1078,7 @@ export default function App() {
               />
             </div>
 
-            <button type="submit" style={styles.searchBtn} disabled={loading}>
+            <button type="submit" className="search-btn" style={styles.searchBtn} disabled={loading}>
               <SearchIcon />
               {loading ? 'Searching...' : 'Search'}
             </button>
@@ -1084,7 +1086,7 @@ export default function App() {
         </form>
 
         {hasSearched && (
-          <div style={styles.advancedSection}>
+          <div className="advanced-section" style={styles.advancedSection}>
             <label style={styles.advancedToggle}>
               <input
                 type="checkbox"
@@ -1095,8 +1097,8 @@ export default function App() {
               <span>Advanced settings</span>
             </label>
 
-            <div style={styles.advancedControlsRow}>
-              <div style={styles.advancedControlItem}>
+            <div className="advanced-controls-row" style={styles.advancedControlsRow}>
+              <div className="advanced-control-item" style={styles.advancedControlItem}>
                 <span style={{
                   ...styles.advancedControlLabel,
                   ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
@@ -1116,7 +1118,7 @@ export default function App() {
                 />
               </div>
 
-              <div style={styles.advancedControlItem}>
+              <div className="advanced-control-item" style={styles.advancedControlItem}>
                 <span style={{
                   ...styles.advancedControlLabel,
                   ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
@@ -1144,7 +1146,7 @@ export default function App() {
       </div>
 
       {/* Results Section */}
-      <main style={styles.resultsContainer}>
+      <main className="results-container" style={styles.resultsContainer}>
         {hasSearched && flights.length > 0 && (
           <p style={styles.resultsCount}>
             Showing {displayedFlights.length} of {flights.length} flight{flights.length === 1 ? '' : 's'}
@@ -1152,10 +1154,10 @@ export default function App() {
         )}
         {displayedFlights.length > 0 ? (
           displayedFlights.map((flight) => (
-            <div key={flight.id} style={styles.flightCard}>
-              <div style={styles.flightInfo}>
+            <div key={flight.id} className="flight-card" style={styles.flightCard}>
+              <div className="flight-info" style={styles.flightInfo}>
                 <CarrierBadge carrier={flight.carrier} logos={flight.carrier_logos} />
-                <div style={styles.routeDetails}>
+                <div className="route-details" style={styles.routeDetails}>
                   <strong>{flight.origin} → {flight.destination}</strong>
                   {flight.departure_time && flight.arrival_time && (
                     <span style={styles.timeText}>
@@ -1189,13 +1191,13 @@ export default function App() {
                 </div>
               </div>
 
-              <div style={styles.pricingSection}>
+              <div className="pricing-section" style={styles.pricingSection}>
                 {searchType === 'cash' ? (
                   <>
                     {tripType === 'round-trip' && (
-                      <div style={styles.priceHint}>Round trip</div>
+                      <div className="price-hint" style={styles.priceHint}>Round trip</div>
                     )}
-                    <div style={styles.priceText}>{formatPrice(flight.cash_price)}</div>
+                    <div className="price-text" style={styles.priceText}>{formatPrice(flight.cash_price)}</div>
                   </>
                 ) : (
                   flight.award_details && (
@@ -1204,7 +1206,7 @@ export default function App() {
                         {flight.award_details.points_required.toLocaleString()} pts
                       </div>
                       <div style={styles.subtext}>+ {formatPrice(flight.award_details.taxes_and_fees)} fees</div>
-                      <div style={styles.partnerContainer}>
+                      <div className="partner-container" style={styles.partnerContainer}>
                         {flight.award_details.transfer_partners.map((p, i) => (
                           <span key={i} style={styles.partnerTag}>{p}</span>
                         ))}
@@ -1231,11 +1233,13 @@ export default function App() {
 
       {validationWarning && (
         <div
+          className="modal-overlay"
           style={styles.modalOverlay}
           onClick={() => setValidationWarning(null)}
           role="presentation"
         >
           <div
+            className="app-modal"
             style={styles.modal}
             role="alertdialog"
             aria-labelledby="validation-title"
