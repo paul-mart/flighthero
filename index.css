@@ -179,6 +179,108 @@ html {
   background: #dfe6ff;
 }
 
+.max-taxes-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 200px;
+}
+
+.max-taxes-slider-disabled {
+  opacity: 0.55;
+}
+
+.max-taxes-slider-input {
+  flex: 1;
+  min-width: 120px;
+  height: 6px;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #6366f1 0%,
+    #6366f1 var(--taxes-fill, 50%),
+    #e0e7ff var(--taxes-fill, 50%),
+    #e0e7ff 100%
+  );
+  cursor: pointer;
+  accent-color: #6366f1;
+}
+
+.max-taxes-slider-input:focus {
+  outline: none;
+}
+
+.max-taxes-slider-input:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 4px;
+}
+
+.max-taxes-slider-input::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.max-taxes-slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -8px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #6366f1;
+  box-shadow: 0 1px 4px rgba(99, 102, 241, 0.45);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.max-taxes-slider-input::-webkit-slider-thumb:hover {
+  transform: scale(1.06);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.5);
+}
+
+.max-taxes-slider-input::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: #e0e7ff;
+}
+
+.max-taxes-slider-input::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: #6366f1;
+}
+
+.max-taxes-slider-input::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #6366f1;
+  box-shadow: 0 1px 4px rgba(99, 102, 241, 0.45);
+  cursor: pointer;
+}
+
+.max-taxes-slider-input:disabled {
+  cursor: not-allowed;
+}
+
+.max-taxes-slider-input:disabled::-webkit-slider-thumb {
+  cursor: not-allowed;
+}
+
+.max-taxes-slider-value {
+  min-width: 52px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #4338ca;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 768px) {
   body {
     background-attachment: scroll;
@@ -295,6 +397,15 @@ html {
     right: 0;
     width: 100%;
     min-width: 0;
+  }
+
+  .max-taxes-control {
+    width: 100%;
+  }
+
+  .max-taxes-slider {
+    width: 100%;
+    min-width: 0 !important;
   }
 
   .flight-card {

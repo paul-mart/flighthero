@@ -753,6 +753,53 @@ function matchesStopsFilter(stops: number, filter: StopsFilter): boolean {
   return stops <= 2;
 }
 
+const POINTS_TAXES_SLIDER_CAP = 500;
+
+function getFlightTaxes(flight: Flight): number {
+  return flight.award_details?.taxes_and_fees ?? 0;
+}
+
+function computeTaxesSliderMax(flights: Flight[]): number {
+  const taxes = flights.map(getFlightTaxes).filter((amount) => amount > 0);
+  if (taxes.length === 0) return 150;
+  const peak = Math.max(...taxes);
+  return Math.min(POINTS_TAXES_SLIDER_CAP, Math.max(50, Math.ceil(peak / 25) * 25));
+}
+
+function MaxTaxesSlider({
+  value,
+  max,
+  disabled,
+  onChange,
+}: {
+  value: number;
+  max: number;
+  disabled: boolean;
+  onChange: (next: number) => void;
+}) {
+  return (
+    <div className={`max-taxes-slider${disabled ? ' max-taxes-slider-disabled' : ''}`}>
+      <input
+        type="range"
+        className="max-taxes-slider-input"
+        min={0}
+        max={max}
+        step={5}
+        value={value}
+        disabled={disabled}
+        style={{ '--taxes-fill': `${max > 0 ? (value / max) * 100 : 0}%` } as React.CSSProperties}
+        aria-label="Maximum taxes and fees"
+        aria-valuemin={0}
+        aria-valuemax={max}
+        aria-valuenow={value}
+        aria-valuetext={`Up to ${formatPrice(value)} in taxes and fees`}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+      <span className="max-taxes-slider-value">{formatPrice(value)}</span>
+    </div>
+  );
+}
+
 function getSortPrice(flight: Flight, searchType: 'cash' | 'points'): number {
   if (searchType === 'points' && flight.award_details) {
     return flight.award_details.points_required;
@@ -883,6 +930,7 @@ export default function App() {
   const [hasSearched, setHasSearched] = useState(false);
   const [stopsFilter, setStopsFilter] = useState<StopsFilter>('2-or-fewer');
   const [sortOption, setSortOption] = useState<SortOption>('price-asc');
+  const [maxTaxes, setMaxTaxes] = useState(150);
   const [advancedEnabled, setAdvancedEnabled] = useState(false);
   const [validationWarning, setValidationWarning] = useState<string | null>(null);
   const [modalTitle, setModalTitle] = useState('Missing information');
@@ -894,13 +942,27 @@ export default function App() {
     setValidationWarning(message);
   };
 
+  const taxesSliderMax = useMemo(
+    () => (searchType === 'points' ? computeTaxesSliderMax(flights) : 150),
+    [flights, searchType],
+  );
+
+  useEffect(() => {
+    if (searchType === 'points' && flights.length > 0) {
+      setMaxTaxes(computeTaxesSliderMax(flights));
+    }
+  }, [flights, searchType]);
+
   const displayedFlights = useMemo(() => {
     if (!advancedEnabled) {
       return sortFlights(flights, 'price-asc', searchType);
     }
-    const filtered = flights.filter((flight) => matchesStopsFilter(flight.stops, stopsFilter));
+    let filtered = flights.filter((flight) => matchesStopsFilter(flight.stops, stopsFilter));
+    if (searchType === 'points') {
+      filtered = filtered.filter((flight) => getFlightTaxes(flight) <= maxTaxes);
+    }
     return sortFlights(filtered, sortOption, searchType);
-  }, [flights, stopsFilter, sortOption, searchType, advancedEnabled]);
+  }, [flights, stopsFilter, sortOption, searchType, advancedEnabled, maxTaxes]);
 
   const swapRoute = () => {
     setOrigin(destination);
@@ -1199,6 +1261,23 @@ export default function App() {
                   disabled={!advancedEnabled}
                 />
               </div>
+
+              {searchType === 'points' && (
+                <div className="advanced-control-item max-taxes-control" style={styles.advancedControlItem}>
+                  <span style={{
+                    ...styles.advancedControlLabel,
+                    ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
+                  }}>
+                    Max taxes:
+                  </span>
+                  <MaxTaxesSlider
+                    value={Math.min(maxTaxes, taxesSliderMax)}
+                    max={taxesSliderMax}
+                    disabled={!advancedEnabled}
+                    onChange={setMaxTaxes}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}
