@@ -656,7 +656,7 @@ function SearchModeTabs({
         className={`search-mode-tab search-mode-tab-right${value === 'cash' ? ' search-mode-tab-active' : ''}`}
         onClick={() => onChange('cash')}
       >
-        Cash fares
+        Cash
       </button>
     </div>
   );
