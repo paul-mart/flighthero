@@ -1,11 +1,11 @@
 # PointsFlight Finder
 
-A flight search web app that compares **cash fares** (via Google Flights through SerpAPI) and **estimated award pricing** (points + transfer partners). The UI is a React SPA; the backend is a small FastAPI service that proxies flight search and serves fast local airport autocomplete.
+A flight search web app that compares **cash fares** (via Google Flights through SerpAPI) and **award availability** (via Seats.aero). The UI is a React SPA; the backend is a small FastAPI service that proxies flight search and serves fast local airport autocomplete.
 
 ## Features
 
 - **One-way and round-trip** flight search
-- **Cash vs. points** view toggle (points are estimated, not live award inventory)
+- **Cash vs. points** view toggle — cash uses SerpAPI; points uses live Seats.aero award availability
 - **Airport autocomplete** with instant local search (~5 ms) over ~7,900 IATA-coded airports
 - **Filters and sorting** — stops, price, duration
 - **Round-trip details** — outbound and return leg times, flight numbers, and stop counts
@@ -65,14 +65,15 @@ pip install -r requirements.txt
 
 ### 2. Configure environment
 
-Copy the example env file and add your SerpAPI key:
+Copy the example env file and add your API keys:
 
 ```bash
 cp .env.example .env
 ```
 
 ```env
-SERPAPI_API_KEY=your_api_key_here
+SERPAPI_API_KEY=your_api_key_here          # required for cash search
+SEATS_AERO_API_KEY=your_seats_aero_key     # required for points search
 SERPAPI_CURRENCY=USD
 SERPAPI_GL=us
 SERPAPI_HL=en
@@ -114,7 +115,8 @@ Open **http://localhost:5173** in your browser.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `SERPAPI_API_KEY` | Yes | — | SerpAPI key for flight search (**backend only**) |
+| `SERPAPI_API_KEY` | Cash search | — | SerpAPI key for Google Flights cash fares (**backend only**) |
+| `SEATS_AERO_API_KEY` | Points search | — | Seats.aero Pro API key for award availability (**backend only**) |
 | `SERPAPI_CURRENCY` | No | `USD` | Currency for displayed prices |
 | `SERPAPI_GL` | No | `us` | Google country code (market) |
 | `SERPAPI_HL` | No | `en` | Language code |
@@ -132,7 +134,7 @@ Frontend build (`.env.local` or CI secrets, not committed):
 
 ## Hosting & security
 
-**GitHub Pages serves static files only.** Your SerpAPI key must stay on a separate backend (Railway, Render, Fly.io, a VPS, etc.). The frontend never receives `SERPAPI_API_KEY`.
+**GitHub Pages serves static files only.** Your API keys must stay on a separate backend (Railway, Render, Fly.io, a VPS, etc.). The frontend never receives `SERPAPI_API_KEY` or `SEATS_AERO_API_KEY`.
 
 This project includes a small **backend safety net** (not bulletproof, but stops casual abuse):
 
@@ -222,7 +224,16 @@ GET /api/search?origin=Boston+(BOS)&destination=New+York+(JFK)&departure_date=20
 
 For round-trip searches, return-leg fields are loaded separately via `POST /api/search/return-legs` (see below).
 
-When `search_type=points`, each result also includes `award_details` with estimated points, taxes/fees, and transfer partners (heuristic only — not live award availability).
+When `search_type=points`, each result includes `award_details` from Seats.aero with live mileage cost, taxes/fees, mileage program, and suggested transfer partners.
+
+### Points search (Seats.aero)
+
+When `search_type=points`, the backend queries [Seats.aero Cached Search](https://developers.seats.aero/reference/cached-search) instead of SerpAPI:
+
+1. **One-way** — Award availability for the route on the departure date, sorted by lowest mileage.
+2. **Round-trip** — Outbound and return cached searches run in parallel; results are combined when the same mileage program has seats on both dates (total points = outbound + return).
+
+Requires a Seats.aero Pro API key (`SEATS_AERO_API_KEY`). Cached data may be a few hours old; seat counts and pricing come from Seats.aero's index, not live airline booking engines.
 
 ### `POST /api/search/return-legs`
 
@@ -290,7 +301,8 @@ flight-app/
 ├── App.tsx              # React UI (search form, results, autocomplete)
 ├── main.tsx             # React entry point
 ├── main.py              # FastAPI app and routes
-├── serpapi_client.py    # SerpAPI flight search + fallback autocomplete
+├── serpapi_client.py    # SerpAPI cash flight search + fallback autocomplete
+├── seats_aero_client.py # Seats.aero award/points search
 ├── airport_places.py    # Local airport autocomplete
 ├── data/
 │   └── airports.json    # mwgg/Airports dataset (~9 MB)
@@ -300,15 +312,11 @@ flight-app/
 └── vite.config.ts       # Vite dev server (port 5173)
 ```
 
-## Points search disclaimer
+## Points search notes
 
-The **points** tab does not query airline award charts or loyalty programs. It applies a simple heuristic on top of cash prices:
+Award results come from **Seats.aero cached availability**, not SerpAPI. Data is refreshed on Seats.aero's schedule (typically every few hours). Always verify price and availability on the airline or Seats.aero before booking.
 
-- Estimated points ≈ 70% of cash price × 100, rounded to hundreds
-- Random taxes/fees range
-- Generic transfer partner suggestions by airline name
-
-Use it for UI demonstration only, not booking decisions.
+Seats.aero Pro API access is required (`SEATS_AERO_API_KEY` in `.env`). Generate a key under **Settings → API** at [seats.aero](https://seats.aero/).
 
 ## Troubleshooting
 

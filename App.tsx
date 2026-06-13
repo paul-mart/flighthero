@@ -6,6 +6,12 @@ interface AwardDetails {
   points_required: number;
   taxes_and_fees: number;
   transfer_partners: string[];
+  mileage_program?: string;
+  mileage_program_slug?: string;
+  seats_remaining?: number;
+  is_direct?: boolean;
+  return_points?: number;
+  return_taxes_and_fees?: number;
 }
 
 function ChevronDownIcon() {
@@ -680,6 +686,7 @@ interface Flight {
   return_arrival_time?: string;
   return_flight_number?: string;
   return_carrier?: string;
+  return_duration?: string;
   return_stops?: number;
   award_details?: AwardDetails;
 }
@@ -775,6 +782,19 @@ function sortFlights(flights: Flight[], sortOption: SortOption, searchType: 'cas
 
 function formatPrice(amount: number): string {
   return `$${Math.round(amount).toLocaleString()}`;
+}
+
+function flightDetailLine(
+  carrier: string,
+  flightNumber: string,
+  duration: string,
+  stops: number,
+): string {
+  const number = flightNumber.trim();
+  const hasNumber = number && number !== 'Award seat' && /\d/.test(number);
+  const flightLabel = hasNumber ? number : carrier;
+  const stopLabel = stops === 0 ? 'Nonstop' : `${stops} stop${stops > 1 ? 's' : ''}`;
+  return `${flightLabel} • ${duration} • ${stopLabel}`;
 }
 
 const RETURN_LEG_BATCH_SIZE = 12;
@@ -908,7 +928,7 @@ export default function App() {
           'No flights found',
           'No flights were found for your search. Try different dates or airports.'
         );
-      } else if (tripType === 'round-trip') {
+      } else if (tripType === 'round-trip' && searchType === 'cash') {
         const tokens = [...new Set(
           results.map((flight) => flight.departure_token).filter((token): token is string => Boolean(token))
         )];
@@ -1164,9 +1184,29 @@ export default function App() {
                     </span>
                   )}
                   <span style={styles.subtext}>
-                    {flight.carrier} {flight.flight_number} • {flight.duration} • {flight.stops === 0 ? 'Nonstop' : `${flight.stops} stop${flight.stops > 1 ? 's' : ''}`}
+                    {flightDetailLine(flight.carrier, flight.flight_number, flight.duration, flight.stops)}
                   </span>
                   {tripType === 'round-trip' && (
+                    searchType === 'points' ? (
+                      (flight.return_flight_number || flight.return_departure_time) ? (
+                        <>
+                          <strong style={styles.returnLabel}>{flight.destination} → {flight.origin}</strong>
+                          {flight.return_departure_time && flight.return_arrival_time && (
+                            <span style={styles.timeText}>
+                              {flight.return_departure_time} – {flight.return_arrival_time}
+                            </span>
+                          )}
+                          <span style={styles.subtext}>
+                            {flightDetailLine(
+                              flight.return_carrier ?? flight.carrier,
+                              flight.return_flight_number ?? '',
+                              flight.return_duration ?? '—',
+                              flight.return_stops ?? 0,
+                            )}
+                          </span>
+                        </>
+                      ) : null
+                    ) : (
                     <>
                       <strong style={styles.returnLabel}>{flight.destination} → {flight.origin}</strong>
                       {flight.return_flight_number ? (
@@ -1177,7 +1217,12 @@ export default function App() {
                             </span>
                           )}
                           <span style={styles.subtext}>
-                            {(flight.return_carrier ?? flight.carrier)} {flight.return_flight_number} • {(flight.return_stops ?? 0) === 0 ? 'Nonstop' : `${flight.return_stops} stop${(flight.return_stops ?? 0) > 1 ? 's' : ''}`}
+                            {flightDetailLine(
+                              flight.return_carrier ?? flight.carrier,
+                              flight.return_flight_number ?? '',
+                              flight.return_duration ?? '—',
+                              flight.return_stops ?? 0,
+                            )}
                           </span>
                         </>
                       ) : loadingReturnDetails && flight.departure_token ? (
@@ -1186,6 +1231,7 @@ export default function App() {
                         <span style={styles.returnLoading}>Return details unavailable</span>
                       ) : null}
                     </>
+                    )
                   )}
                 </div>
               </div>
@@ -1201,10 +1247,16 @@ export default function App() {
                 ) : (
                   flight.award_details && (
                     <div style={{ textAlign: 'right' }}>
+                      {tripType === 'round-trip' && (
+                        <div className="price-hint" style={styles.priceHint}>Round trip</div>
+                      )}
                       <div style={styles.pointsText}>
                         {flight.award_details.points_required.toLocaleString()} pts
                       </div>
                       <div style={styles.subtext}>+ {formatPrice(flight.award_details.taxes_and_fees)} fees</div>
+                      {flight.award_details.mileage_program && (
+                        <div style={styles.programTag}>{flight.award_details.mileage_program}</div>
+                      )}
                       <div className="partner-container" style={styles.partnerContainer}>
                         {flight.award_details.transfer_partners.map((p, i) => (
                           <span key={i} style={styles.partnerTag}>{p}</span>
@@ -1748,6 +1800,13 @@ const styles: { [key: string]: React.CSSProperties } = {
   priceText: { fontSize: '24px', fontWeight: 500, color: '#2e7d32' },
   priceHint: { fontSize: '12px', color: '#6b7280', marginBottom: '2px', textAlign: 'right' },
   pointsText: { fontSize: '22px', fontWeight: 500, color: '#6366f1' },
+  programTag: {
+    fontSize: '12px',
+    color: '#4338ca',
+    fontWeight: 600,
+    marginTop: '4px',
+    textAlign: 'right',
+  },
   partnerContainer: { display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '6px', justifyContent: 'flex-end' },
   partnerTag: { fontSize: '10px', background: '#ede9fe', color: '#6d28d9', padding: '2px 6px', borderRadius: '4px', fontWeight: 500 },
   emptyState: { textAlign: 'center', padding: '40px', color: '#888' },

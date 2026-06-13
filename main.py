@@ -1,4 +1,3 @@
-import random
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -18,6 +17,11 @@ from api_security import (
 )
 from airport_places import data_available as airport_data_available
 from airport_places import search_place_suggestions as airport_place_suggestions
+from seats_aero_client import (
+    SeatsAeroConfigError,
+    SeatsAeroError,
+    search_award_offers,
+)
 from serpapi_client import (
     SerpAPIConfigError,
     SerpAPIError,
@@ -57,24 +61,6 @@ app.add_middleware(
 )
 
 
-def calculate_points_estimate(cash_price: float, airline: str) -> dict:
-    """Estimates award chart pricing and notes credit card transfer partners."""
-    base_points = int((cash_price * 0.7) * 100)
-    base_points = (base_points // 100) * 100
-
-    partners = ["Chase Sapphire", "Capital One Venture", "Amex Membership Rewards"]
-    if airline in ["Delta Air Lines", "Air France", "KLM"]:
-        partners = ["Amex Membership Rewards", "Chase Sapphire", "Capital One"]
-    elif airline in ["United Airlines", "Singapore Airlines"]:
-        partners = ["Chase Sapphire", "Amex Membership Rewards"]
-
-    return {
-        "points_required": max(base_points, 7500),
-        "taxes_and_fees": round(random.uniform(5.60, 85.50), 2),
-        "transfer_partners": partners,
-    }
-
-
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
@@ -92,30 +78,35 @@ def search_flights(
     trip_type: str = Query("round-trip"),
     cabin_class: str = Query("economy"),
 ):
+    is_round_trip = trip_type == "round-trip"
+    effective_return_date = return_date if is_round_trip else None
+
     try:
-        results = search_flight_offers(
-            origin=origin,
-            destination=destination,
-            departure_date=departure_date,
-            adults=adults,
-            children=children,
-            return_date=return_date if trip_type == "round-trip" else None,
-            cabin_class=cabin_class,
-        )
-    except SerpAPIConfigError as exc:
+        if search_type == "points":
+            results = search_award_offers(
+                origin=origin,
+                destination=destination,
+                departure_date=departure_date,
+                return_date=effective_return_date,
+                cabin_class=cabin_class,
+            )
+        else:
+            results = search_flight_offers(
+                origin=origin,
+                destination=destination,
+                departure_date=departure_date,
+                adults=adults,
+                children=children,
+                return_date=effective_return_date,
+                cabin_class=cabin_class,
+            )
+    except (SerpAPIConfigError, SeatsAeroConfigError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except SerpAPIError as exc:
+    except (SerpAPIError, SeatsAeroError) as exc:
         status = exc.status_code if exc.status_code and exc.status_code < 500 else 502
         raise HTTPException(status_code=status, detail=str(exc)) from exc
-
-    if search_type == "points":
-        for flight in results:
-            flight["award_details"] = calculate_points_estimate(
-                flight["cash_price"],
-                flight["carrier"],
-            )
 
     return results
 
