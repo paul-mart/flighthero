@@ -93,12 +93,25 @@ export default function DatePicker({
     return new Date(initial.getFullYear(), initial.getMonth(), 1);
   });
 
-  const selectedDate = useMemo(() => parseIsoDate(value), [value]);
   const minDay = useMemo(
     () => (minDate ? parseIsoDate(minDate) : null),
     [minDate],
   );
-  const todayIso = useMemo(() => toIsoDate(startOfDay(new Date())), []);
+  const todayDay = useMemo(() => startOfDay(new Date()), [open]);
+  const effectiveMinDay = useMemo(() => {
+    if (!minDay) return todayDay;
+    return minDay > todayDay ? minDay : todayDay;
+  }, [minDay, todayDay]);
+  const todayIso = useMemo(() => toIsoDate(todayDay), [todayDay]);
+  const canGoPrevMonth = useMemo(() => {
+    const firstOfView = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1);
+    const firstOfMinMonth = new Date(
+      effectiveMinDay.getFullYear(),
+      effectiveMinDay.getMonth(),
+      1,
+    );
+    return firstOfView > firstOfMinMonth;
+  }, [viewMonth, effectiveMinDay]);
 
   useEffect(() => {
     if (disabled) setOpen(false);
@@ -106,9 +119,10 @@ export default function DatePicker({
 
   useEffect(() => {
     if (!open) return;
-    const selected = parseIsoDate(value) ?? startOfDay(new Date());
-    setViewMonth(new Date(selected.getFullYear(), selected.getMonth(), 1));
-  }, [open, value]);
+    const selected = parseIsoDate(value);
+    const anchor = selected && selected >= effectiveMinDay ? selected : effectiveMinDay;
+    setViewMonth(new Date(anchor.getFullYear(), anchor.getMonth(), 1));
+  }, [open, value, effectiveMinDay]);
 
   useEffect(() => {
     if (!open || disabled) return;
@@ -165,9 +179,8 @@ export default function DatePicker({
   }, [viewMonth]);
 
   const isDisabledDay = (iso: string) => {
-    if (!minDay) return false;
     const day = parseIsoDate(iso);
-    return !day || day < minDay;
+    return !day || day < effectiveMinDay;
   };
 
   const selectDay = (iso: string) => {
@@ -217,9 +230,16 @@ export default function DatePicker({
             <button
               type="button"
               className="date-picker-nav"
-              style={styles.navBtn}
+              style={{
+                ...styles.navBtn,
+                ...(!canGoPrevMonth ? styles.navBtnDisabled : {}),
+              }}
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setViewMonth((prev) => addMonths(prev, -1))}
+              onClick={() => {
+                if (!canGoPrevMonth) return;
+                setViewMonth((prev) => addMonths(prev, -1));
+              }}
+              disabled={!canGoPrevMonth}
               aria-label="Previous month"
             >
               <ChevronLeftIcon />
@@ -361,6 +381,11 @@ const styles: { [key: string]: React.CSSProperties } = {
     cursor: 'pointer',
     flexShrink: 0,
     padding: 0,
+  },
+  navBtnDisabled: {
+    background: '#f3f4f6',
+    color: '#d1d5db',
+    cursor: 'not-allowed',
   },
   monthLabel: {
     fontSize: '16px',
