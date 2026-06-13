@@ -627,6 +627,41 @@ function SwapIcon() {
   );
 }
 
+function SearchModeTabs({
+  value,
+  onChange,
+}: {
+  value: 'cash' | 'points';
+  onChange: (next: 'cash' | 'points') => void;
+}) {
+  return (
+    <div className="search-mode-tabs" role="tablist" aria-label="Search type">
+      <button
+        type="button"
+        role="tab"
+        id="search-tab-points"
+        aria-selected={value === 'points'}
+        aria-controls="search-panel-body"
+        className={`search-mode-tab search-mode-tab-left${value === 'points' ? ' search-mode-tab-active' : ''}`}
+        onClick={() => onChange('points')}
+      >
+        Points
+      </button>
+      <button
+        type="button"
+        role="tab"
+        id="search-tab-cash"
+        aria-selected={value === 'cash'}
+        aria-controls="search-panel-body"
+        className={`search-mode-tab search-mode-tab-right${value === 'cash' ? ' search-mode-tab-active' : ''}`}
+        onClick={() => onChange('cash')}
+      >
+        Cash fares
+      </button>
+    </div>
+  );
+}
+
 function CarrierBadge({ carrier, logos }: { carrier: string; logos?: string[] }) {
   const [failed, setFailed] = useState(false);
   const visibleLogos = (logos ?? []).filter(Boolean).slice(0, 2);
@@ -872,6 +907,14 @@ export default function App() {
     setDestination(origin);
   };
 
+  const handleSearchTypeChange = (next: 'cash' | 'points') => {
+    if (next === searchType) return;
+    setSearchType(next);
+    setFlights([]);
+    setHasSearched(false);
+    setLoadingReturnDetails(false);
+  };
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -987,7 +1030,15 @@ export default function App() {
       </header>
 
       {/* Search Panel */}
-      <div className="search-panel" style={styles.searchPanel}>
+      <div className="search-panel-wrap" style={styles.searchPanelWrap}>
+        <SearchModeTabs value={searchType} onChange={handleSearchTypeChange} />
+        <div
+          id="search-panel-body"
+          className="search-panel"
+          style={styles.searchPanel}
+          role="tabpanel"
+          aria-labelledby={searchType === 'cash' ? 'search-tab-cash' : 'search-tab-points'}
+        >
         <form onSubmit={handleSearch} style={styles.form}>
           <div className="filter-bar" style={styles.filterBar}>
             <FilterDropdown
@@ -1024,17 +1075,6 @@ export default function App() {
               ]}
               ariaLabel="Cabin class"
               minTriggerWidth={168}
-            />
-
-            <FilterDropdown
-              value={searchType}
-              onChange={setSearchType}
-              options={[
-                { value: 'cash', label: 'Cash fares' },
-                { value: 'points', label: 'Points' },
-              ]}
-              ariaLabel="Search mode"
-              minTriggerWidth={88}
             />
           </div>
 
@@ -1162,6 +1202,7 @@ export default function App() {
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Results Section */}
@@ -1338,10 +1379,14 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#3c4043',
   },
   header: { textAlign: 'center', marginBottom: '32px' },
+  searchPanelWrap: {
+    width: '100%',
+  },
   searchPanel: {
     background: '#fff',
-    borderRadius: '14px',
+    borderRadius: '0 0 14px 14px',
     border: '1px solid #c7d2fe',
+    borderTop: 'none',
     boxShadow: '0 4px 20px rgba(99, 102, 241, 0.12), 0 1px 4px rgba(60, 64, 67, 0.06)',
   },
   advancedSection: {

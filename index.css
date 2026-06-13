@@ -134,6 +134,51 @@ html {
   padding: 0 8px;
 }
 
+.search-mode-tabs {
+  display: flex;
+  width: 100%;
+  gap: 6px;
+}
+
+.search-mode-tab {
+  flex: 1;
+  padding: 14px 16px 15px;
+  border: 1px solid #c7d2fe;
+  border-bottom: none;
+  background: #e8ecff;
+  color: #4338ca;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, padding 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.search-mode-tab-left {
+  border-radius: 14px 4px 0 0;
+}
+
+.search-mode-tab-right {
+  border-radius: 4px 14px 0 0;
+}
+
+.search-mode-tab-active {
+  background: #fff;
+  padding-bottom: 16px;
+  margin-bottom: -1px;
+  position: relative;
+  z-index: 1;
+}
+
+.search-mode-tab:not(.search-mode-tab-active) {
+  opacity: 0.92;
+}
+
+.search-mode-tab:not(.search-mode-tab-active):hover {
+  background: #dfe6ff;
+}
+
 @media (max-width: 768px) {
   body {
     background-attachment: scroll;
@@ -148,6 +193,15 @@ html {
 
   .app-header {
     margin-bottom: 20px !important;
+  }
+
+  .search-mode-tab {
+    padding: 12px 12px 13px !important;
+    font-size: 15px !important;
+  }
+
+  .search-mode-tab-active {
+    padding-bottom: 14px !important;
   }
 
   .filter-bar {
