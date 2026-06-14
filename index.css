@@ -267,10 +267,26 @@ html {
   cursor: not-allowed;
 }
 
+.swap-btn {
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.route-block {
+  isolation: isolate;
+}
+
+.route-swap-slot {
+  pointer-events: auto;
+}
+
 .swap-btn:hover {
   border-color: #6366f1;
   color: #4338ca;
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.22);
+  transform: scale(1.05);
 }
 
 .view-flight-btn {
@@ -378,6 +394,7 @@ html {
   }
 
   .route-block {
+    display: flex !important;
     flex-direction: column !important;
     align-items: stretch !important;
     min-width: 0 !important;
@@ -391,12 +408,18 @@ html {
     padding: 0 10px !important;
   }
 
-  .route-block .swap-btn {
-    align-self: center;
+  .route-swap-slot {
+    width: auto !important;
     margin: 4px 0;
-    width: 44px !important;
-    height: 44px !important;
-    transform: rotate(90deg);
+    align-self: center;
+  }
+
+  .route-block .swap-btn {
+    transform: rotate(90deg) !important;
+  }
+
+  .route-block .swap-btn:hover {
+    transform: rotate(90deg) scale(1.05) !important;
   }
 
   .date-block {

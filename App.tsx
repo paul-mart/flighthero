@@ -150,6 +150,7 @@ interface AirportAutocompleteProps {
   onChange: (value: string) => void;
   placeholder: string;
   ariaLabel: string;
+  swapGeneration?: number;
 }
 
 function formatPlaceLabel(suggestion: PlaceSuggestion): string {
@@ -208,7 +209,7 @@ function getCachedSuggestions(
   return null;
 }
 
-function AirportAutocomplete({ value, onChange, placeholder, ariaLabel }: AirportAutocompleteProps) {
+function AirportAutocomplete({ value, onChange, placeholder, ariaLabel, swapGeneration = 0 }: AirportAutocompleteProps) {
   const [open, setOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -247,7 +248,21 @@ function AirportAutocomplete({ value, onChange, placeholder, ariaLabel }: Airpor
     };
   }, [open]);
 
+  const lastSwapGenerationRef = useRef(swapGeneration);
+
   useEffect(() => {
+    const swapJustHappened = swapGeneration !== lastSwapGenerationRef.current;
+    if (swapJustHappened) {
+      lastSwapGenerationRef.current = swapGeneration;
+      abortRef.current?.abort();
+      requestIdRef.current += 1;
+      setOpen(false);
+      setSuggestions([]);
+      setHighlightIndex(-1);
+      setLoading(false);
+      return;
+    }
+
     const query = value.trim();
     if (suppressFetchRef.current) {
       suppressFetchRef.current = false;
@@ -318,7 +333,7 @@ function AirportAutocomplete({ value, onChange, placeholder, ariaLabel }: Airpor
     return () => {
       window.clearTimeout(timer);
     };
-  }, [value]);
+  }, [value, swapGeneration]);
 
   const selectSuggestion = (suggestion: PlaceSuggestion) => {
     suppressFetchRef.current = true;
@@ -1114,8 +1129,15 @@ export default function App() {
   const passengers = adults + childrenCount;
   const [tripType, setTripType] = useState<'one-way' | 'round-trip'>('round-trip');
   const [cabinClass, setCabinClass] = useState('economy');
-  const [origin, setOrigin] = useState('');
-  const [destination, setDestination] = useState('');
+  const [route, setRoute] = useState({ origin: '', destination: '' });
+  const origin = route.origin;
+  const destination = route.destination;
+  const setOrigin = (value: string) => {
+    setRoute((prev) => ({ ...prev, origin: value }));
+  };
+  const setDestination = (value: string) => {
+    setRoute((prev) => ({ ...prev, destination: value }));
+  };
   const [date, setDate] = useState('');
   const [returnDate, setReturnDate] = useState('');
   const [searchType, setSearchType] = useState<'cash' | 'points'>('points');
@@ -1130,6 +1152,7 @@ export default function App() {
   const [modalTitle, setModalTitle] = useState('Missing information');
   const [loadingReturnDetails, setLoadingReturnDetails] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
+  const [routeSwapGeneration, setRouteSwapGeneration] = useState(0);
   const searchSeqRef = useRef(0);
 
   const showDialog = (title: string, message: string) => {
@@ -1160,8 +1183,14 @@ export default function App() {
   }, [flights, stopsFilter, sortOption, searchType, advancedEnabled, maxTaxes]);
 
   const swapRoute = () => {
-    setOrigin(destination);
-    setDestination(origin);
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    setRoute((prev) => ({
+      origin: prev.destination,
+      destination: prev.origin,
+    }));
+    setRouteSwapGeneration((generation) => generation + 1);
   };
 
   const handleSearchTypeChange = (next: 'cash' | 'points') => {
@@ -1344,19 +1373,22 @@ export default function App() {
                   onChange={setOrigin}
                   placeholder="From (city or airport)"
                   ariaLabel="Origin"
+                  swapGeneration={routeSwapGeneration}
                 />
               </div>
 
-              <button
-                type="button"
-                onClick={swapRoute}
-                className="swap-btn"
-                style={styles.swapBtn}
-                aria-label="Swap origin and destination"
-                title="Swap airports"
-              >
-                <SwapIcon />
-              </button>
+              <div className="route-swap-slot" style={styles.routeSwapSlot}>
+                <button
+                  type="button"
+                  onClick={swapRoute}
+                  className="swap-btn"
+                  style={styles.swapBtn}
+                  aria-label="Swap origin and destination"
+                  title="Swap airports"
+                >
+                  <SwapIcon />
+                </button>
+              </div>
 
               <div style={styles.routeField} className="route-field">
                 <span className="form-field-icon" style={styles.fieldIcon}><PlaneArriveIcon /></span>
@@ -1365,6 +1397,7 @@ export default function App() {
                   onChange={setDestination}
                   placeholder="To (city or airport)"
                   ariaLabel="Destination"
+                  swapGeneration={routeSwapGeneration}
                 />
               </div>
             </div>
@@ -1922,20 +1955,29 @@ const styles: { [key: string]: React.CSSProperties } = {
     flexWrap: 'wrap',
   },
   routeBlock: {
-    display: 'flex',
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
     alignItems: 'center',
     flex: '2 1 300px',
     minWidth: '260px',
     background: '#f5f5f5',
     borderRadius: '10px',
     padding: '6px 8px',
-    gap: '4px',
+    columnGap: '4px',
+  },
+  routeSwapSlot: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    zIndex: 2,
+    flexShrink: 0,
+    width: '44px',
   },
   routeField: {
     position: 'relative',
     display: 'flex',
     alignItems: 'center',
-    flex: 1,
     minWidth: 0,
     gap: '8px',
     padding: '0 8px',
@@ -1944,6 +1986,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     position: 'relative',
     flex: 1,
     minWidth: 0,
+    overflow: 'visible',
   },
   suggestionMenu: {
     position: 'absolute',
@@ -2038,11 +2081,15 @@ const styles: { [key: string]: React.CSSProperties } = {
     ...fieldFont,
     flex: 1,
     minWidth: 0,
+    width: '100%',
     border: 'none',
     background: 'transparent',
     padding: '12px 0',
     outline: 'none',
     height: '48px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   routeInputLoading: {
     paddingRight: '34px',
@@ -2051,15 +2098,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '36px',
-    height: '36px',
+    width: '38px',
+    height: '38px',
     borderRadius: '50%',
-    border: '1px solid #ddd',
+    border: '1px solid #d1d5db',
     background: '#fff',
-    color: '#666',
+    color: '#4b5563',
     cursor: 'pointer',
     flexShrink: 0,
     padding: 0,
+    boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)',
   },
   dateBlock: {
     display: 'flex',

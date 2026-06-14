@@ -66,8 +66,13 @@ export function CalendarIcon({ size = FORM_ICON_SIZE }: IconProps) {
 
 export function SwapIcon({ size = FORM_ICON_SIZE }: IconProps) {
   return (
-    <FeatherIcon size={size}>
-      <path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+    <FeatherIcon size={size} strokeWidth={2.25}>
+      <path d="M7 16V4" />
+      <path d="M7 4L3 8" />
+      <path d="M7 4l4 4" />
+      <path d="M17 8v12" />
+      <path d="M17 20l4-4" />
+      <path d="M17 20l-4-4" />
     </FeatherIcon>
   );
 }
