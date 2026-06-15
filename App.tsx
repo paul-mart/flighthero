@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from 'react-dom';
 import { apiFetch, apiUrl } from './api';
 import DatePicker from './DatePicker';
+import { FlightHeroLogo } from './components/FlightHeroLogo';
+import { TopNavbar } from './components/TopNavbar';
 import { ChevronDownIcon, PlaneArriveIcon, PlaneDepartIcon, CalendarIcon, SwapIcon, SearchIcon, ArrowRightIcon } from './icons';
 
 interface AwardDetails {
@@ -289,19 +291,24 @@ function AirportAutocomplete({ value, onChange, placeholder, ariaLabel, swapGene
   }, [open, loading, updateMenuPosition]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open && !loading) return;
+
+    const dismissMenu = () => {
+      abortRef.current?.abort();
+      setOpen(false);
+      setHighlightIndex(-1);
+      setLoading(false);
+    };
 
     const handlePointerDown = (event: MouseEvent) => {
       const target = event.target as Node;
       if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return;
-      setOpen(false);
-      setHighlightIndex(-1);
+      dismissMenu();
     };
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setOpen(false);
-        setHighlightIndex(-1);
+        dismissMenu();
         inputRef.current?.blur();
       }
     };
@@ -312,7 +319,7 @@ function AirportAutocomplete({ value, onChange, placeholder, ariaLabel, swapGene
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [open]);
+  }, [open, loading]);
 
   const lastSwapGenerationRef = useRef(swapGeneration);
 
@@ -737,37 +744,6 @@ const TRENDING_DEALS = [
     cash: 'From $198',
   },
 ] as const;
-
-const FLIGHTHERO_LOGO = '/flighthero-logo.png?v=6';
-
-function FlightHeroLogo({ variant = 'hero' }: { variant?: 'hero' | 'nav' }) {
-  return (
-    <img
-      src={FLIGHTHERO_LOGO}
-      alt="FlightHero"
-      className={`flighthero-logo flighthero-logo--${variant}`}
-      decoding="async"
-    />
-  );
-}
-
-function TopNavbar() {
-  return (
-    <header className="top-nav">
-      <div className="top-nav-inner">
-        <a href="/" className="top-nav-brand" aria-label="FlightHero home">
-          <FlightHeroLogo variant="nav" />
-        </a>
-        <nav className="top-nav-links" aria-label="Main navigation">
-          <a href="#deals" className="top-nav-link">Deals</a>
-          <a href="#explore" className="top-nav-link">Explore</a>
-          <a href="#points-guide" className="top-nav-link">Points Guide</a>
-          <button type="button" className="top-nav-sign-in">Sign In</button>
-        </nav>
-      </div>
-    </header>
-  );
-}
 
 function TrendingDeals() {
   const ref = useRef<HTMLElement>(null);
