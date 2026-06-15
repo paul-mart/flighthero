@@ -5,9 +5,14 @@ import {
   getUserProfile,
   signOut as authSignOut,
   updateUserPreferences,
+  getFirestoreErrorMessage,
   type UserPreferences,
   type UserProfile,
 } from '../lib/auth';
+import {
+  mergeProfilePreferences,
+  writeLocalPreferences,
+} from '../lib/userPreferences';
 
 interface AuthContextValue {
   user: User | null;
@@ -15,7 +20,7 @@ interface AuthContextValue {
   loading: boolean;
   configured: boolean;
   signOut: () => Promise<void>;
-  updatePreferences: (preferences: UserPreferences) => Promise<void>;
+  updatePreferences: (preferences: UserPreferences) => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -36,9 +41,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (firebaseUser) {
         try {
           const nextProfile = await getUserProfile(firebaseUser.uid);
-          setProfile(nextProfile);
+          const preferences = mergeProfilePreferences(
+            firebaseUser.uid,
+            nextProfile?.preferences,
+          );
+          setProfile(nextProfile
+            ? { ...nextProfile, preferences }
+            : {
+              email: firebaseUser.email ?? '',
+              displayName: firebaseUser.displayName ?? '',
+              preferences,
+            });
         } catch {
-          setProfile(null);
+          const preferences = mergeProfilePreferences(firebaseUser.uid);
+          setProfile({
+            email: firebaseUser.email ?? '',
+            displayName: firebaseUser.displayName ?? '',
+            preferences,
+          });
         }
       } else {
         setProfile(null);
@@ -63,8 +83,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!user) {
         throw new Error('You must be signed in to update preferences.');
       }
-      await updateUserPreferences(user.uid, preferences);
-      setProfile((current) => (current ? { ...current, preferences } : { preferences, email: user.email ?? '', displayName: user.displayName ?? '' }));
+
+      writeLocalPreferences(user.uid, preferences);
+      setProfile((current) => (current
+        ? { ...current, preferences }
+        : {
+          preferences,
+          email: user.email ?? '',
+          displayName: user.displayName ?? '',
+        }));
+
+      if (!isFirebaseConfigured()) {
+        return null;
+      }
+
+      try {
+        await updateUserPreferences(user.uid, preferences, {
+          email: user.email,
+          displayName: user.displayName ?? profile?.displayName,
+        });
+        return null;
+      } catch (error) {
+        return getFirestoreErrorMessage(error);
+      }
     },
   }), [user, profile, loading]);
 

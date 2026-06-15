@@ -77,12 +77,30 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 export async function updateUserPreferences(
   uid: string,
   preferences: UserPreferences,
+  user?: { email?: string | null; displayName?: string | null },
 ): Promise<void> {
   const { db: firestore } = requireAuth();
   await setDoc(doc(firestore, 'users', uid), {
+    email: user?.email ?? '',
+    displayName: user?.displayName ?? '',
     preferences,
     updatedAt: serverTimestamp(),
   }, { merge: true });
+}
+
+export function getFirestoreErrorMessage(error: unknown): string {
+  const code = typeof error === 'object' && error && 'code' in error
+    ? String((error as { code: string }).code)
+    : '';
+
+  switch (code) {
+    case 'permission-denied':
+      return 'Your account cannot update preferences in the cloud yet. They were saved on this device.';
+    case 'unavailable':
+      return 'Could not reach the server. Your preference was saved on this device.';
+    default:
+      return error instanceof Error ? error.message : 'Could not sync preferences to the cloud.';
+  }
 }
 
 export async function signUpWithEmail(

@@ -182,13 +182,17 @@ body:has(.auth-section) {
 
 .hero-section--landing {
   min-height: calc(100vh + 32px);
-  padding-top: 102px;
+  padding-top: 84px;
   padding-bottom: 70px;
+}
+
+.hero-section--landing:not(.hero-section--searched) .hero-inner {
+  transform: translateY(-14px);
 }
 
 .hero-section--searched {
   min-height: auto;
-  padding-top: 112px;
+  padding-top: 96px;
   padding-bottom: 32px;
 }
 
@@ -470,7 +474,7 @@ body:has(.auth-section) {
   }
 
   .hero-section--searched {
-    padding-top: 104px;
+    padding-top: 88px;
   }
 
   .hero-copy {
@@ -1520,10 +1524,11 @@ html {
   color: #6b7280;
 }
 
-.profile-preference-error {
+.profile-preference-notice {
   margin: 12px 0 0;
   font-size: 0.875rem;
-  color: #dc2626;
+  line-height: 1.45;
+  color: #92400e;
 }
 
 .profile-field-list {

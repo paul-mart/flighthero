@@ -17,7 +17,7 @@ export default function ProfilePage() {
   const [activeSection, setActiveSection] = useState<ProfileSection>('settings');
   const [signingOut, setSigningOut] = useState(false);
   const [savingPreference, setSavingPreference] = useState(false);
-  const [preferenceError, setPreferenceError] = useState('');
+  const [preferenceNotice, setPreferenceNotice] = useState('');
 
   const militaryZuluTime = profile?.preferences?.militaryZuluTime ?? false;
 
@@ -41,15 +41,18 @@ export default function ProfilePage() {
   };
 
   const handleMilitaryZuluToggle = async (enabled: boolean) => {
-    setPreferenceError('');
+    setPreferenceNotice('');
     setSavingPreference(true);
     try {
-      await updatePreferences({
+      const notice = await updatePreferences({
         ...profile?.preferences,
         militaryZuluTime: enabled,
       });
-    } catch {
-      setPreferenceError('Could not save your preference. Please try again.');
+      if (notice) {
+        setPreferenceNotice(notice);
+      }
+    } catch (error) {
+      setPreferenceNotice(error instanceof Error ? error.message : 'Could not save your preference. Please try again.');
     } finally {
       setSavingPreference(false);
     }
@@ -151,8 +154,8 @@ export default function ProfilePage() {
                   </span>
                 </label>
               </div>
-              {preferenceError && (
-                <p className="profile-preference-error" role="alert">{preferenceError}</p>
+              {preferenceNotice && (
+                <p className="profile-preference-notice" role="status">{preferenceNotice}</p>
               )}
             </div>
           )}
