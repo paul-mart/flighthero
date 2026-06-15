@@ -280,7 +280,7 @@ function AirportAutocomplete({ value, onChange, placeholder, ariaLabel, swapGene
   }, []);
 
   useLayoutEffect(() => {
-    if (!open && !loading) return;
+    if (!open) return;
     updateMenuPosition();
     window.addEventListener('scroll', updateMenuPosition, true);
     window.addEventListener('resize', updateMenuPosition);
@@ -288,10 +288,10 @@ function AirportAutocomplete({ value, onChange, placeholder, ariaLabel, swapGene
       window.removeEventListener('scroll', updateMenuPosition, true);
       window.removeEventListener('resize', updateMenuPosition);
     };
-  }, [open, loading, updateMenuPosition]);
+  }, [open, updateMenuPosition]);
 
   useEffect(() => {
-    if (!open && !loading) return;
+    if (!open) return;
 
     const dismissMenu = () => {
       abortRef.current?.abort();
@@ -319,7 +319,7 @@ function AirportAutocomplete({ value, onChange, placeholder, ariaLabel, swapGene
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [open, loading]);
+  }, [open]);
 
   const lastSwapGenerationRef = useRef(swapGeneration);
 
@@ -410,10 +410,13 @@ function AirportAutocomplete({ value, onChange, placeholder, ariaLabel, swapGene
 
   const selectSuggestion = (suggestion: PlaceSuggestion) => {
     suppressFetchRef.current = true;
+    abortRef.current?.abort();
+    requestIdRef.current += 1;
     onChange(formatPlaceLabel(suggestion));
     setOpen(false);
     setSuggestions([]);
     setHighlightIndex(-1);
+    setLoading(false);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -1562,7 +1565,7 @@ export default function App() {
     <div className="app-page">
       <TopNavbar />
 
-      <section className={`hero-section${hasSearched ? ' hero-section--searched' : ''}`} aria-label="Flight search">
+      <section className={`hero-section hero-section--landing${hasSearched ? ' hero-section--searched' : ''}`} aria-label="Flight search">
         <div className="hero-backdrop" aria-hidden />
         <div className="hero-inner">
           <HeroCopyBlock />

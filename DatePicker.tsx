@@ -2,6 +2,10 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from 'react-dom';
 import { ChevronDownIcon } from './icons';
 
+const POPOVER_WIDTH = 248;
+const POPOVER_GAP = 6;
+const POPOVER_MARGIN = 16;
+
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as const;
 
 const MONTH_NAMES = [
@@ -53,7 +57,7 @@ function addMonths(date: Date, delta: number): Date {
 
 function ChevronLeftIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
       <path d="M15 18l-6-6 6-6" />
     </svg>
   );
@@ -61,7 +65,7 @@ function ChevronLeftIcon() {
 
 function ChevronRightIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
       <path d="M9 18l6-6-6-6" />
     </svg>
   );
@@ -121,15 +125,15 @@ export default function DatePicker({
   const updatePopoverPosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    const popoverWidth = 300;
-    const margin = 16;
-    let left = rect.left + rect.width / 2 - popoverWidth / 2;
-    left = Math.max(margin, Math.min(left, window.innerWidth - popoverWidth - margin));
+
+    let left = rect.left + rect.width / 2 - POPOVER_WIDTH / 2;
+    left = Math.max(POPOVER_MARGIN, Math.min(left, window.innerWidth - POPOVER_WIDTH - POPOVER_MARGIN));
+
     setPopoverPosition({
       position: 'fixed',
-      top: rect.bottom + 8,
+      top: rect.bottom + POPOVER_GAP,
       left,
-      width: popoverWidth,
+      width: POPOVER_WIDTH,
       transform: 'none',
     });
   }, []);
@@ -137,9 +141,11 @@ export default function DatePicker({
   useLayoutEffect(() => {
     if (!open || disabled) return;
     updatePopoverPosition();
+    const frame = requestAnimationFrame(() => updatePopoverPosition());
     window.addEventListener('scroll', updatePopoverPosition, true);
     window.addEventListener('resize', updatePopoverPosition);
     return () => {
+      cancelAnimationFrame(frame);
       window.removeEventListener('scroll', updatePopoverPosition, true);
       window.removeEventListener('resize', updatePopoverPosition);
     };
@@ -416,28 +422,28 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#6366f1',
   },
   popover: {
-    maxWidth: 'min(300px, calc(100vw - 32px))',
+    maxWidth: `min(${POPOVER_WIDTH}px, calc(100vw - 32px))`,
     background: '#fff',
-    borderRadius: '14px',
-    boxShadow: '0 16px 40px rgba(99, 102, 241, 0.18), 0 4px 14px rgba(0, 0, 0, 0.08)',
+    borderRadius: '12px',
+    boxShadow: '0 12px 32px rgba(99, 102, 241, 0.16), 0 4px 12px rgba(0, 0, 0, 0.08)',
     border: '1px solid rgba(199, 210, 254, 0.8)',
-    padding: '16px',
+    padding: '12px',
   },
   header: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: '14px',
-    gap: '8px',
+    marginBottom: '10px',
+    gap: '6px',
   },
   navBtn: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '36px',
-    height: '36px',
+    width: '30px',
+    height: '30px',
     border: 'none',
-    borderRadius: '10px',
+    borderRadius: '8px',
     background: '#f3f4ff',
     color: '#6366f1',
     cursor: 'pointer',
@@ -450,7 +456,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     cursor: 'not-allowed',
   },
   monthLabel: {
-    fontSize: '16px',
+    fontSize: '14px',
     fontWeight: 600,
     color: '#1f2937',
     letterSpacing: '0.01em',
@@ -458,31 +464,31 @@ const styles: { [key: string]: React.CSSProperties } = {
   weekdayRow: {
     display: 'grid',
     gridTemplateColumns: 'repeat(7, 1fr)',
-    gap: '2px',
-    marginBottom: '6px',
+    gap: '1px',
+    marginBottom: '4px',
   },
   weekdayCell: {
     textAlign: 'center',
-    fontSize: '11px',
+    fontSize: '10px',
     fontWeight: 600,
     color: '#9ca3af',
     letterSpacing: '0.04em',
     textTransform: 'uppercase',
-    padding: '4px 0',
+    padding: '2px 0',
   },
   dayGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(7, 1fr)',
-    gap: '4px',
+    gap: '2px',
   },
   dayBtn: {
     width: '100%',
     aspectRatio: '1',
     border: 'none',
-    borderRadius: '10px',
+    borderRadius: '8px',
     background: 'transparent',
     color: '#374151',
-    fontSize: '14px',
+    fontSize: '13px',
     fontWeight: 500,
     cursor: 'pointer',
     fontFamily: 'inherit',

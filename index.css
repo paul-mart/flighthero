@@ -170,6 +170,12 @@ body:has(.auth-section) {
   overflow: visible;
 }
 
+.hero-section--landing {
+  min-height: calc(100vh + 32px);
+  padding-top: 102px;
+  padding-bottom: 70px;
+}
+
 .hero-section--searched {
   min-height: auto;
   padding-top: 112px;
@@ -228,7 +234,7 @@ body:has(.auth-section) {
 
 .hero-copy {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   opacity: 0;
   transform: translateY(14px);
 }
@@ -447,6 +453,10 @@ body:has(.auth-section) {
 
   .hero-section {
     padding: 96px 16px 48px;
+  }
+
+  .hero-section--landing {
+    padding-bottom: 56px;
   }
 
   .hero-section--searched {
