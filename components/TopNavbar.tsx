@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FlightHeroLogo } from './FlightHeroLogo';
+import { ProfileAvatar } from './ProfileAvatar';
 
 export function TopNavbar() {
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading } = useAuth();
 
-  const userLabel = profile?.displayName || user?.email || '';
+  const displayName = profile?.displayName || user?.displayName || '';
+  const email = profile?.email || user?.email || '';
 
   return (
     <header className="top-nav">
@@ -18,18 +20,14 @@ export function TopNavbar() {
           <a href="/#explore" className="top-nav-link">Explore</a>
           <a href="/#points-guide" className="top-nav-link">Points Guide</a>
           {!loading && user ? (
-            <>
-              <span className="top-nav-user" title={user.email ?? undefined}>
-                {userLabel}
-              </span>
-              <button
-                type="button"
-                className="top-nav-sign-out"
-                onClick={() => { void signOut(); }}
-              >
-                Sign Out
-              </button>
-            </>
+            <Link
+              to="/profile"
+              className="top-nav-profile"
+              aria-label={`Profile for ${displayName || email}`}
+              title={displayName || email || 'Profile'}
+            >
+              <ProfileAvatar displayName={displayName} email={email} size="nav" />
+            </Link>
           ) : (
             <Link to="/auth/sign-in" className="top-nav-sign-in">Sign In</Link>
           )}

@@ -12,6 +12,8 @@ from urllib.parse import quote_plus
 import httpx
 from dotenv import load_dotenv
 
+from flight_times import build_flight_time_fields
+
 ENV_PATH = Path(__file__).resolve().parent / ".env"
 SERPAPI_URL = "https://serpapi.com/search.json"
 _PLACE_CACHE: dict[str, tuple[float, list[dict[str, Any]]]] = {}
@@ -224,7 +226,12 @@ def _format_flight_numbers(segments: list[dict[str, Any]]) -> str:
     return " · ".join(numbers)
 
 
-def _parse_leg(segments: list[dict[str, Any]], origin_fallback: str, destination_fallback: str) -> dict[str, Any]:
+def _parse_leg(
+    segments: list[dict[str, Any]],
+    origin_fallback: str,
+    destination_fallback: str,
+    travel_date: str = "",
+) -> dict[str, Any]:
     if not segments:
         raise ValueError("SerpAPI flight is missing segments")
 
@@ -234,11 +241,23 @@ def _parse_leg(segments: list[dict[str, Any]], origin_fallback: str, destination
     arrival = last.get("arrival_airport") or {}
     duration_minutes = sum(int(segment.get("duration") or 0) for segment in segments)
 
+    origin = (departure.get("id") or origin_fallback).upper()
+    destination = (arrival.get("id") or destination_fallback).upper()
+    dep_raw = str(departure.get("time") or "")
+    arr_raw = str(arrival.get("time") or "")
+
+    dep_fields = build_flight_time_fields(dep_raw, origin, travel_date)
+    arr_fields = build_flight_time_fields(arr_raw, destination, travel_date)
+
     return {
-        "origin": (departure.get("id") or origin_fallback).upper(),
-        "destination": (arrival.get("id") or destination_fallback).upper(),
-        "departure_time": format_local_time(departure.get("time", "")),
-        "arrival_time": format_local_time(arrival.get("time", "")),
+        "origin": origin,
+        "destination": destination,
+        "departure_time": dep_fields["time"] or format_local_time(dep_raw),
+        "arrival_time": arr_fields["time"] or format_local_time(arr_raw),
+        "departure_timezone": dep_fields["timezone"],
+        "arrival_timezone": arr_fields["timezone"],
+        "departure_at": dep_fields["at"],
+        "arrival_at": arr_fields["at"],
         "carrier": _format_carrier_label(_segment_carrier_names(segments)),
         "carrier_logos": _segment_carrier_logos(segments),
         "flight_number": _format_flight_numbers(segments),
@@ -295,7 +314,7 @@ def _fetch_return_leg(
         return None
 
     try:
-        return _parse_leg(segments, destination_code, origin_code)
+        return _parse_leg(segments, destination_code, origin_code, return_date)
     except ValueError:
         return None
 
@@ -337,6 +356,10 @@ def _fetch_return_legs_parallel(
 def _attach_return_leg(flight: dict[str, Any], inbound: dict[str, Any]) -> None:
     flight["return_departure_time"] = inbound["departure_time"]
     flight["return_arrival_time"] = inbound["arrival_time"]
+    flight["return_departure_timezone"] = inbound.get("departure_timezone", "")
+    flight["return_arrival_timezone"] = inbound.get("arrival_timezone", "")
+    flight["return_departure_at"] = inbound.get("departure_at", "")
+    flight["return_arrival_at"] = inbound.get("arrival_at", "")
     flight["return_flight_number"] = inbound["flight_number"]
     flight["return_carrier"] = inbound["carrier"]
     flight["return_stops"] = inbound["stops"]
@@ -354,7 +377,7 @@ def _parse_flight_option(
     if not segments:
         return None
 
-    outbound = _parse_leg(segments, origin_code, destination_code)
+    outbound = _parse_leg(segments, origin_code, destination_code, departure_date)
     price = option.get("price")
     if price is None:
         return None
@@ -370,6 +393,10 @@ def _parse_flight_option(
         "departure_date": departure_date,
         "departure_time": outbound["departure_time"],
         "arrival_time": outbound["arrival_time"],
+        "departure_timezone": outbound.get("departure_timezone", ""),
+        "arrival_timezone": outbound.get("arrival_timezone", ""),
+        "departure_at": outbound.get("departure_at", ""),
+        "arrival_at": outbound.get("arrival_at", ""),
         "carrier": outbound["carrier"],
         "carrier_logos": outbound["carrier_logos"]
         or ([option["airline_logo"]] if option.get("airline_logo") else []),
@@ -422,6 +449,10 @@ def _return_leg_fields(inbound: dict[str, Any]) -> dict[str, Any]:
     return {
         "return_departure_time": inbound["departure_time"],
         "return_arrival_time": inbound["arrival_time"],
+        "return_departure_timezone": inbound.get("departure_timezone", ""),
+        "return_arrival_timezone": inbound.get("arrival_timezone", ""),
+        "return_departure_at": inbound.get("departure_at", ""),
+        "return_arrival_at": inbound.get("arrival_at", ""),
         "return_flight_number": inbound["flight_number"],
         "return_carrier": inbound["carrier"],
         "return_stops": inbound["stops"],

@@ -4,6 +4,8 @@ import { auth, isFirebaseConfigured } from '../lib/firebase';
 import {
   getUserProfile,
   signOut as authSignOut,
+  updateUserPreferences,
+  type UserPreferences,
   type UserProfile,
 } from '../lib/auth';
 
@@ -13,6 +15,7 @@ interface AuthContextValue {
   loading: boolean;
   configured: boolean;
   signOut: () => Promise<void>;
+  updatePreferences: (preferences: UserPreferences) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -55,6 +58,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (auth) {
         await authSignOut();
       }
+    },
+    updatePreferences: async (preferences: UserPreferences) => {
+      if (!user) {
+        throw new Error('You must be signed in to update preferences.');
+      }
+      await updateUserPreferences(user.uid, preferences);
+      setProfile((current) => (current ? { ...current, preferences } : { preferences, email: user.email ?? '', displayName: user.displayName ?? '' }));
     },
   }), [user, profile, loading]);
 

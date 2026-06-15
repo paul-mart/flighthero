@@ -14,9 +14,14 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
+export interface UserPreferences {
+  militaryZuluTime?: boolean;
+}
+
 export interface UserProfile {
   email: string;
   displayName: string;
+  preferences?: UserPreferences;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
   lastLoginAt?: Timestamp;
@@ -67,6 +72,17 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   const snapshot = await getDoc(doc(firestore, 'users', uid));
   if (!snapshot.exists()) return null;
   return snapshot.data() as UserProfile;
+}
+
+export async function updateUserPreferences(
+  uid: string,
+  preferences: UserPreferences,
+): Promise<void> {
+  const { db: firestore } = requireAuth();
+  await setDoc(doc(firestore, 'users', uid), {
+    preferences,
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
 }
 
 export async function signUpWithEmail(

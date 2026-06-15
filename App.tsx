@@ -4,6 +4,8 @@ import { apiFetch, apiUrl } from './api';
 import DatePicker from './DatePicker';
 import { FlightHeroLogo } from './components/FlightHeroLogo';
 import { TopNavbar } from './components/TopNavbar';
+import { useAuth } from './context/AuthContext';
+import { formatFlightTimeRange, getDepartureSortMinutes } from './lib/flightTimes';
 import { ChevronDownIcon, PlaneArriveIcon, PlaneDepartIcon, CalendarIcon, SwapIcon, SearchIcon, ArrowRightIcon } from './icons';
 
 interface AwardDetails {
@@ -920,6 +922,10 @@ function CarrierBadge({ carrier, logos }: { carrier: string; logos?: string[] })
 interface ReturnLegFields {
   return_departure_time: string;
   return_arrival_time: string;
+  return_departure_timezone?: string;
+  return_arrival_timezone?: string;
+  return_departure_at?: string;
+  return_arrival_at?: string;
   return_flight_number: string;
   return_carrier: string;
   return_stops: number;
@@ -941,6 +947,10 @@ interface Flight {
   departure_date: string;
   departure_time?: string;
   arrival_time?: string;
+  departure_timezone?: string;
+  arrival_timezone?: string;
+  departure_at?: string;
+  arrival_at?: string;
   carrier: string;
   carrier_logos?: string[];
   flight_number: string;
@@ -950,6 +960,10 @@ interface Flight {
   cash_price: number;
   return_departure_time?: string;
   return_arrival_time?: string;
+  return_departure_timezone?: string;
+  return_arrival_timezone?: string;
+  return_departure_at?: string;
+  return_arrival_at?: string;
   return_flight_number?: string;
   return_carrier?: string;
   return_duration?: string;
@@ -962,6 +976,10 @@ function applyReturnLeg(flight: Flight, leg: ReturnLegFields): Flight {
     ...flight,
     return_departure_time: leg.return_departure_time,
     return_arrival_time: leg.return_arrival_time,
+    return_departure_timezone: leg.return_departure_timezone,
+    return_arrival_timezone: leg.return_arrival_timezone,
+    return_departure_at: leg.return_departure_at,
+    return_arrival_at: leg.return_arrival_at,
     return_flight_number: leg.return_flight_number,
     return_carrier: leg.return_carrier,
     return_stops: leg.return_stops,
@@ -1046,23 +1064,39 @@ function getDurationMinutes(flight: Flight): number {
 }
 
 function getDepartureMinutes(flight: Flight): number | null {
-  const time = flight.departure_time?.trim();
-  if (!time) return null;
+  return getDepartureSortMinutes(flight);
+}
 
-  const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (!match) return null;
+function formatOutboundTimes(flight: Flight, militaryZulu: boolean): string {
+  return formatFlightTimeRange(
+    {
+      time: flight.departure_time,
+      timezone: flight.departure_timezone,
+      at: flight.departure_at,
+    },
+    {
+      time: flight.arrival_time,
+      timezone: flight.arrival_timezone,
+      at: flight.arrival_at,
+    },
+    militaryZulu,
+  );
+}
 
-  let hours = parseInt(match[1], 10);
-  const minutes = parseInt(match[2], 10);
-  const period = match[3].toUpperCase();
-
-  if (period === 'AM') {
-    if (hours === 12) hours = 0;
-  } else if (hours !== 12) {
-    hours += 12;
-  }
-
-  return hours * 60 + minutes;
+function formatReturnTimes(flight: Flight, militaryZulu: boolean): string {
+  return formatFlightTimeRange(
+    {
+      time: flight.return_departure_time,
+      timezone: flight.return_departure_timezone,
+      at: flight.return_departure_at,
+    },
+    {
+      time: flight.return_arrival_time,
+      timezone: flight.return_arrival_timezone,
+      at: flight.return_arrival_at,
+    },
+    militaryZulu,
+  );
 }
 
 function sortFlights(flights: Flight[], sortOption: SortOption, searchType: 'cash' | 'points'): Flight[] {
@@ -1147,12 +1181,14 @@ function FlightDetailModal({
   searchType,
   tripType,
   returnDate,
+  militaryZuluTime,
   onClose,
 }: {
   flight: Flight;
   searchType: 'cash' | 'points';
   tripType: 'one-way' | 'round-trip';
   returnDate: string;
+  militaryZuluTime: boolean;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -1210,7 +1246,7 @@ function FlightDetailModal({
           <h3 style={styles.flightDetailSectionTitle}>Outbound</h3>
           <p style={styles.flightDetailLine}>
             {flight.departure_time && flight.arrival_time
-              ? `${flight.departure_time} – ${flight.arrival_time}`
+              ? formatOutboundTimes(flight, militaryZuluTime)
               : 'Times unavailable'}
           </p>
           <p style={styles.flightDetailMeta}>
@@ -1223,7 +1259,7 @@ function FlightDetailModal({
             <h3 style={styles.flightDetailSectionTitle}>Return</h3>
             <p style={styles.flightDetailLine}>
               {flight.return_departure_time && flight.return_arrival_time
-                ? `${flight.return_departure_time} – ${flight.return_arrival_time}`
+                ? formatReturnTimes(flight, militaryZuluTime)
                 : 'Times unavailable'}
             </p>
             <p style={styles.flightDetailMeta}>
@@ -1377,6 +1413,8 @@ async function fetchReturnLegBatches(
 }
 
 export default function App() {
+  const { profile } = useAuth();
+  const militaryZuluTime = profile?.preferences?.militaryZuluTime ?? false;
   const [adults, setAdults] = useState(1);
   const [childrenCount, setChildrenCount] = useState(0);
   const passengers = adults + childrenCount;
@@ -1794,7 +1832,7 @@ export default function App() {
                   <div className="flight-meta-block" style={styles.flightMetaBlock}>
                     {flight.departure_time && flight.arrival_time && (
                       <span style={styles.timeText}>
-                        {flight.departure_time} – {flight.arrival_time}
+                        {formatOutboundTimes(flight, militaryZuluTime)}
                       </span>
                     )}
                     <span style={styles.subtext}>
@@ -1813,7 +1851,7 @@ export default function App() {
                           <div className="flight-meta-block" style={styles.flightMetaBlock}>
                             {flight.return_departure_time && flight.return_arrival_time && (
                               <span style={styles.timeText}>
-                                {flight.return_departure_time} – {flight.return_arrival_time}
+                                {formatReturnTimes(flight, militaryZuluTime)}
                               </span>
                             )}
                             <span style={styles.subtext}>
@@ -1838,7 +1876,7 @@ export default function App() {
                         <div className="flight-meta-block" style={styles.flightMetaBlock}>
                           {flight.return_departure_time && flight.return_arrival_time && (
                             <span style={styles.timeText}>
-                              {flight.return_departure_time} – {flight.return_arrival_time}
+                              {formatReturnTimes(flight, militaryZuluTime)}
                             </span>
                           )}
                           <span style={styles.subtext}>
@@ -1925,6 +1963,7 @@ export default function App() {
           searchType={searchType}
           tripType={tripType}
           returnDate={returnDate}
+          militaryZuluTime={militaryZuluTime}
           onClose={() => setSelectedFlight(null)}
         />
       )}

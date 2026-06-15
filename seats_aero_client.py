@@ -8,6 +8,7 @@ from typing import Any
 import httpx
 from dotenv import load_dotenv
 
+from flight_times import build_flight_time_fields
 from serpapi_client import format_duration_minutes, normalize_airport_code
 
 ENV_PATH = Path(__file__).resolve().parent / ".env"
@@ -268,6 +269,16 @@ def _format_flight_number(raw: str) -> str:
     return " · ".join(segments)
 
 
+def _trip_raw_time(trip: dict[str, Any] | None, *keys: str) -> str:
+    if not trip:
+        return ""
+    for key in keys:
+        value = str(trip.get(key) or "").strip()
+        if value:
+            return value
+    return ""
+
+
 def _trip_time(trip: dict[str, Any] | None, *keys: str) -> str:
     if not trip:
         return ""
@@ -413,8 +424,12 @@ def _parse_availability(
     if not flight_numbers and airline_codes:
         flight_numbers = carrier_codes_label
 
-    departure_time = _trip_time(trip, "DepartsAt", "DepartureTime")
-    arrival_time = _trip_time(trip, "ArrivesAt", "ArrivalTime")
+    dep_raw = _trip_raw_time(trip, "DepartsAt", "DepartureTime")
+    arr_raw = _trip_raw_time(trip, "ArrivesAt", "ArrivalTime")
+    dep_fields = build_flight_time_fields(dep_raw, origin, travel_date)
+    arr_fields = build_flight_time_fields(arr_raw, destination, travel_date)
+    departure_time = dep_fields["time"] or _trip_time(trip, "DepartsAt", "DepartureTime")
+    arrival_time = arr_fields["time"] or _trip_time(trip, "ArrivesAt", "ArrivalTime")
 
     duration_label = format_duration_minutes(duration_minutes) if duration_minutes else "—"
 
@@ -425,6 +440,10 @@ def _parse_availability(
         "departure_date": travel_date,
         "departure_time": departure_time,
         "arrival_time": arrival_time,
+        "departure_timezone": dep_fields["timezone"],
+        "arrival_timezone": arr_fields["timezone"],
+        "departure_at": dep_fields["at"],
+        "arrival_at": arr_fields["at"],
         "carrier": carrier,
         "carrier_logos": carrier_logos,
         "flight_number": flight_numbers or "Award seat",
@@ -466,6 +485,10 @@ def _merge_round_trip(outbound: dict[str, Any], inbound: dict[str, Any]) -> dict
         },
         "return_departure_time": inbound.get("departure_time") or "",
         "return_arrival_time": inbound.get("arrival_time") or "",
+        "return_departure_timezone": inbound.get("departure_timezone") or "",
+        "return_arrival_timezone": inbound.get("arrival_timezone") or "",
+        "return_departure_at": inbound.get("departure_at") or "",
+        "return_arrival_at": inbound.get("arrival_at") or "",
         "return_flight_number": inbound.get("flight_number") or "",
         "return_carrier": inbound.get("carrier") or out_award["mileage_program"],
         "return_duration": inbound.get("duration") or "—",
