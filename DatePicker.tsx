@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDownIcon } from './icons';
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as const;
@@ -87,7 +88,9 @@ export default function DatePicker({
 }: DatePickerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState<React.CSSProperties>({});
   const [triggerHovered, setTriggerHovered] = useState(false);
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
   const [viewMonth, setViewMonth] = useState(() => {
@@ -115,6 +118,33 @@ export default function DatePicker({
     return firstOfView > firstOfMinMonth;
   }, [viewMonth, effectiveMinDay]);
 
+  const updatePopoverPosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const popoverWidth = 300;
+    const margin = 16;
+    let left = rect.left + rect.width / 2 - popoverWidth / 2;
+    left = Math.max(margin, Math.min(left, window.innerWidth - popoverWidth - margin));
+    setPopoverPosition({
+      position: 'fixed',
+      top: rect.bottom + 8,
+      left,
+      width: popoverWidth,
+      transform: 'none',
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open || disabled) return;
+    updatePopoverPosition();
+    window.addEventListener('scroll', updatePopoverPosition, true);
+    window.addEventListener('resize', updatePopoverPosition);
+    return () => {
+      window.removeEventListener('scroll', updatePopoverPosition, true);
+      window.removeEventListener('resize', updatePopoverPosition);
+    };
+  }, [open, disabled, updatePopoverPosition]);
+
   useEffect(() => {
     if (disabled) setOpen(false);
   }, [disabled]);
@@ -130,10 +160,10 @@ export default function DatePicker({
     if (!open || disabled) return;
 
     const handlePointerDown = (event: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-        triggerRef.current?.blur();
-      }
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target) || popoverRef.current?.contains(target)) return;
+      setOpen(false);
+      triggerRef.current?.blur();
     };
 
     const handleEscape = (event: KeyboardEvent) => {
@@ -236,80 +266,88 @@ export default function DatePicker({
         </span>
       </button>
 
-      {open && !disabled && (
-        <div className="date-picker-popover" style={styles.popover} role="dialog" aria-label={ariaLabel}>
-          <div style={styles.header}>
-            <button
-              type="button"
-              className="date-picker-nav"
-              style={{
-                ...styles.navBtn,
-                ...(!canGoPrevMonth ? styles.navBtnDisabled : {}),
-              }}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                if (!canGoPrevMonth) return;
-                setViewMonth((prev) => addMonths(prev, -1));
-              }}
-              disabled={!canGoPrevMonth}
-              aria-label="Previous month"
-            >
-              <ChevronLeftIcon />
-            </button>
-            <span style={styles.monthLabel}>{monthLabel}</span>
-            <button
-              type="button"
-              className="date-picker-nav"
-              style={styles.navBtn}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setViewMonth((prev) => addMonths(prev, 1))}
-              aria-label="Next month"
-            >
-              <ChevronRightIcon />
-            </button>
-          </div>
+      {open && !disabled &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            className="date-picker-popover"
+            style={{ ...styles.popover, ...popoverPosition }}
+            role="dialog"
+            aria-label={ariaLabel}
+          >
+            <div style={styles.header}>
+              <button
+                type="button"
+                className="date-picker-nav"
+                style={{
+                  ...styles.navBtn,
+                  ...(!canGoPrevMonth ? styles.navBtnDisabled : {}),
+                }}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  if (!canGoPrevMonth) return;
+                  setViewMonth((prev) => addMonths(prev, -1));
+                }}
+                disabled={!canGoPrevMonth}
+                aria-label="Previous month"
+              >
+                <ChevronLeftIcon />
+              </button>
+              <span style={styles.monthLabel}>{monthLabel}</span>
+              <button
+                type="button"
+                className="date-picker-nav"
+                style={styles.navBtn}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setViewMonth((prev) => addMonths(prev, 1))}
+                aria-label="Next month"
+              >
+                <ChevronRightIcon />
+              </button>
+            </div>
 
-          <div style={styles.weekdayRow}>
-            {WEEKDAYS.map((weekday) => (
-              <span key={weekday} style={styles.weekdayCell}>{weekday}</span>
-            ))}
-          </div>
+            <div style={styles.weekdayRow}>
+              {WEEKDAYS.map((weekday) => (
+                <span key={weekday} style={styles.weekdayCell}>{weekday}</span>
+              ))}
+            </div>
 
-          <div style={styles.dayGrid}>
-            {calendarDays.map(({ iso, inMonth }) => {
-              const selected = value === iso;
-              const today = todayIso === iso;
-              const disabledDay = isDisabledDay(iso);
-              const hovered = hoveredDay === iso;
+            <div style={styles.dayGrid}>
+              {calendarDays.map(({ iso, inMonth }) => {
+                const selected = value === iso;
+                const today = todayIso === iso;
+                const disabledDay = isDisabledDay(iso);
+                const hovered = hoveredDay === iso;
 
-              return (
-                <button
-                  key={iso}
-                  type="button"
-                  className="date-picker-day"
-                  style={{
-                    ...styles.dayBtn,
-                    ...(!inMonth ? styles.dayOutside : {}),
-                    ...(selected ? styles.daySelected : {}),
-                    ...(!selected && today ? styles.dayToday : {}),
-                    ...(hovered && !selected && !disabledDay ? styles.dayHover : {}),
-                    ...(disabledDay ? styles.dayDisabled : {}),
-                  }}
-                  onMouseEnter={() => setHoveredDay(iso)}
-                  onMouseLeave={() => setHoveredDay(null)}
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => selectDay(iso)}
-                  disabled={disabledDay}
-                  aria-label={iso}
-                  aria-pressed={selected}
-                >
-                  {parseIsoDate(iso)?.getDate()}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+                return (
+                  <button
+                    key={iso}
+                    type="button"
+                    className="date-picker-day"
+                    style={{
+                      ...styles.dayBtn,
+                      ...(!inMonth ? styles.dayOutside : {}),
+                      ...(selected ? styles.daySelected : {}),
+                      ...(!selected && today ? styles.dayToday : {}),
+                      ...(hovered && !selected && !disabledDay ? styles.dayHover : {}),
+                      ...(disabledDay ? styles.dayDisabled : {}),
+                    }}
+                    onMouseEnter={() => setHoveredDay(iso)}
+                    onMouseLeave={() => setHoveredDay(null)}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => selectDay(iso)}
+                    disabled={disabledDay}
+                    aria-label={iso}
+                    aria-pressed={selected}
+                  >
+                    {parseIsoDate(iso)?.getDate()}
+                  </button>
+                );
+              })}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
@@ -378,18 +416,12 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#6366f1',
   },
   popover: {
-    position: 'absolute',
-    top: 'calc(100% + 8px)',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    width: '300px',
     maxWidth: 'min(300px, calc(100vw - 32px))',
     background: '#fff',
     borderRadius: '14px',
     boxShadow: '0 16px 40px rgba(99, 102, 241, 0.18), 0 4px 14px rgba(0, 0, 0, 0.08)',
     border: '1px solid rgba(199, 210, 254, 0.8)',
     padding: '16px',
-    zIndex: 40,
   },
   header: {
     display: 'flex',

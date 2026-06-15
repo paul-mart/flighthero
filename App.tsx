@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { apiFetch, apiUrl } from './api';
 import DatePicker from './DatePicker';
 import { ChevronDownIcon, PlaneArriveIcon, PlaneDepartIcon, CalendarIcon, SwapIcon, SearchIcon, ArrowRightIcon } from './icons';
@@ -37,8 +38,39 @@ function FilterDropdown<T extends string | number>({
   const [triggerHovered, setTriggerHovered] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLUListElement>(null);
+  const [menuPosition, setMenuPosition] = useState<React.CSSProperties>({});
 
   const selectedLabel = options.find((option) => option.value === value)?.label ?? '';
+
+  const updateMenuPosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const margin = 16;
+    const minWidth = rect.width;
+    let left = rect.left;
+    if (left + minWidth > window.innerWidth - margin) {
+      left = window.innerWidth - margin - minWidth;
+    }
+    left = Math.max(margin, left);
+    setMenuPosition({
+      position: 'fixed',
+      top: rect.bottom + 6,
+      left,
+      minWidth,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open || disabled) return;
+    updateMenuPosition();
+    window.addEventListener('scroll', updateMenuPosition, true);
+    window.addEventListener('resize', updateMenuPosition);
+    return () => {
+      window.removeEventListener('scroll', updateMenuPosition, true);
+      window.removeEventListener('resize', updateMenuPosition);
+    };
+  }, [open, disabled, updateMenuPosition]);
 
   useEffect(() => {
     if (disabled) setOpen(false);
@@ -48,10 +80,10 @@ function FilterDropdown<T extends string | number>({
     if (!open || disabled) return;
 
     const handlePointerDown = (event: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-        triggerRef.current?.blur();
-      }
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+      triggerRef.current?.blur();
     };
 
     const handleEscape = (event: KeyboardEvent) => {
@@ -109,30 +141,38 @@ function FilterDropdown<T extends string | number>({
           <ChevronDownIcon />
         </span>
       </button>
-      {open && (
-        <ul className="filter-menu" style={styles.filterMenu} role="listbox" aria-label={ariaLabel}>
-          {options.map((option) => (
-            <li key={String(option.value)} role="none">
-              <button
-                type="button"
-                role="option"
-                className="filter-option"
-                aria-selected={option.value === value}
-                style={{
-                  ...styles.filterOption,
-                  ...(hoveredOption === option.value ? styles.filterOptionHover : {}),
-                }}
-                onMouseEnter={() => setHoveredOption(option.value)}
-                onMouseLeave={() => setHoveredOption(null)}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => selectOption(option.value)}
-              >
-                {option.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {open &&
+        createPortal(
+          <ul
+            ref={menuRef}
+            className="filter-menu"
+            style={{ ...styles.filterMenu, ...menuPosition }}
+            role="listbox"
+            aria-label={ariaLabel}
+          >
+            {options.map((option) => (
+              <li key={String(option.value)} role="none">
+                <button
+                  type="button"
+                  role="option"
+                  className="filter-option"
+                  aria-selected={option.value === value}
+                  style={{
+                    ...styles.filterOption,
+                    ...(hoveredOption === option.value ? styles.filterOptionHover : {}),
+                  }}
+                  onMouseEnter={() => setHoveredOption(option.value)}
+                  onMouseLeave={() => setHoveredOption(null)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => selectOption(option.value)}
+                >
+                  {option.label}
+                </button>
+              </li>
+            ))}
+          </ul>,
+          document.body
+        )}
     </div>
   );
 }
@@ -217,19 +257,45 @@ function AirportAutocomplete({ value, onChange, placeholder, ariaLabel, swapGene
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLUListElement>(null);
+  const [menuPosition, setMenuPosition] = useState<React.CSSProperties>({});
   const suppressFetchRef = useRef(false);
   const cacheRef = useRef<Map<string, PlaceSuggestion[]>>(new Map());
   const abortRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef(0);
 
+  const updateMenuPosition = useCallback(() => {
+    if (!rootRef.current) return;
+    const inputRect = rootRef.current.getBoundingClientRect();
+    const routeBlock = rootRef.current.closest('.route-block') as HTMLElement | null;
+    const anchorRect = routeBlock?.getBoundingClientRect() ?? inputRect;
+    setMenuPosition({
+      position: 'fixed',
+      top: inputRect.bottom + 6,
+      left: anchorRect.left,
+      width: anchorRect.width,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open && !loading) return;
+    updateMenuPosition();
+    window.addEventListener('scroll', updateMenuPosition, true);
+    window.addEventListener('resize', updateMenuPosition);
+    return () => {
+      window.removeEventListener('scroll', updateMenuPosition, true);
+      window.removeEventListener('resize', updateMenuPosition);
+    };
+  }, [open, loading, updateMenuPosition]);
+
   useEffect(() => {
     if (!open) return;
 
     const handlePointerDown = (event: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-        setHighlightIndex(-1);
-      }
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+      setHighlightIndex(-1);
     };
 
     const handleEscape = (event: KeyboardEvent) => {
@@ -387,52 +453,56 @@ function AirportAutocomplete({ value, onChange, placeholder, ariaLabel, swapGene
           <PlacesSearchLoader size={26} />
         </div>
       )}
-      {(open || loading) && (
-        <ul
-          id={`${ariaLabel}-suggestions`}
-          style={styles.suggestionMenu}
-          role="listbox"
-          aria-label={`${ariaLabel} suggestions`}
-        >
-          {loading && suggestions.length === 0 ? (
-            <li style={styles.suggestionLoaderRow} role="presentation">
-              <PlacesSearchLoader size={40} />
-              <span style={styles.suggestionLoaderText}>Searching places...</span>
-            </li>
-          ) : (
-            suggestions.map((suggestion, index) => {
-              const highlighted = highlightIndex === index || hoveredIndex === index;
-              return (
-                <li key={suggestion.id} role="none">
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={highlightIndex === index}
-                    style={{
-                      ...styles.suggestionOption,
-                      ...(highlighted ? styles.suggestionOptionHover : {}),
-                    }}
-                    onMouseEnter={() => {
-                      setHoveredIndex(index);
-                      setHighlightIndex(index);
-                    }}
-                    onMouseLeave={() => setHoveredIndex(null)}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => selectSuggestion(suggestion)}
-                  >
-                    <span style={styles.suggestionText}>
-                      <span style={styles.suggestionName}>{formatPlaceLabel(suggestion)}</span>
-                      {suggestion.subtitle && (
-                        <span style={styles.suggestionSubtitle}>{suggestion.subtitle}</span>
-                      )}
-                    </span>
-                  </button>
-                </li>
-              );
-            })
-          )}
-        </ul>
-      )}
+      {(open || loading) &&
+        createPortal(
+          <ul
+            ref={menuRef}
+            id={`${ariaLabel}-suggestions`}
+            className="suggestion-menu"
+            style={{ ...styles.suggestionMenu, ...menuPosition }}
+            role="listbox"
+            aria-label={`${ariaLabel} suggestions`}
+          >
+            {loading && suggestions.length === 0 ? (
+              <li style={styles.suggestionLoaderRow} role="presentation">
+                <PlacesSearchLoader size={40} />
+                <span style={styles.suggestionLoaderText}>Searching places...</span>
+              </li>
+            ) : (
+              suggestions.map((suggestion, index) => {
+                const highlighted = highlightIndex === index || hoveredIndex === index;
+                return (
+                  <li key={suggestion.id} role="none">
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={highlightIndex === index}
+                      style={{
+                        ...styles.suggestionOption,
+                        ...(highlighted ? styles.suggestionOptionHover : {}),
+                      }}
+                      onMouseEnter={() => {
+                        setHoveredIndex(index);
+                        setHighlightIndex(index);
+                      }}
+                      onMouseLeave={() => setHoveredIndex(null)}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => selectSuggestion(suggestion)}
+                    >
+                      <span style={styles.suggestionText}>
+                        <span style={styles.suggestionName}>{formatPlaceLabel(suggestion)}</span>
+                        {suggestion.subtitle && (
+                          <span style={styles.suggestionSubtitle}>{suggestion.subtitle}</span>
+                        )}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })
+            )}
+          </ul>,
+          document.body
+        )}
     </div>
   );
 }
@@ -448,18 +518,49 @@ function PassengerDropdown({ adults, childCount, onChange }: PassengerDropdownPr
   const [triggerHovered, setTriggerHovered] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPosition, setMenuPosition] = useState<React.CSSProperties>({});
 
   const total = adults + childCount;
   const label = `${total} Passenger${total === 1 ? '' : 's'}`;
+
+  const updateMenuPosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const margin = 16;
+    const menuWidth = Math.max(280, rect.width);
+    let left = rect.left;
+    if (left + menuWidth > window.innerWidth - margin) {
+      left = window.innerWidth - margin - menuWidth;
+    }
+    left = Math.max(margin, left);
+    setMenuPosition({
+      position: 'fixed',
+      top: rect.bottom + 6,
+      left,
+      width: menuWidth,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    updateMenuPosition();
+    window.addEventListener('scroll', updateMenuPosition, true);
+    window.addEventListener('resize', updateMenuPosition);
+    return () => {
+      window.removeEventListener('scroll', updateMenuPosition, true);
+      window.removeEventListener('resize', updateMenuPosition);
+    };
+  }, [open, updateMenuPosition]);
 
   useEffect(() => {
     if (!open) return;
 
     const handlePointerDown = (event: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-        triggerRef.current?.blur();
-      }
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+      triggerRef.current?.blur();
     };
 
     const handleEscape = (event: KeyboardEvent) => {
@@ -513,83 +614,91 @@ function PassengerDropdown({ adults, childCount, onChange }: PassengerDropdownPr
           <ChevronDownIcon />
         </span>
       </button>
-      {open && (
-        <div className="passenger-menu" style={styles.passengerMenu} role="dialog" aria-label="Passenger selection">
-          <div style={styles.passengerRow}>
-            <div style={styles.passengerRowLabel}>
-              <span style={styles.passengerLabel}>Adults:</span>
+      {open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="passenger-menu"
+            style={{ ...styles.passengerMenu, ...menuPosition }}
+            role="dialog"
+            aria-label="Passenger selection"
+          >
+            <div style={styles.passengerRow}>
+              <div style={styles.passengerRowLabel}>
+                <span style={styles.passengerLabel}>Adults:</span>
+              </div>
+              <div style={styles.stepper}>
+                <button
+                  type="button"
+                  className="stepper-btn"
+                  style={{
+                    ...styles.stepperBtn,
+                    ...(adults <= 1 ? styles.stepperBtnDisabled : {}),
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => adjustAdults(-1)}
+                  disabled={adults <= 1}
+                  aria-label="Decrease adults"
+                >
+                  −
+                </button>
+                <span style={styles.stepperValue}>{adults}</span>
+                <button
+                  type="button"
+                  className="stepper-btn"
+                  style={{
+                    ...styles.stepperBtn,
+                    ...(adults + childCount >= 9 ? styles.stepperBtnDisabled : {}),
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => adjustAdults(1)}
+                  disabled={adults + childCount >= 9}
+                  aria-label="Increase adults"
+                >
+                  +
+                </button>
+              </div>
             </div>
-            <div style={styles.stepper}>
-              <button
-                type="button"
-                className="stepper-btn"
-                style={{
-                  ...styles.stepperBtn,
-                  ...(adults <= 1 ? styles.stepperBtnDisabled : {}),
-                }}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => adjustAdults(-1)}
-                disabled={adults <= 1}
-                aria-label="Decrease adults"
-              >
-                −
-              </button>
-              <span style={styles.stepperValue}>{adults}</span>
-              <button
-                type="button"
-                className="stepper-btn"
-                style={{
-                  ...styles.stepperBtn,
-                  ...(adults + childCount >= 9 ? styles.stepperBtnDisabled : {}),
-                }}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => adjustAdults(1)}
-                disabled={adults + childCount >= 9}
-                aria-label="Increase adults"
-              >
-                +
-              </button>
+            <div style={{ ...styles.passengerRow, ...styles.passengerRowLast }}>
+              <div style={styles.passengerRowLabel}>
+                <span style={styles.passengerLabel}>Children:</span>
+                <span style={styles.passengerSublabel}>(Aged 2-11)</span>
+              </div>
+              <div style={styles.stepper}>
+                <button
+                  type="button"
+                  className="stepper-btn"
+                  style={{
+                    ...styles.stepperBtn,
+                    ...(childCount <= 0 ? styles.stepperBtnDisabled : {}),
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => adjustChildren(-1)}
+                  disabled={childCount <= 0}
+                  aria-label="Decrease children"
+                >
+                  −
+                </button>
+                <span style={styles.stepperValue}>{childCount}</span>
+                <button
+                  type="button"
+                  className="stepper-btn"
+                  style={{
+                    ...styles.stepperBtn,
+                    ...(childCount >= 8 || adults + childCount >= 9 ? styles.stepperBtnDisabled : {}),
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => adjustChildren(1)}
+                  disabled={childCount >= 8 || adults + childCount >= 9}
+                  aria-label="Increase children"
+                >
+                  +
+                </button>
+              </div>
             </div>
-          </div>
-          <div style={{ ...styles.passengerRow, ...styles.passengerRowLast }}>
-            <div style={styles.passengerRowLabel}>
-              <span style={styles.passengerLabel}>Children:</span>
-              <span style={styles.passengerSublabel}>(Aged 2-11)</span>
-            </div>
-            <div style={styles.stepper}>
-              <button
-                type="button"
-                className="stepper-btn"
-                style={{
-                  ...styles.stepperBtn,
-                  ...(childCount <= 0 ? styles.stepperBtnDisabled : {}),
-                }}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => adjustChildren(-1)}
-                disabled={childCount <= 0}
-                aria-label="Decrease children"
-              >
-                −
-              </button>
-              <span style={styles.stepperValue}>{childCount}</span>
-              <button
-                type="button"
-                className="stepper-btn"
-                style={{
-                  ...styles.stepperBtn,
-                  ...(childCount >= 8 || adults + childCount >= 9 ? styles.stepperBtnDisabled : {}),
-                }}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => adjustChildren(1)}
-                disabled={childCount >= 8 || adults + childCount >= 9}
-                aria-label="Increase children"
-              >
-                +
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
@@ -661,14 +770,46 @@ function TopNavbar() {
 }
 
 function TrendingDeals() {
+  const ref = useRef<HTMLElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className="trending-deals" id="deals" aria-labelledby="trending-deals-title">
+    <section
+      ref={ref}
+      className={`trending-deals${visible ? ' trending-deals--visible' : ''}`}
+      id="deals"
+      aria-labelledby="trending-deals-title"
+    >
       <div className="trending-deals-inner">
-        <h2 id="trending-deals-title" className="trending-deals-title">Trending Deals</h2>
-        <p className="trending-deals-subtitle">Popular routes with sample award and cash fares</p>
+        <div className="trending-deals-header">
+          <h2 id="trending-deals-title" className="trending-deals-title">Trending Deals</h2>
+          <p className="trending-deals-subtitle">Popular routes with sample award and cash fares</p>
+        </div>
         <div className="trending-deals-grid">
-          {TRENDING_DEALS.map((deal) => (
-            <article key={deal.city} className="trending-deal-card">
+          {TRENDING_DEALS.map((deal, index) => (
+            <article
+              key={deal.city}
+              className="trending-deal-card"
+              style={{ ['--deal-index' as string]: index }}
+            >
               <img
                 className="trending-deal-image"
                 src={deal.image}
@@ -1868,13 +2009,14 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   searchPanelWrap: {
     width: '100%',
-    maxWidth: '920px',
+    maxWidth: '1000px',
   },
   searchPanel: {
     background: '#fff',
     border: 'none',
-    borderRadius: 0,
+    borderRadius: '0 0 12px 12px',
     boxShadow: 'none',
+    overflow: 'visible',
   },
   advancedSection: {
     borderTop: '1px solid #f0f0f0',
@@ -1980,11 +2122,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#6366f1',
   },
   filterMenu: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    marginTop: '6px',
-    minWidth: '100%',
     width: 'max-content',
     background: '#fff',
     borderRadius: '8px',
@@ -1992,7 +2129,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: 0,
     listStyle: 'none',
     margin: 0,
-    zIndex: 20,
     whiteSpace: 'nowrap',
     overflow: 'hidden',
   },
@@ -2017,16 +2153,11 @@ const styles: { [key: string]: React.CSSProperties } = {
     background: '#ececec',
   },
   passengerMenu: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    marginTop: '6px',
     minWidth: '280px',
     background: '#fff',
     borderRadius: '12px',
     boxShadow: '0 8px 30px rgba(99, 102, 241, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06)',
     padding: '18px 20px',
-    zIndex: 20,
   },
   passengerRow: {
     display: 'flex',
@@ -2092,8 +2223,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     alignItems: 'stretch',
     gap: '10px',
-    padding: '6px 20px 16px',
+    padding: '6px 20px 24px',
     flexWrap: 'wrap',
+    overflow: 'visible',
   },
   routeBlock: {
     display: 'grid',
@@ -2105,6 +2237,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '10px',
     padding: '6px 8px',
     columnGap: '4px',
+    overflow: 'visible',
   },
   routeSwapSlot: {
     display: 'flex',
@@ -2122,6 +2255,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     minWidth: 0,
     gap: '8px',
     padding: '0 8px',
+    overflow: 'visible',
   },
   airportAutocomplete: {
     position: 'relative',
@@ -2130,10 +2264,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     overflow: 'visible',
   },
   suggestionMenu: {
-    position: 'absolute',
-    top: 'calc(100% + 6px)',
-    left: '-8px',
-    right: '-8px',
     margin: 0,
     padding: '6px 0',
     listStyle: 'none',
@@ -2141,7 +2271,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: '1px solid #e0e0e0',
     borderRadius: '10px',
     boxShadow: '0 8px 24px rgba(60, 64, 67, 0.18)',
-    zIndex: 30,
     maxHeight: '320px',
     overflowY: 'auto',
   },

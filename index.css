@@ -62,7 +62,7 @@ body {
 }
 
 .flighthero-logo--hero {
-  height: clamp(2rem, 5vw, 2.75rem);
+  height: clamp(3rem, 8vw, 4.25rem);
   margin: 0 auto;
 }
 
@@ -118,7 +118,7 @@ body {
   justify-content: center;
   min-height: 100vh;
   padding: 104px clamp(16px, 2.5vw, 40px) 64px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .hero-section--searched {
@@ -166,7 +166,15 @@ body {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: min(920px, 100%);
+  max-width: min(1000px, 100%);
+  overflow: visible;
+}
+
+.hero-search {
+  width: 100%;
+  overflow: visible;
+  position: relative;
+  z-index: 2;
 }
 
 .hero-copy {
@@ -207,10 +215,6 @@ body {
   color: rgba(255, 255, 255, 0.78);
 }
 
-.hero-search {
-  width: 100%;
-}
-
 .trending-deals {
   padding: 56px clamp(16px, 2.5vw, 40px) 72px;
   background: #f9fafb;
@@ -218,6 +222,15 @@ body {
 
 .trending-deals-inner {
   width: 100%;
+}
+
+.trending-deals-header {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.trending-deals--visible .trending-deals-header {
+  animation: trending-deals-rise-in 0.75s ease forwards;
 }
 
 .trending-deals-title {
@@ -246,7 +259,38 @@ body {
   border-radius: 14px;
   overflow: hidden;
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1);
+  opacity: 0;
+  transform: translateY(28px);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.trending-deals--visible .trending-deal-card {
+  animation: trending-deals-rise-in 0.7s ease forwards;
+  animation-delay: calc(0.12s + var(--deal-index, 0) * 0.1s);
+}
+
+@keyframes trending-deals-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trending-deals-header,
+  .trending-deal-card {
+    opacity: 1;
+    transform: none;
+  }
+
+  .trending-deals--visible .trending-deals-header,
+  .trending-deals--visible .trending-deal-card {
+    animation: none;
+  }
 }
 
 .trending-deal-card:hover {
@@ -469,8 +513,10 @@ html {
   display: flex;
   align-items: stretch;
   width: 100%;
-  background: #fff;
+  background: #f3f4f6;
   border-bottom: 1px solid #e5e7eb;
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
 }
 
 .search-mode-option {
@@ -478,7 +524,7 @@ html {
   margin: 0;
   padding: 12px 14px;
   border: none;
-  background: #f9fafb;
+  background: transparent;
   color: #6b7280;
   font-size: 14px;
   font-weight: 600;
@@ -486,18 +532,20 @@ html {
   letter-spacing: -0.01em;
   text-align: center;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
   -webkit-tap-highlight-color: transparent;
+  box-shadow: inset 0 -3px 0 transparent;
 }
 
 .search-mode-option-active {
   background: #fff;
-  color: #111827;
+  color: #4338ca;
+  box-shadow: inset 0 -3px 0 #6366f1;
 }
 
 .search-mode-option:not(.search-mode-option-active):hover {
-  background: #f3f4f6;
-  color: #374151;
+  background: #eef2ff;
+  color: #4f46e5;
 }
 
 .search-mode-option:focus-visible {
@@ -523,6 +571,29 @@ html {
 
 .search-panel {
   background: #fff;
+  border-radius: 0 0 12px 12px;
+  overflow: visible;
+}
+
+.search-panel .advanced-section:last-child {
+  border-radius: 0 0 12px 12px;
+}
+
+.suggestion-menu {
+  z-index: 300;
+  position: fixed;
+  min-width: 280px;
+}
+
+.date-picker-popover {
+  z-index: 300;
+  position: fixed;
+}
+
+.filter-menu,
+.passenger-menu {
+  z-index: 300;
+  position: fixed;
 }
 
 .max-taxes-slider {
@@ -649,6 +720,10 @@ html {
   z-index: 1;
   cursor: pointer;
   transition: border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.swap-btn svg {
+  transform: rotate(90deg);
 }
 
 .route-block {
@@ -835,13 +910,6 @@ html {
     width: 100%;
   }
 
-  .advanced-controls-row .filter-menu {
-    left: 0;
-    right: 0;
-    width: 100%;
-    min-width: 0;
-  }
-
   .max-taxes-control {
     width: 100%;
   }
@@ -962,11 +1030,6 @@ html {
 
   .date-block {
     flex-wrap: wrap;
-  }
-
-  .date-block .date-picker-popover {
-    left: 0;
-    transform: none;
   }
 
   .date-picker-nav:hover:not(:disabled) {
