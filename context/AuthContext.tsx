@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from '../lib/firebase';
 import {
@@ -11,7 +18,7 @@ import {
 } from '../lib/auth';
 import {
   mergeProfilePreferences,
-  mergePreferencesPatch,
+  readLocalPreferences,
   writeLocalPreferences,
 } from '../lib/userPreferences';
 
@@ -26,10 +33,39 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function resolveAccountMeta(
+  authEmail: string,
+  authDisplayName: string,
+  profileData?: Partial<UserProfile> | null,
+) {
+  return {
+    email: profileData?.email || authEmail,
+    displayName: profileData?.displayName || authDisplayName,
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(isFirebaseConfigured());
+  const latestPreferencesRef = useRef<UserPreferences>({});
+  const activeSyncUserRef = useRef<string | null>(null);
+  const syncContextRef = useRef({ email: '', displayName: '' });
+  const cloudSyncRef = useRef<Promise<void>>(Promise.resolve());
+
+  const resetSyncState = () => {
+    activeSyncUserRef.current = null;
+    syncContextRef.current = { email: '', displayName: '' };
+    latestPreferencesRef.current = {};
+    cloudSyncRef.current = Promise.resolve();
+  };
+
+  const setSyncContext = (uid: string, email: string, displayName: string) => {
+    activeSyncUserRef.current = uid;
+    syncContextRef.current = { email, displayName };
+    latestPreferencesRef.current = {};
+    cloudSyncRef.current = Promise.resolve();
+  };
 
   useEffect(() => {
     if (!auth) {
@@ -40,28 +76,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
+        const authEmail = firebaseUser.email ?? '';
+        const authDisplayName = firebaseUser.displayName ?? '';
+        setSyncContext(firebaseUser.uid, authEmail, authDisplayName);
+
         try {
           const nextProfile = await getUserProfile(firebaseUser.uid);
+          if (activeSyncUserRef.current !== firebaseUser.uid) {
+            return;
+          }
+
           const preferences = mergeProfilePreferences(
             firebaseUser.uid,
             nextProfile?.preferences,
           );
-          setProfile(nextProfile
-            ? { ...nextProfile, preferences }
-            : {
-              email: firebaseUser.email ?? '',
-              displayName: firebaseUser.displayName ?? '',
-              preferences,
-            });
-        } catch {
-          const preferences = mergeProfilePreferences(firebaseUser.uid);
+          latestPreferencesRef.current = preferences;
+          const { email, displayName } = resolveAccountMeta(authEmail, authDisplayName, nextProfile);
+          syncContextRef.current = { email, displayName };
           setProfile({
-            email: firebaseUser.email ?? '',
-            displayName: firebaseUser.displayName ?? '',
+            email,
+            displayName,
+            preferences,
+            createdAt: nextProfile?.createdAt,
+            updatedAt: nextProfile?.updatedAt,
+            lastLoginAt: nextProfile?.lastLoginAt,
+          });
+        } catch {
+          if (activeSyncUserRef.current !== firebaseUser.uid) {
+            return;
+          }
+
+          const preferences = mergeProfilePreferences(firebaseUser.uid);
+          latestPreferencesRef.current = preferences;
+          setProfile({
+            email: authEmail,
+            displayName: authDisplayName,
             preferences,
           });
         }
       } else {
+        resetSyncState();
         setProfile(null);
       }
       setLoading(false);
@@ -85,35 +139,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('You must be signed in to update preferences.');
       }
 
-      const merged = mergePreferencesPatch(user.uid, profile?.preferences, patch);
-      writeLocalPreferences(user.uid, merged);
+      const syncUserId = user.uid;
+      const syncMeta = resolveAccountMeta(
+        user.email ?? '',
+        user.displayName ?? '',
+        profile,
+      );
+      const preferenceBase = Object.keys(latestPreferencesRef.current).length > 0
+        ? latestPreferencesRef.current
+        : (readLocalPreferences(syncUserId) ?? profile?.preferences ?? {});
+      const merged: UserPreferences = {
+        ...preferenceBase,
+        ...patch,
+      };
+      latestPreferencesRef.current = merged;
+      writeLocalPreferences(syncUserId, merged);
       setProfile((current) => (current
         ? { ...current, preferences: merged }
         : {
           preferences: merged,
-          email: user.email ?? '',
-          displayName: user.displayName ?? '',
+          email: syncMeta.email,
+          displayName: syncMeta.displayName,
         }));
 
       if (!isFirebaseConfigured()) {
         return null;
       }
 
+      const syncJob = cloudSyncRef.current.then(async () => {
+        if (activeSyncUserRef.current !== syncUserId) {
+          return;
+        }
+
+        const cloudPreferences = await patchUserPreferences(syncUserId, patch, syncMeta);
+
+        if (activeSyncUserRef.current !== syncUserId) {
+          return;
+        }
+
+        latestPreferencesRef.current = {
+          ...cloudPreferences,
+          ...latestPreferencesRef.current,
+        };
+        writeLocalPreferences(syncUserId, latestPreferencesRef.current);
+      });
+      cloudSyncRef.current = syncJob.catch(() => undefined);
+
       try {
-        const cloudPreferences = await patchUserPreferences(user.uid, patch, {
-          email: user.email,
-          displayName: user.displayName ?? profile?.displayName,
-        });
-        setProfile((current) => (current
-          ? { ...current, preferences: cloudPreferences }
-          : {
-            preferences: cloudPreferences,
-            email: user.email ?? '',
-            displayName: user.displayName ?? '',
-          }));
-        writeLocalPreferences(user.uid, cloudPreferences);
+        await syncJob;
+        if (activeSyncUserRef.current !== syncUserId) {
+          return null;
+        }
         return null;
       } catch (error) {
+        if (activeSyncUserRef.current !== syncUserId) {
+          return null;
+        }
         return getFirestoreErrorMessage(error);
       }
     },
