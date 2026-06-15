@@ -31,3 +31,14 @@ export function mergeProfilePreferences(
     ...profilePreferences,
   };
 }
+
+export function mergePreferencesPatch(
+  uid: string,
+  profilePreferences: UserPreferences | undefined,
+  patch: Partial<UserPreferences>,
+): UserPreferences {
+  return {
+    ...mergeProfilePreferences(uid, profilePreferences),
+    ...patch,
+  };
+}

@@ -44,10 +44,7 @@ export default function ProfilePage() {
     setPreferenceNotice('');
     setSavingPreference(true);
     try {
-      const notice = await updatePreferences({
-        ...profile?.preferences,
-        militaryZuluTime: enabled,
-      });
+      const notice = await updatePreferences({ militaryZuluTime: enabled });
       if (notice) {
         setPreferenceNotice(notice);
       }

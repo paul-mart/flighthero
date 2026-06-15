@@ -88,6 +88,29 @@ export async function updateUserPreferences(
   }, { merge: true });
 }
 
+export async function patchUserPreferences(
+  uid: string,
+  patch: Partial<UserPreferences>,
+  user?: { email?: string | null; displayName?: string | null },
+): Promise<UserPreferences> {
+  const { db: firestore } = requireAuth();
+  const userRef = doc(firestore, 'users', uid);
+  const snapshot = await getDoc(userRef);
+  const existing = snapshot.exists()
+    ? ((snapshot.data() as UserProfile).preferences ?? {})
+    : {};
+  const preferences = { ...existing, ...patch };
+
+  await setDoc(userRef, {
+    email: user?.email ?? '',
+    displayName: user?.displayName ?? '',
+    preferences,
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+
+  return preferences;
+}
+
 export function getFirestoreErrorMessage(error: unknown): string {
   const code = typeof error === 'object' && error && 'code' in error
     ? String((error as { code: string }).code)

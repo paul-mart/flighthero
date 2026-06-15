@@ -4,13 +4,14 @@ import { auth, isFirebaseConfigured } from '../lib/firebase';
 import {
   getUserProfile,
   signOut as authSignOut,
-  updateUserPreferences,
+  patchUserPreferences,
   getFirestoreErrorMessage,
   type UserPreferences,
   type UserProfile,
 } from '../lib/auth';
 import {
   mergeProfilePreferences,
+  mergePreferencesPatch,
   writeLocalPreferences,
 } from '../lib/userPreferences';
 
@@ -20,7 +21,7 @@ interface AuthContextValue {
   loading: boolean;
   configured: boolean;
   signOut: () => Promise<void>;
-  updatePreferences: (preferences: UserPreferences) => Promise<string | null>;
+  updatePreferences: (patch: Partial<UserPreferences>) => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -79,16 +80,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await authSignOut();
       }
     },
-    updatePreferences: async (preferences: UserPreferences) => {
+    updatePreferences: async (patch: Partial<UserPreferences>) => {
       if (!user) {
         throw new Error('You must be signed in to update preferences.');
       }
 
-      writeLocalPreferences(user.uid, preferences);
+      const merged = mergePreferencesPatch(user.uid, profile?.preferences, patch);
+      writeLocalPreferences(user.uid, merged);
       setProfile((current) => (current
-        ? { ...current, preferences }
+        ? { ...current, preferences: merged }
         : {
-          preferences,
+          preferences: merged,
           email: user.email ?? '',
           displayName: user.displayName ?? '',
         }));
@@ -98,10 +100,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        await updateUserPreferences(user.uid, preferences, {
+        const cloudPreferences = await patchUserPreferences(user.uid, patch, {
           email: user.email,
           displayName: user.displayName ?? profile?.displayName,
         });
+        setProfile((current) => (current
+          ? { ...current, preferences: cloudPreferences }
+          : {
+            preferences: cloudPreferences,
+            email: user.email ?? '',
+            displayName: user.displayName ?? '',
+          }));
+        writeLocalPreferences(user.uid, cloudPreferences);
         return null;
       } catch (error) {
         return getFirestoreErrorMessage(error);
