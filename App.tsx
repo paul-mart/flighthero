@@ -5,6 +5,13 @@ import DatePicker from './DatePicker';
 import { FlightHeroLogo } from './components/FlightHeroLogo';
 import { TopNavbar } from './components/TopNavbar';
 import { useAuth } from './context/AuthContext';
+import {
+  calculateCpp,
+  formatCpp,
+  GRADE_LABELS,
+  rateTransferPartners,
+  type RedemptionGrade,
+} from './lib/cpp';
 import { formatFlightTimeRange, getDepartureSortMinutes } from './lib/flightTimes';
 import { ChevronDownIcon, PlaneArriveIcon, PlaneDepartIcon, CalendarIcon, SwapIcon, SearchIcon, ArrowRightIcon } from './icons';
 
@@ -958,6 +965,7 @@ interface Flight {
   duration_minutes?: number;
   stops: number;
   cash_price: number;
+  cash_price_matched?: boolean;
   return_departure_time?: string;
   return_arrival_time?: string;
   return_departure_timezone?: string;
@@ -1176,6 +1184,23 @@ function buildCashBookingUrl(
   );
 }
 
+function RedemptionGradeBadge({ grade }: { grade: RedemptionGrade }) {
+  return (
+    <span className={`redemption-grade redemption-grade--${grade}`}>
+      {GRADE_LABELS[grade]}
+    </span>
+  );
+}
+
+function getFlightCpp(flight: Flight): number | null {
+  if (!flight.award_details || flight.cash_price <= 0) return null;
+  return calculateCpp(
+    flight.cash_price,
+    flight.award_details.points_required,
+    flight.award_details.taxes_and_fees,
+  );
+}
+
 function FlightDetailModal({
   flight,
   searchType,
@@ -1191,6 +1216,9 @@ function FlightDetailModal({
   militaryZuluTime: boolean;
   onClose: () => void;
 }) {
+  const { profile } = useAuth();
+  const cppValuations = profile?.preferences?.cppValuations;
+
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
@@ -1207,6 +1235,10 @@ function FlightDetailModal({
   );
   const cashBookingUrl = buildCashBookingUrl(flight, tripType, returnDate);
   const programName = flight.award_details?.mileage_program ?? 'mileage program';
+  const flightCpp = getFlightCpp(flight);
+  const partnerRatings = flight.award_details
+    ? rateTransferPartners(flight.award_details.transfer_partners, flightCpp, cppValuations)
+    : [];
   const hasReturn = tripType === 'round-trip'
     && (flight.return_flight_number || flight.return_departure_time);
 
@@ -1288,15 +1320,36 @@ function FlightDetailModal({
               {flight.award_details.mileage_program && (
                 <p style={styles.flightDetailMeta}>{flight.award_details.mileage_program}</p>
               )}
+              {flight.cash_price_matched && flight.cash_price > 0 && (
+                <p style={styles.flightDetailMeta}>
+                  Comparable cash fare: {formatPrice(flight.cash_price)}
+                </p>
+              )}
+              {flightCpp != null && (
+                <p style={styles.flightDetailMeta}>
+                  Redemption value: {formatCpp(flightCpp)} per point
+                </p>
+              )}
               {flight.award_details.seats_remaining != null && flight.award_details.seats_remaining > 0 && (
                 <p style={styles.flightDetailMeta}>
                   {flight.award_details.seats_remaining} seat{flight.award_details.seats_remaining === 1 ? '' : 's'} left
                 </p>
               )}
-              {flight.award_details.transfer_partners.length > 0 && (
+              {partnerRatings.length > 0 && (
                 <div style={styles.flightDetailPartners}>
-                  <span style={styles.flightDetailMeta}>Transfer partners: </span>
-                  {flight.award_details.transfer_partners.join(', ')}
+                  <p style={styles.flightDetailMeta}>Transfer partners</p>
+                  <ul className="redemption-partner-list">
+                    {partnerRatings.map((rating) => (
+                      <li key={rating.partner} className="redemption-partner-item">
+                        <span className="redemption-partner-name">{rating.partner}</span>
+                        {rating.grade ? (
+                          <RedemptionGradeBadge grade={rating.grade} />
+                        ) : (
+                          <span className="redemption-partner-unrated">Grade unavailable</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </>
@@ -1917,6 +1970,12 @@ export default function App() {
                           {flight.award_details.points_required.toLocaleString()} pts
                         </div>
                         <div style={styles.subtext}>+ {formatPrice(flight.award_details.taxes_and_fees)} fees</div>
+                        {flight.cash_price_matched && flight.cash_price > 0 && (
+                          <div style={styles.subtext}>~{formatPrice(flight.cash_price)} cash</div>
+                        )}
+                        {getFlightCpp(flight) != null && (
+                          <div style={styles.cppText}>{formatCpp(getFlightCpp(flight)!)} / pt</div>
+                        )}
                         {flight.award_details.mileage_program && (
                           <div style={styles.programTag}>{flight.award_details.mileage_program}</div>
                         )}
@@ -2663,6 +2722,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   priceText: { fontSize: '28px', fontWeight: 700, color: '#15803d', letterSpacing: '-0.02em' },
   priceHint: { fontSize: '11px', color: '#6b7280', marginBottom: '2px', textAlign: 'right', fontWeight: 500 },
   pointsText: { fontSize: '26px', fontWeight: 700, color: '#4338ca', letterSpacing: '-0.02em' },
+  cppText: { fontSize: '14px', fontWeight: 600, color: '#059669', marginTop: 2 },
   programTag: {
     fontSize: '12px',
     color: '#4338ca',

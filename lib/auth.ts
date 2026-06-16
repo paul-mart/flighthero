@@ -16,6 +16,7 @@ import { auth, db } from './firebase';
 
 export interface UserPreferences {
   militaryZuluTime?: boolean;
+  cppValuations?: Record<string, number>;
 }
 
 export interface UserProfile {
@@ -99,7 +100,13 @@ export async function patchUserPreferences(
   const existing = snapshot.exists()
     ? ((snapshot.data() as UserProfile).preferences ?? {})
     : {};
-  const preferences = { ...existing, ...patch };
+  const preferences: UserPreferences = { ...existing, ...patch };
+  if (patch.cppValuations) {
+    preferences.cppValuations = {
+      ...(existing.cppValuations ?? {}),
+      ...patch.cppValuations,
+    };
+  }
 
   await setDoc(userRef, {
     email: user?.email ?? '',

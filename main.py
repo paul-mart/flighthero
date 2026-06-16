@@ -18,6 +18,7 @@ from api_security import (
 )
 from airport_places import data_available as airport_data_available
 from airport_places import search_place_suggestions as airport_place_suggestions
+from flight_matching import enrich_awards_with_cash_prices
 from seats_aero_client import (
     SeatsAeroConfigError,
     SeatsAeroError,
@@ -28,6 +29,7 @@ from serpapi_client import (
     SerpAPIError,
     build_booking_redirect_html,
     build_google_flights_search_url,
+    credentials_configured as serpapi_configured,
     fetch_preferred_booking_request,
     fetch_return_legs,
     normalize_airport_code,
@@ -95,6 +97,20 @@ def search_flights(
                 return_date=effective_return_date,
                 cabin_class=cabin_class,
             )
+            if serpapi_configured() and results:
+                try:
+                    cash_offers = search_flight_offers(
+                        origin=origin,
+                        destination=destination,
+                        departure_date=departure_date,
+                        adults=adults,
+                        children=children,
+                        return_date=effective_return_date,
+                        cabin_class=cabin_class,
+                    )
+                    results = enrich_awards_with_cash_prices(results, cash_offers)
+                except SerpAPIError:
+                    pass
         else:
             results = search_flight_offers(
                 origin=origin,

@@ -152,6 +152,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...preferenceBase,
         ...patch,
       };
+      if (patch.cppValuations) {
+        merged.cppValuations = {
+          ...(preferenceBase.cppValuations ?? {}),
+          ...patch.cppValuations,
+        };
+      }
       latestPreferencesRef.current = merged;
       writeLocalPreferences(syncUserId, merged);
       setProfile((current) => (current
@@ -171,7 +177,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const cloudPreferences = await patchUserPreferences(syncUserId, patch, syncMeta);
+        const cloudPatch = patch.cppValuations
+          ? { ...patch, cppValuations: merged.cppValuations }
+          : patch;
+        const cloudPreferences = await patchUserPreferences(syncUserId, cloudPatch, syncMeta);
 
         if (activeSyncUserRef.current !== syncUserId) {
           return;

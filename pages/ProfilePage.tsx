@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ProfileAvatar } from '../components/ProfileAvatar';
 import { TopNavbar } from '../components/TopNavbar';
 import { useAuth } from '../context/AuthContext';
+import { TRANSFER_PARTNER_OPTIONS } from '../lib/cpp';
 
 type ProfileSection = 'settings' | 'preferences';
 
@@ -20,6 +21,7 @@ export default function ProfilePage() {
   const [preferenceNotice, setPreferenceNotice] = useState('');
 
   const militaryZuluTime = profile?.preferences?.militaryZuluTime ?? false;
+  const cppValuations = profile?.preferences?.cppValuations ?? {};
 
   useEffect(() => {
     if (!loading && !user) {
@@ -50,6 +52,31 @@ export default function ProfilePage() {
       }
     } catch (error) {
       setPreferenceNotice(error instanceof Error ? error.message : 'Could not save your preference. Please try again.');
+    } finally {
+      setSavingPreference(false);
+    }
+  };
+
+  const handleCppChange = async (partnerKey: string, rawValue: string) => {
+    const parsed = Number.parseFloat(rawValue);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return;
+    }
+
+    setPreferenceNotice('');
+    setSavingPreference(true);
+    try {
+      const notice = await updatePreferences({
+        cppValuations: {
+          ...cppValuations,
+          [partnerKey]: Math.round(parsed * 100) / 100,
+        },
+      });
+      if (notice) {
+        setPreferenceNotice(notice);
+      }
+    } catch (error) {
+      setPreferenceNotice(error instanceof Error ? error.message : 'Could not save your CPP value.');
     } finally {
       setSavingPreference(false);
     }
@@ -151,6 +178,35 @@ export default function ProfilePage() {
                   </span>
                 </label>
               </div>
+
+              <div className="profile-cpp-section">
+                <h3 className="profile-cpp-title">Point currency value (CPP)</h3>
+                <p className="profile-cpp-description">
+                  Set your personal cents-per-point benchmark for each transfer partner.
+                  Redemption grades on award flights compare the flight&apos;s CPP against these values.
+                </p>
+                <div className="profile-cpp-grid">
+                  {TRANSFER_PARTNER_OPTIONS.map((partner) => (
+                    <label key={partner.key} className="profile-cpp-field">
+                      <span className="profile-cpp-label">{partner.label}</span>
+                      <span className="profile-cpp-input-wrap">
+                        <input
+                          type="number"
+                          className="profile-cpp-input"
+                          min={0.1}
+                          max={10}
+                          step={0.05}
+                          disabled={savingPreference}
+                          defaultValue={cppValuations[partner.key] ?? partner.defaultCpp}
+                          onBlur={(event) => { void handleCppChange(partner.key, event.target.value); }}
+                        />
+                        <span className="profile-cpp-suffix">¢ / pt</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               {preferenceNotice && (
                 <p className="profile-preference-notice" role="status">{preferenceNotice}</p>
               )}
