@@ -171,9 +171,9 @@ export default function ProfilePage() {
                     onChange={(event) => { void handleMilitaryZuluToggle(event.target.checked); }}
                   />
                   <span className="profile-preference-copy">
-                    <span className="profile-preference-label">Military and Zulu time</span>
+                    <span className="profile-preference-label">Military time (24-hour)</span>
                     <span className="profile-preference-description">
-                      Show flight times in 24-hour format with Zulu (UTC), e.g. 0830 EST (1230Z).
+                      Show flight times in 24-hour format, e.g. 08:30 EST – 14:30 JST.
                     </span>
                   </span>
                 </label>

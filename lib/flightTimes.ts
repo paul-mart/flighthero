@@ -4,6 +4,11 @@ export interface FlightTimeParts {
   at?: string;
 }
 
+export interface FormattedFlightTime {
+  time: string;
+  timezone: string;
+}
+
 function convert12ToMilitary(time: string): string {
   const match = time.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
   if (!match) return time.trim();
@@ -18,53 +23,53 @@ function convert12ToMilitary(time: string): string {
     hours += 12;
   }
 
-  return `${hours.toString().padStart(2, '0')}${minutes}`;
-}
-
-function formatZuluFromIso(at: string): string {
-  const parsed = new Date(at);
-  if (Number.isNaN(parsed.getTime())) return '';
-  const hours = parsed.getUTCHours().toString().padStart(2, '0');
-  const minutes = parsed.getUTCMinutes().toString().padStart(2, '0');
-  return `${hours}${minutes}Z`;
+  return `${hours.toString().padStart(2, '0')}:${minutes}`;
 }
 
 function formatMilitaryFromIso(at: string): string {
   const match = at.match(/T(\d{2}):(\d{2})/);
   if (!match) return '';
-  return `${match[1]}${match[2]}`;
+  return `${match[1]}:${match[2]}`;
+}
+
+function extractIsoDate(at: string): string | null {
+  const match = at.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : null;
+}
+
+export function isNextDayArrival(departureAt?: string, arrivalAt?: string): boolean {
+  if (!departureAt || !arrivalAt) return false;
+  const departureDate = extractIsoDate(departureAt);
+  const arrivalDate = extractIsoDate(arrivalAt);
+  if (!departureDate || !arrivalDate) return false;
+  return arrivalDate > departureDate;
+}
+
+export function formatSingleFlightTimeParts(
+  { time, timezone, at }: FlightTimeParts,
+  militaryTime: boolean,
+): FormattedFlightTime {
+  const label = time?.trim() ?? '';
+  const tz = timezone?.trim() ?? '';
+
+  if (!label) {
+    return { time: '', timezone: tz };
+  }
+
+  const displayTime = militaryTime
+    ? ((at ? formatMilitaryFromIso(at) : '') || convert12ToMilitary(label))
+    : label;
+
+  return { time: displayTime, timezone: tz };
 }
 
 export function formatSingleFlightTime(
-  { time, timezone, at }: FlightTimeParts,
-  militaryZulu: boolean,
+  parts: FlightTimeParts,
+  militaryTime: boolean,
 ): string {
-  const label = time?.trim();
-  if (!label) return '';
-
-  const tz = timezone?.trim() ?? '';
-
-  if (!militaryZulu) {
-    return tz ? `${label} ${tz}` : label;
-  }
-
-  const military = (at ? formatMilitaryFromIso(at) : '') || convert12ToMilitary(label);
-  const zulu = at ? formatZuluFromIso(at) : '';
-
-  if (zulu && tz) return `${military} ${tz} (${zulu})`;
-  if (tz) return `${military} ${tz}`;
-  if (zulu) return `${military} (${zulu})`;
-  return military;
-}
-
-export function formatFlightTimeRange(
-  departure: FlightTimeParts,
-  arrival: FlightTimeParts,
-  militaryZulu: boolean,
-): string {
-  if (!departure.time?.trim() || !arrival.time?.trim()) return '';
-
-  return `${formatSingleFlightTime(departure, militaryZulu)} – ${formatSingleFlightTime(arrival, militaryZulu)}`;
+  const { time, timezone } = formatSingleFlightTimeParts(parts, militaryTime);
+  if (!time) return '';
+  return timezone ? `${time} ${timezone}` : time;
 }
 
 export function getDepartureSortMinutes(flight: {

@@ -1734,3 +1734,12 @@ html {
   background: #fee2e2;
   color: #b91c1c;
 }
+
+.flight-day-offset {
+  margin-left: 1px;
+  font-size: 0.68em;
+  font-weight: 700;
+  line-height: 0;
+  color: #6b7280;
+  vertical-align: super;
+}

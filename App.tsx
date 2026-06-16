@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { apiFetch, apiUrl } from './api';
 import DatePicker from './DatePicker';
 import { FlightHeroLogo } from './components/FlightHeroLogo';
+import { FlightTimeRange } from './components/FlightTimeRange';
 import { TopNavbar } from './components/TopNavbar';
 import { useAuth } from './context/AuthContext';
 import {
@@ -12,7 +13,7 @@ import {
   rateTransferPartners,
   type RedemptionGrade,
 } from './lib/cpp';
-import { formatFlightTimeRange, getDepartureSortMinutes } from './lib/flightTimes';
+import { getDepartureSortMinutes } from './lib/flightTimes';
 import { ChevronDownIcon, PlaneArriveIcon, PlaneDepartIcon, CalendarIcon, SwapIcon, SearchIcon, ArrowRightIcon } from './icons';
 
 interface AwardDetails {
@@ -1075,38 +1076,6 @@ function getDepartureMinutes(flight: Flight): number | null {
   return getDepartureSortMinutes(flight);
 }
 
-function formatOutboundTimes(flight: Flight, militaryZulu: boolean): string {
-  return formatFlightTimeRange(
-    {
-      time: flight.departure_time,
-      timezone: flight.departure_timezone,
-      at: flight.departure_at,
-    },
-    {
-      time: flight.arrival_time,
-      timezone: flight.arrival_timezone,
-      at: flight.arrival_at,
-    },
-    militaryZulu,
-  );
-}
-
-function formatReturnTimes(flight: Flight, militaryZulu: boolean): string {
-  return formatFlightTimeRange(
-    {
-      time: flight.return_departure_time,
-      timezone: flight.return_departure_timezone,
-      at: flight.return_departure_at,
-    },
-    {
-      time: flight.return_arrival_time,
-      timezone: flight.return_arrival_timezone,
-      at: flight.return_arrival_at,
-    },
-    militaryZulu,
-  );
-}
-
 function sortFlights(flights: Flight[], sortOption: SortOption, searchType: 'cash' | 'points'): Flight[] {
   const sorted = [...flights];
   sorted.sort((a, b) => {
@@ -1277,9 +1246,21 @@ function FlightDetailModal({
         <div style={styles.flightDetailSection}>
           <h3 style={styles.flightDetailSectionTitle}>Outbound</h3>
           <p style={styles.flightDetailLine}>
-            {flight.departure_time && flight.arrival_time
-              ? formatOutboundTimes(flight, militaryZuluTime)
-              : 'Times unavailable'}
+            {flight.departure_time && flight.arrival_time ? (
+              <FlightTimeRange
+                departure={{
+                  time: flight.departure_time,
+                  timezone: flight.departure_timezone,
+                  at: flight.departure_at,
+                }}
+                arrival={{
+                  time: flight.arrival_time,
+                  timezone: flight.arrival_timezone,
+                  at: flight.arrival_at,
+                }}
+                militaryTime={militaryZuluTime}
+              />
+            ) : 'Times unavailable'}
           </p>
           <p style={styles.flightDetailMeta}>
             {flightDetailLine(flight.carrier, flight.flight_number, flight.duration, flight.stops)}
@@ -1290,9 +1271,21 @@ function FlightDetailModal({
           <div style={styles.flightDetailSection}>
             <h3 style={styles.flightDetailSectionTitle}>Return</h3>
             <p style={styles.flightDetailLine}>
-              {flight.return_departure_time && flight.return_arrival_time
-                ? formatReturnTimes(flight, militaryZuluTime)
-                : 'Times unavailable'}
+              {flight.return_departure_time && flight.return_arrival_time ? (
+                <FlightTimeRange
+                  departure={{
+                    time: flight.return_departure_time,
+                    timezone: flight.return_departure_timezone,
+                    at: flight.return_departure_at,
+                  }}
+                  arrival={{
+                    time: flight.return_arrival_time,
+                    timezone: flight.return_arrival_timezone,
+                    at: flight.return_arrival_at,
+                  }}
+                  militaryTime={militaryZuluTime}
+                />
+              ) : 'Times unavailable'}
             </p>
             <p style={styles.flightDetailMeta}>
               {flightDetailLine(
@@ -1884,9 +1877,20 @@ export default function App() {
                   </div>
                   <div className="flight-meta-block" style={styles.flightMetaBlock}>
                     {flight.departure_time && flight.arrival_time && (
-                      <span style={styles.timeText}>
-                        {formatOutboundTimes(flight, militaryZuluTime)}
-                      </span>
+                      <FlightTimeRange
+                        style={styles.timeText}
+                        departure={{
+                          time: flight.departure_time,
+                          timezone: flight.departure_timezone,
+                          at: flight.departure_at,
+                        }}
+                        arrival={{
+                          time: flight.arrival_time,
+                          timezone: flight.arrival_timezone,
+                          at: flight.arrival_at,
+                        }}
+                        militaryTime={militaryZuluTime}
+                      />
                     )}
                     <span style={styles.subtext}>
                       {flightDetailLine(flight.carrier, flight.flight_number, flight.duration, flight.stops)}
@@ -1903,9 +1907,20 @@ export default function App() {
                           </div>
                           <div className="flight-meta-block" style={styles.flightMetaBlock}>
                             {flight.return_departure_time && flight.return_arrival_time && (
-                              <span style={styles.timeText}>
-                                {formatReturnTimes(flight, militaryZuluTime)}
-                              </span>
+                              <FlightTimeRange
+                                style={styles.timeText}
+                                departure={{
+                                  time: flight.return_departure_time,
+                                  timezone: flight.return_departure_timezone,
+                                  at: flight.return_departure_at,
+                                }}
+                                arrival={{
+                                  time: flight.return_arrival_time,
+                                  timezone: flight.return_arrival_timezone,
+                                  at: flight.return_arrival_at,
+                                }}
+                                militaryTime={militaryZuluTime}
+                              />
                             )}
                             <span style={styles.subtext}>
                               {flightDetailLine(
@@ -1928,9 +1943,20 @@ export default function App() {
                       {flight.return_flight_number ? (
                         <div className="flight-meta-block" style={styles.flightMetaBlock}>
                           {flight.return_departure_time && flight.return_arrival_time && (
-                            <span style={styles.timeText}>
-                              {formatReturnTimes(flight, militaryZuluTime)}
-                            </span>
+                            <FlightTimeRange
+                              style={styles.timeText}
+                              departure={{
+                                time: flight.return_departure_time,
+                                timezone: flight.return_departure_timezone,
+                                at: flight.return_departure_at,
+                              }}
+                              arrival={{
+                                time: flight.return_arrival_time,
+                                timezone: flight.return_arrival_timezone,
+                                at: flight.return_arrival_at,
+                              }}
+                              militaryTime={militaryZuluTime}
+                            />
                           )}
                           <span style={styles.subtext}>
                             {flightDetailLine(
