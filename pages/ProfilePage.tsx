@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ProfileAvatar } from '../components/ProfileAvatar';
 import { TopNavbar } from '../components/TopNavbar';
@@ -12,6 +12,25 @@ const PROFILE_NAV: { id: ProfileSection; label: string }[] = [
   { id: 'preferences', label: 'Preferences' },
 ];
 
+function buildCppDraft(saved: Record<string, number> = {}): Record<string, number> {
+  const draft: Record<string, number> = {};
+  for (const partner of TRANSFER_PARTNER_OPTIONS) {
+    draft[partner.key] = saved[partner.key] ?? partner.defaultCpp;
+  }
+  return draft;
+}
+
+function cppValuesEqual(
+  left: Record<string, number>,
+  right: Record<string, number>,
+): boolean {
+  return TRANSFER_PARTNER_OPTIONS.every((partner) => {
+    const leftValue = left[partner.key] ?? partner.defaultCpp;
+    const rightValue = right[partner.key] ?? partner.defaultCpp;
+    return leftValue === rightValue;
+  });
+}
+
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { user, profile, loading, signOut, updatePreferences } = useAuth();
@@ -20,8 +39,21 @@ export default function ProfilePage() {
   const [savingPreference, setSavingPreference] = useState(false);
   const [preferenceNotice, setPreferenceNotice] = useState('');
 
-  const militaryZuluTime = profile?.preferences?.militaryZuluTime ?? false;
-  const cppValuations = profile?.preferences?.cppValuations ?? {};
+  const savedMilitaryTime = profile?.preferences?.militaryZuluTime ?? false;
+  const savedCppValuations = profile?.preferences?.cppValuations ?? {};
+
+  const [draftMilitaryTime, setDraftMilitaryTime] = useState(savedMilitaryTime);
+  const [draftCppValuations, setDraftCppValuations] = useState(() => buildCppDraft(savedCppValuations));
+
+  useEffect(() => {
+    setDraftMilitaryTime(profile?.preferences?.militaryZuluTime ?? false);
+    setDraftCppValuations(buildCppDraft(profile?.preferences?.cppValuations ?? {}));
+  }, [profile?.preferences]);
+
+  const hasPreferenceChanges = useMemo(() => (
+    draftMilitaryTime !== savedMilitaryTime
+    || !cppValuesEqual(draftCppValuations, savedCppValuations)
+  ), [draftMilitaryTime, savedMilitaryTime, draftCppValuations, savedCppValuations]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -42,41 +74,36 @@ export default function ProfilePage() {
     }
   };
 
-  const handleMilitaryZuluToggle = async (enabled: boolean) => {
+  const handleSavePreferences = async () => {
     setPreferenceNotice('');
-    setSavingPreference(true);
-    try {
-      const notice = await updatePreferences({ militaryZuluTime: enabled });
-      if (notice) {
-        setPreferenceNotice(notice);
-      }
-    } catch (error) {
-      setPreferenceNotice(error instanceof Error ? error.message : 'Could not save your preference. Please try again.');
-    } finally {
-      setSavingPreference(false);
-    }
-  };
 
-  const handleCppChange = async (partnerKey: string, rawValue: string) => {
-    const parsed = Number.parseFloat(rawValue);
-    if (!Number.isFinite(parsed) || parsed <= 0) {
+    const invalidPartner = TRANSFER_PARTNER_OPTIONS.find((partner) => {
+      const value = draftCppValuations[partner.key];
+      return !Number.isFinite(value) || value <= 0;
+    });
+    if (invalidPartner) {
+      setPreferenceNotice(`Enter a valid cents-per-point value for ${invalidPartner.label}.`);
       return;
     }
 
-    setPreferenceNotice('');
     setSavingPreference(true);
     try {
       const notice = await updatePreferences({
-        cppValuations: {
-          ...cppValuations,
-          [partnerKey]: Math.round(parsed * 100) / 100,
-        },
+        militaryZuluTime: draftMilitaryTime,
+        cppValuations: Object.fromEntries(
+          TRANSFER_PARTNER_OPTIONS.map((partner) => [
+            partner.key,
+            Math.round((draftCppValuations[partner.key] ?? partner.defaultCpp) * 100) / 100,
+          ]),
+        ),
       });
       if (notice) {
         setPreferenceNotice(notice);
+      } else {
+        setPreferenceNotice('Preferences saved.');
       }
     } catch (error) {
-      setPreferenceNotice(error instanceof Error ? error.message : 'Could not save your CPP value.');
+      setPreferenceNotice(error instanceof Error ? error.message : 'Could not save your preferences.');
     } finally {
       setSavingPreference(false);
     }
@@ -166,9 +193,12 @@ export default function ProfilePage() {
                   <input
                     type="checkbox"
                     className="profile-preference-checkbox"
-                    checked={militaryZuluTime}
+                    checked={draftMilitaryTime}
                     disabled={savingPreference}
-                    onChange={(event) => { void handleMilitaryZuluToggle(event.target.checked); }}
+                    onChange={(event) => {
+                      setPreferenceNotice('');
+                      setDraftMilitaryTime(event.target.checked);
+                    }}
                   />
                   <span className="profile-preference-copy">
                     <span className="profile-preference-label">Military time (24-hour)</span>
@@ -180,10 +210,10 @@ export default function ProfilePage() {
               </div>
 
               <div className="profile-cpp-section">
-                <h3 className="profile-cpp-title">Point currency value (CPP)</h3>
+                <h3 className="profile-cpp-title">Cents per point</h3>
                 <p className="profile-cpp-description">
-                  Set your personal cents-per-point benchmark for each transfer partner.
-                  Redemption grades on award flights compare the flight&apos;s CPP against these values.
+                  Set your personal cents-per-point (CPP) benchmark for each transfer partner.
+                  Redemption grades on award flights compare the flight&apos;s value against these targets.
                 </p>
                 <div className="profile-cpp-grid">
                   {TRANSFER_PARTNER_OPTIONS.map((partner) => (
@@ -197,14 +227,32 @@ export default function ProfilePage() {
                           max={10}
                           step={0.05}
                           disabled={savingPreference}
-                          defaultValue={cppValuations[partner.key] ?? partner.defaultCpp}
-                          onBlur={(event) => { void handleCppChange(partner.key, event.target.value); }}
+                          value={draftCppValuations[partner.key]}
+                          onChange={(event) => {
+                            setPreferenceNotice('');
+                            const parsed = Number.parseFloat(event.target.value);
+                            setDraftCppValuations((current) => ({
+                              ...current,
+                              [partner.key]: Number.isFinite(parsed) ? parsed : current[partner.key],
+                            }));
+                          }}
                         />
                         <span className="profile-cpp-suffix">¢ / pt</span>
                       </span>
                     </label>
                   ))}
                 </div>
+              </div>
+
+              <div className="profile-preferences-actions">
+                <button
+                  type="button"
+                  className="profile-save-btn"
+                  disabled={savingPreference || !hasPreferenceChanges}
+                  onClick={() => { void handleSavePreferences(); }}
+                >
+                  {savingPreference ? 'Saving…' : 'Save preferences'}
+                </button>
               </div>
 
               {preferenceNotice && (

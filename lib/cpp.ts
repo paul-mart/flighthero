@@ -1,5 +1,7 @@
 export type RedemptionGrade = 'very-good' | 'good' | 'ok' | 'bad' | 'very-bad';
 
+/** CPP = cents per point — how many cents of flight value each point is worth. */
+
 export interface TransferPartnerOption {
   key: string;
   label: string;

@@ -8,7 +8,6 @@ import { TopNavbar } from './components/TopNavbar';
 import { useAuth } from './context/AuthContext';
 import {
   calculateCpp,
-  formatCpp,
   GRADE_LABELS,
   rateTransferPartners,
   type RedemptionGrade,
@@ -1320,7 +1319,7 @@ function FlightDetailModal({
               )}
               {flightCpp != null && (
                 <p style={styles.flightDetailMeta}>
-                  Redemption value: {formatCpp(flightCpp)} per point
+                  Redemption value: {flightCpp.toFixed(2)} cents per point
                 </p>
               )}
               {flight.award_details.seats_remaining != null && flight.award_details.seats_remaining > 0 && (
@@ -2000,7 +1999,7 @@ export default function App() {
                           <div style={styles.subtext}>~{formatPrice(flight.cash_price)} cash</div>
                         )}
                         {getFlightCpp(flight) != null && (
-                          <div style={styles.cppText}>{formatCpp(getFlightCpp(flight)!)} / pt</div>
+                          <div style={styles.cppText}>{getFlightCpp(flight)!.toFixed(2)} cents/pt</div>
                         )}
                         {flight.award_details.mileage_program && (
                           <div style={styles.programTag}>{flight.award_details.mileage_program}</div>
