@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { User } from 'firebase/auth';
+import type { Timestamp } from 'firebase/firestore';
 import { Link, useNavigate } from 'react-router-dom';
 import { ProfileAvatar } from '../components/ProfileAvatar';
 import { TopNavbar } from '../components/TopNavbar';
 import { useAuth } from '../context/AuthContext';
 import { TRANSFER_PARTNER_OPTIONS } from '../lib/cpp';
+import type { UserProfile } from '../lib/auth';
 
 type ProfileSection = 'settings' | 'preferences';
 
@@ -29,6 +32,23 @@ function cppValuesEqual(
     const rightValue = right[partner.key] ?? partner.defaultCpp;
     return leftValue === rightValue;
   });
+}
+
+function getMemberSinceDate(profile: UserProfile | null, user: User | null): Date | null {
+  const createdAt = profile?.createdAt;
+  if (createdAt && typeof createdAt === 'object' && 'toDate' in createdAt) {
+    return (createdAt as Timestamp).toDate();
+  }
+  if (user?.metadata?.creationTime) {
+    const parsed = new Date(user.metadata.creationTime);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  return null;
+}
+
+function formatMemberSince(date: Date): string {
+  const formatted = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  return `Member since ${formatted}`;
 }
 
 export default function ProfilePage() {
@@ -63,6 +83,10 @@ export default function ProfilePage() {
 
   const displayName = profile?.displayName || user?.displayName || 'Your account';
   const email = profile?.email || user?.email || '';
+  const memberSinceLabel = useMemo(() => {
+    const date = getMemberSinceDate(profile, user);
+    return date ? formatMemberSince(date) : '';
+  }, [profile, user]);
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -133,7 +157,7 @@ export default function ProfilePage() {
           />
           <div className="profile-header-text">
             <h1 id="profile-title" className="profile-title">{displayName}</h1>
-            {email && <p className="profile-email">{email}</p>}
+            {memberSinceLabel && <p className="profile-member-since">{memberSinceLabel}</p>}
           </div>
         </header>
 
@@ -210,7 +234,7 @@ export default function ProfilePage() {
               </div>
 
               <div className="profile-cpp-section">
-                <h3 className="profile-cpp-title">Cents per point</h3>
+                <h3 className="profile-cpp-title">Custom Cent-Per-Point Values</h3>
                 <p className="profile-cpp-description">
                   Set your personal cents-per-point (CPP) benchmark for each transfer partner.
                   Redemption grades on award flights compare the flight&apos;s value against these targets.

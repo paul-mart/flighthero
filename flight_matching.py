@@ -74,16 +74,25 @@ def _index_cash_offers(cash_offers: list[dict[str, Any]]) -> tuple[
     return strict, relaxed
 
 
-def match_cash_price(
+def match_cash_offer(
     award_flight: dict[str, Any],
     strict_index: dict[tuple[Any, ...], dict[str, Any]],
     relaxed_index: dict[tuple[Any, ...], dict[str, Any]],
-) -> float | None:
+) -> dict[str, Any] | None:
     strict_key = flight_identity_key(award_flight, include_flight_numbers=True)
     match = strict_index.get(strict_key)
     if match is None:
         relaxed_key = flight_identity_key(award_flight, include_flight_numbers=False)
         match = relaxed_index.get(relaxed_key)
+    return match
+
+
+def match_cash_price(
+    award_flight: dict[str, Any],
+    strict_index: dict[tuple[Any, ...], dict[str, Any]],
+    relaxed_index: dict[tuple[Any, ...], dict[str, Any]],
+) -> float | None:
+    match = match_cash_offer(award_flight, strict_index, relaxed_index)
     if match is None:
         return None
     return round(float(match.get("cash_price") or 0), 2)
@@ -101,10 +110,14 @@ def enrich_awards_with_cash_prices(
 
     for flight in award_flights:
         updated = dict(flight)
-        cash_price = match_cash_price(flight, strict_index, relaxed_index)
-        if cash_price is not None:
-            updated["cash_price"] = cash_price
+        cash_match = match_cash_offer(flight, strict_index, relaxed_index)
+        if cash_match is not None:
+            updated["cash_price"] = round(float(cash_match.get("cash_price") or 0), 2)
             updated["cash_price_matched"] = True
+            if cash_match.get("itinerary"):
+                updated["itinerary"] = cash_match["itinerary"]
+            if cash_match.get("return_itinerary"):
+                updated["return_itinerary"] = cash_match["return_itinerary"]
         else:
             updated["cash_price_matched"] = False
         enriched.append(updated)

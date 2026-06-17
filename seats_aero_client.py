@@ -9,6 +9,7 @@ import httpx
 from dotenv import load_dotenv
 
 from flight_times import build_flight_time_fields
+from flight_itinerary import build_basic_itinerary
 from serpapi_client import format_duration_minutes, normalize_airport_code
 
 ENV_PATH = Path(__file__).resolve().parent / ".env"
@@ -450,6 +451,7 @@ def _parse_availability(
         "duration": duration_label,
         "duration_minutes": duration_minutes,
         "stops": stops,
+        "itinerary": build_basic_itinerary(origin, destination, duration_minutes, stops),
         "cash_price": 0,
         "booking_links": _booking_links(source, origin, destination, travel_date),
         "award_details": {
@@ -493,6 +495,7 @@ def _merge_round_trip(outbound: dict[str, Any], inbound: dict[str, Any]) -> dict
         "return_carrier": inbound.get("carrier") or out_award["mileage_program"],
         "return_duration": inbound.get("duration") or "—",
         "return_stops": inbound.get("stops", 0),
+        "return_itinerary": inbound.get("itinerary"),
     }
     return merged
 

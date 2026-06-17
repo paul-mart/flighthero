@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { apiFetch, apiUrl } from './api';
 import DatePicker from './DatePicker';
 import { FlightHeroLogo } from './components/FlightHeroLogo';
+import { FlightItineraryTimeline, type FlightItinerary } from './components/FlightItineraryTimeline';
 import { FlightTimeRange } from './components/FlightTimeRange';
 import { TopNavbar } from './components/TopNavbar';
 import { useAuth } from './context/AuthContext';
@@ -937,6 +938,7 @@ interface ReturnLegFields {
   return_carrier: string;
   return_stops: number;
   return_duration_minutes?: number;
+  return_itinerary?: FlightItinerary;
 }
 
 interface BookingLinks {
@@ -964,6 +966,7 @@ interface Flight {
   duration: string;
   duration_minutes?: number;
   stops: number;
+  itinerary?: FlightItinerary;
   cash_price: number;
   cash_price_matched?: boolean;
   return_departure_time?: string;
@@ -976,6 +979,7 @@ interface Flight {
   return_carrier?: string;
   return_duration?: string;
   return_stops?: number;
+  return_itinerary?: FlightItinerary;
   award_details?: AwardDetails;
 }
 
@@ -991,6 +995,7 @@ function applyReturnLeg(flight: Flight, leg: ReturnLegFields): Flight {
     return_flight_number: leg.return_flight_number,
     return_carrier: leg.return_carrier,
     return_stops: leg.return_stops,
+    return_itinerary: leg.return_itinerary,
     duration_minutes: (flight.duration_minutes ?? 0) + (leg.return_duration_minutes ?? 0),
   };
 }
@@ -1264,6 +1269,7 @@ function FlightDetailModal({
           <p style={styles.flightDetailMeta}>
             {flightDetailLine(flight.carrier, flight.flight_number, flight.duration, flight.stops)}
           </p>
+          {flight.itinerary ? <FlightItineraryTimeline itinerary={flight.itinerary} /> : null}
         </div>
 
         {hasReturn && (
@@ -1294,6 +1300,9 @@ function FlightDetailModal({
                 flight.return_stops ?? 0,
               )}
             </p>
+            {flight.return_itinerary ? (
+              <FlightItineraryTimeline itinerary={flight.return_itinerary} />
+            ) : null}
           </div>
         )}
 

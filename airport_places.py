@@ -14,6 +14,16 @@ def data_available() -> bool:
     return DATA_PATH.exists()
 
 
+def get_airport_name(iata: str) -> str | None:
+    if not data_available():
+        return None
+    entry = _load_airports().get(iata.strip().upper())
+    if not entry:
+        return None
+    name = (entry.get("name") or "").strip()
+    return name or None
+
+
 def get_airport_timezone(iata: str) -> str | None:
     if not data_available():
         return None

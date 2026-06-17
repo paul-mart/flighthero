@@ -12,6 +12,7 @@ from urllib.parse import quote_plus
 import httpx
 from dotenv import load_dotenv
 
+from flight_itinerary import parse_serpapi_itinerary
 from flight_times import build_flight_time_fields
 
 ENV_PATH = Path(__file__).resolve().parent / ".env"
@@ -231,6 +232,7 @@ def _parse_leg(
     origin_fallback: str,
     destination_fallback: str,
     travel_date: str = "",
+    layovers: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     if not segments:
         raise ValueError("SerpAPI flight is missing segments")
@@ -264,6 +266,7 @@ def _parse_leg(
         "duration": format_duration_minutes(duration_minutes),
         "duration_minutes": duration_minutes,
         "stops": max(len(segments) - 1, 0),
+        "itinerary": parse_serpapi_itinerary(segments, layovers, travel_date),
     }
 
 
@@ -309,12 +312,19 @@ def _fetch_return_leg(
     if not options:
         return None
 
-    segments = options[0].get("flights") or []
+    option = options[0]
+    segments = option.get("flights") or []
     if not segments:
         return None
 
     try:
-        return _parse_leg(segments, destination_code, origin_code, return_date)
+        return _parse_leg(
+            segments,
+            destination_code,
+            origin_code,
+            return_date,
+            option.get("layovers"),
+        )
     except ValueError:
         return None
 
@@ -363,6 +373,7 @@ def _attach_return_leg(flight: dict[str, Any], inbound: dict[str, Any]) -> None:
     flight["return_flight_number"] = inbound["flight_number"]
     flight["return_carrier"] = inbound["carrier"]
     flight["return_stops"] = inbound["stops"]
+    flight["return_itinerary"] = inbound.get("itinerary")
     flight["duration_minutes"] += inbound["duration_minutes"]
 
 
@@ -377,7 +388,7 @@ def _parse_flight_option(
     if not segments:
         return None
 
-    outbound = _parse_leg(segments, origin_code, destination_code, departure_date)
+    outbound = _parse_leg(segments, origin_code, destination_code, departure_date, option.get("layovers"))
     price = option.get("price")
     if price is None:
         return None
@@ -404,6 +415,7 @@ def _parse_flight_option(
         "duration": outbound["duration"],
         "duration_minutes": int(option.get("total_duration") or outbound["duration_minutes"]),
         "stops": outbound["stops"],
+        "itinerary": outbound["itinerary"],
         "cash_price": round(float(price), 2),
     }
 
@@ -457,6 +469,7 @@ def _return_leg_fields(inbound: dict[str, Any]) -> dict[str, Any]:
         "return_carrier": inbound["carrier"],
         "return_stops": inbound["stops"],
         "return_duration_minutes": inbound["duration_minutes"],
+        "return_itinerary": inbound.get("itinerary"),
     }
 
 

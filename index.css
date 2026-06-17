@@ -1387,7 +1387,7 @@ html {
   color: #111827;
 }
 
-.profile-email {
+.profile-member-since {
   margin: 0;
   font-size: 0.8125rem;
   color: #6b7280;
@@ -1776,4 +1776,112 @@ html {
   line-height: 0;
   color: #6b7280;
   vertical-align: super;
+}
+
+.flight-itinerary {
+  margin-top: 14px;
+  padding-top: 4px;
+}
+
+.flight-itinerary-track {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.flight-itinerary-node-col {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 72px;
+  flex-shrink: 0;
+}
+
+.flight-itinerary-layover-slot {
+  min-height: 18px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.flight-itinerary-layover {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.flight-itinerary-dot-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 12px;
+  width: 100%;
+}
+
+.flight-itinerary-dot {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.flight-itinerary-dot--endpoint {
+  background: #2563eb;
+  border: 2px solid #2563eb;
+}
+
+.flight-itinerary-dot--layover {
+  background: #fff;
+  border: 2px solid #2563eb;
+}
+
+.flight-itinerary-label {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: 0.02em;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.flight-itinerary-label--layover {
+  cursor: default;
+}
+
+.flight-itinerary-segment {
+  flex: 1 1 0;
+  min-width: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  align-self: flex-start;
+  margin-top: 10px;
+  gap: 6px;
+}
+
+.flight-itinerary-segment-duration {
+  text-align: center;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.flight-itinerary-segment-line {
+  width: 100%;
+  height: 2px;
+  background: #94a3b8;
+  flex-shrink: 0;
+}
+
+.flight-itinerary-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #94a3b8;
 }
