@@ -672,7 +672,9 @@ type SortOption =
   | 'duration-asc'
   | 'duration-desc'
   | 'departure-asc'
-  | 'departure-desc';
+  | 'departure-desc'
+  | 'cpp-asc'
+  | 'cpp-desc';
 
 function matchesStopsFilter(stops: number, filter: StopsFilter): boolean {
   if (filter === 'nonstop') return stops === 0;
@@ -767,6 +769,14 @@ function sortFlights(flights: Flight[], sortOption: SortOption, searchType: 'cas
       if (aMinutes == null) return 1;
       if (bMinutes == null) return -1;
       return sortOption === 'departure-asc' ? aMinutes - bMinutes : bMinutes - aMinutes;
+    }
+    if (sortOption === 'cpp-asc' || sortOption === 'cpp-desc') {
+      const aCpp = getFlightCpp(a);
+      const bCpp = getFlightCpp(b);
+      if (aCpp == null && bCpp == null) return 0;
+      if (aCpp == null) return 1;
+      if (bCpp == null) return -1;
+      return sortOption === 'cpp-asc' ? aCpp - bCpp : bCpp - aCpp;
     }
     return 0;
   });
@@ -1255,6 +1265,9 @@ export default function App() {
     setFlights([]);
     setHasSearched(false);
     setLoadingReturnDetails(false);
+    if (next === 'cash' && (sortOption === 'cpp-asc' || sortOption === 'cpp-desc')) {
+      setSortOption('price-asc');
+    }
   };
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -1542,6 +1555,12 @@ export default function App() {
                     { value: 'departure-desc', label: 'Departure: latest first' },
                     { value: 'duration-asc', label: 'Duration: shortest first' },
                     { value: 'duration-desc', label: 'Duration: longest first' },
+                    ...(searchType === 'points'
+                      ? [
+                          { value: 'cpp-desc' as const, label: 'CPP: high to low' },
+                          { value: 'cpp-asc' as const, label: 'CPP: low to high' },
+                        ]
+                      : []),
                   ]}
                   ariaLabel="Sort by"
                   disabled={!advancedEnabled}
