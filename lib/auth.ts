@@ -1,5 +1,6 @@
 import {
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   updateProfile,
@@ -157,6 +158,11 @@ export async function signInWithEmail(email: string, password: string): Promise<
 export async function signOut(): Promise<void> {
   const { auth: firebaseAuth } = requireAuth();
   await firebaseSignOut(firebaseAuth);
+}
+
+export async function sendPasswordReset(email: string): Promise<void> {
+  const { auth: firebaseAuth } = requireAuth();
+  await sendPasswordResetEmail(firebaseAuth, email.trim());
 }
 
 export function getAuthErrorMessage(error: unknown): string {

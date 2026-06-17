@@ -1212,6 +1212,59 @@ html {
   color: #374151;
 }
 
+.auth-password-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.auth-forgot-row {
+  margin: 0;
+  text-align: right;
+}
+
+.auth-forgot-link {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #6366f1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.auth-forgot-link:hover {
+  color: #4338ca;
+  text-decoration: underline;
+}
+
+.auth-success {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-success-title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.auth-success-text {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: #4b5563;
+}
+
+.auth-submit--link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  margin-top: 4px;
+}
+
 .auth-input {
   width: 100%;
   padding: 12px 14px;

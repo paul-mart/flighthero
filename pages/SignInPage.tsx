@@ -72,20 +72,25 @@ export default function SignInPage() {
           />
         </label>
 
-        <label className="auth-field">
-          <span className="auth-label">Password</span>
-          <input
-            type="password"
-            className="auth-input"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            placeholder="Your password"
-            required
-            minLength={6}
-            disabled={submitting}
-          />
-        </label>
+        <div className="auth-password-block">
+          <label className="auth-field">
+            <span className="auth-label">Password</span>
+            <input
+              type="password"
+              className="auth-input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              placeholder="Your password"
+              required
+              minLength={6}
+              disabled={submitting}
+            />
+          </label>
+          <p className="auth-forgot-row">
+            <Link to="/auth/forgot-password" className="auth-forgot-link">Forgot password?</Link>
+          </p>
+        </div>
 
         {error && (
           <p className="auth-error" role="alert">
