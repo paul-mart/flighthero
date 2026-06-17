@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { TopNavbar } from '../components/TopNavbar';
+import { SiteFooter } from '../components/SiteFooter';
 import { TRANSFER_PARTNER_OPTIONS } from '../lib/cpp';
 
 export default function FaqPage() {
@@ -56,6 +57,7 @@ export default function FaqPage() {
           </p>
         </article>
       </main>
+      <SiteFooter />
     </div>
   );
 }

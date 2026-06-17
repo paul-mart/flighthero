@@ -1,5 +1,6 @@
 import React from 'react';
 import { TopNavbar } from './TopNavbar';
+import { SiteFooter } from './SiteFooter';
 
 interface AuthShellProps {
   title: string;
@@ -21,6 +22,7 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
           </div>
         </div>
       </section>
+      <SiteFooter />
     </div>
   );
 }

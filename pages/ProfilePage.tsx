@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AirportAutocomplete } from '../components/AirportAutocomplete';
 import { ProfileAvatar } from '../components/ProfileAvatar';
 import { TopNavbar } from '../components/TopNavbar';
+import { SiteFooter } from '../components/SiteFooter';
 import { useAuth } from '../context/AuthContext';
 import { extractAirportCode } from '../lib/airportCode';
 import { TRANSFER_PARTNER_OPTIONS } from '../lib/cpp';
@@ -168,6 +169,7 @@ export default function ProfilePage() {
         <div className="profile-body profile-body--loading">
           <p className="profile-loading">Loading your profile…</p>
         </div>
+        <SiteFooter />
       </div>
     );
   }
@@ -346,6 +348,7 @@ export default function ProfilePage() {
         </div>
       </div>
       </div>
+      <SiteFooter />
     </div>
   );
 }

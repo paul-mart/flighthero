@@ -9,6 +9,7 @@ import { FlightItineraryTimeline, type FlightItinerary } from './components/Flig
 import { FlightTimeRange } from './components/FlightTimeRange';
 import { TransferPartnerLogo } from './components/TransferPartnerLogo';
 import { TopNavbar } from './components/TopNavbar';
+import { SiteFooter } from './components/SiteFooter';
 import { useAuth } from './context/AuthContext';
 import {
   calculateCpp,
@@ -1830,6 +1831,7 @@ export default function App() {
           </div>
         </div>
       )}
+      <SiteFooter />
     </div>
   );
 }
