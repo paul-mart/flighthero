@@ -7,6 +7,7 @@ import { AuthProvider } from './context/AuthContext';
 import SignInPage from './pages/SignInPage';
 import SignUpPage from './pages/SignUpPage';
 import ProfilePage from './pages/ProfilePage';
+import FaqPage from './pages/FaqPage';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -18,6 +19,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/auth/sign-in" element={<SignInPage />} />
           <Route path="/auth/sign-up" element={<SignUpPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/faq" element={<FaqPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

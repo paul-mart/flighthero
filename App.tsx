@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import { apiFetch, apiUrl } from './api';
 import DatePicker from './DatePicker';
 import { AirportAutocomplete, PlacesSearchLoader } from './components/AirportAutocomplete';
 import { FlightHeroLogo } from './components/FlightHeroLogo';
 import { FlightItineraryTimeline, type FlightItinerary } from './components/FlightItineraryTimeline';
 import { FlightTimeRange } from './components/FlightTimeRange';
+import { TransferPartnerLogo } from './components/TransferPartnerLogo';
 import { TopNavbar } from './components/TopNavbar';
 import { useAuth } from './context/AuthContext';
 import {
@@ -820,9 +822,9 @@ function buildCashBookingUrl(
   );
 }
 
-function RedemptionGradeBadge({ grade }: { grade: RedemptionGrade }) {
+function RedemptionGradeBadge({ grade, compact = false }: { grade: RedemptionGrade; compact?: boolean }) {
   return (
-    <span className={`redemption-grade redemption-grade--${grade}`}>
+    <span className={`redemption-grade redemption-grade--${grade}${compact ? ' redemption-grade--compact' : ''}`}>
       {GRADE_LABELS[grade]}
     </span>
   );
@@ -975,39 +977,67 @@ function FlightDetailModal({
             <p style={styles.flightDetailPrice}>{formatPrice(flight.cash_price)}</p>
           ) : flight.award_details ? (
             <>
-              <p style={styles.flightDetailPoints}>
-                {flight.award_details.points_required.toLocaleString()} points
-              </p>
-              <p style={styles.flightDetailMeta}>
-                + {formatPrice(flight.award_details.taxes_and_fees)} taxes & fees
-              </p>
-              {flight.award_details.mileage_program && (
-                <p style={styles.flightDetailMeta}>{flight.award_details.mileage_program}</p>
-              )}
-              {flight.cash_price_matched && flight.cash_price > 0 && (
-                <p style={styles.flightDetailMeta}>
-                  Comparable cash fare: {formatPrice(flight.cash_price)}
-                </p>
-              )}
-              {flightCpp != null && (
-                <p style={styles.flightDetailMeta}>
-                  Redemption value: {flightCpp.toFixed(2)} cents per point
-                </p>
-              )}
-              {flight.award_details.seats_remaining != null && flight.award_details.seats_remaining > 0 && (
-                <p style={styles.flightDetailMeta}>
-                  {flight.award_details.seats_remaining} seat{flight.award_details.seats_remaining === 1 ? '' : 's'} left
-                </p>
-              )}
+              <div className="flight-price-core">
+                <div className="flight-price-primary">
+                  <div className="flight-price-cost">
+                    <span className="flight-price-points">
+                      {flight.award_details.points_required.toLocaleString()} points
+                    </span>
+                    <span className="flight-price-taxes">
+                      + {formatPrice(flight.award_details.taxes_and_fees)} taxes &amp; fees
+                    </span>
+                  </div>
+                  {flightCpp != null && (
+                    <div className="flight-value-badge" aria-label={`Flight value ${flightCpp.toFixed(2)} cents per point`}>
+                      <span className="flight-value-badge__label">Flight Value</span>
+                      <span className="flight-value-badge__value">{flightCpp.toFixed(2)}¢/pt</span>
+                    </div>
+                  )}
+                </div>
+                {flight.cash_price_matched && flight.cash_price > 0 && (
+                  <p className="flight-price-cash-comparison">
+                    Comparable cash fare: {formatPrice(flight.cash_price)}
+                  </p>
+                )}
+                {flight.award_details.mileage_program && (
+                  <p className="flight-price-meta">{flight.award_details.mileage_program}</p>
+                )}
+                {flight.award_details.seats_remaining != null && flight.award_details.seats_remaining > 0 && (
+                  <p className="flight-price-meta">
+                    {flight.award_details.seats_remaining} seat{flight.award_details.seats_remaining === 1 ? '' : 's'} left
+                  </p>
+                )}
+              </div>
               {partnerRatings.length > 0 && (
-                <div style={styles.flightDetailPartners}>
-                  <p style={styles.flightDetailMeta}>Transfer partners</p>
-                  <ul className="redemption-partner-list">
+                <div className="redemption-partners-module">
+                  <div className="redemption-partners-module-header">
+                    <span className="redemption-partners-module-title">Transfer partners</span>
+                    <Link
+                      to="/faq#custom-cent-per-point"
+                      className="redemption-cpp-help"
+                      aria-label="What is custom cent-per-point?"
+                      title="What is custom cent-per-point?"
+                      onClick={onClose}
+                    >
+                      ?
+                    </Link>
+                  </div>
+                  <ul className="redemption-partners-list">
                     {partnerRatings.map((rating) => (
-                      <li key={rating.partner} className="redemption-partner-item">
-                        <span className="redemption-partner-name">{rating.partner}</span>
+                      <li key={rating.partner} className="redemption-partner-row">
+                        <div className="redemption-partner-info">
+                          <TransferPartnerLogo partner={rating.partner} size={36} />
+                          <div className="redemption-partner-copy">
+                            <span className="redemption-partner-name">{rating.partner}</span>
+                            {rating.benchmarkCpp != null ? (
+                              <span className="redemption-partner-baseline">
+                                (Your Baseline: {rating.benchmarkCpp.toFixed(2)}¢/pt)
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
                         {rating.grade ? (
-                          <RedemptionGradeBadge grade={rating.grade} />
+                          <RedemptionGradeBadge grade={rating.grade} compact />
                         ) : (
                           <span className="redemption-partner-unrated">Grade unavailable</span>
                         )}
@@ -1696,7 +1726,9 @@ export default function App() {
                         )}
                         <div className="partner-container" style={styles.partnerContainer}>
                           {flight.award_details.transfer_partners.map((p, i) => (
-                            <span key={i} style={styles.partnerTag}>{p}</span>
+                            <span key={i} className="partner-tag" style={styles.partnerTag} title={p}>
+                              <TransferPartnerLogo partner={p} size={25} />
+                            </span>
                           ))}
                         </div>
                       </div>
@@ -2445,8 +2477,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginTop: '4px',
     textAlign: 'right',
   },
-  partnerContainer: { display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '6px', justifyContent: 'flex-end' },
-  partnerTag: { fontSize: '10px', background: '#ede9fe', color: '#6d28d9', padding: '2px 6px', borderRadius: '4px', fontWeight: 500 },
+  partnerContainer: { display: 'flex', gap: '7px', flexWrap: 'wrap', marginTop: '6px', justifyContent: 'flex-end' },
+  partnerTag: { display: 'inline-flex', alignItems: 'center', padding: 0, background: 'transparent' },
   emptyState: { textAlign: 'center', padding: '40px', color: '#888' },
   modalOverlay: {
     position: 'fixed',

@@ -33,6 +33,7 @@ export function partnerLabelToKey(label: string): string | null {
   if (lower.includes('citi')) return 'citi';
   if (lower.includes('capital one')) return 'capital_one';
   if (lower.includes('bilt')) return 'bilt';
+  if (lower.includes('wells fargo')) return 'wells_fargo';
   return null;
 }
 
@@ -47,6 +48,15 @@ export function getBenchmarkCpp(
   }
   const option = TRANSFER_PARTNER_OPTIONS.find((item) => item.key === partnerKey);
   return option?.defaultCpp ?? null;
+}
+
+export function hasCustomCppValuation(
+  partnerKey: string | null,
+  valuations?: CppValuations,
+): boolean {
+  if (!partnerKey) return false;
+  const custom = valuations?.[partnerKey];
+  return typeof custom === 'number' && custom > 0;
 }
 
 export function calculateCpp(

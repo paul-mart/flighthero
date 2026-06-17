@@ -1707,25 +1707,316 @@ html {
   outline-offset: 2px;
 }
 
-.redemption-partner-list {
+.redemption-partner-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 118px 104px;
+  column-gap: 12px;
+  row-gap: 10px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.flight-price-core {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.flight-price-primary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.flight-price-cost {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.flight-price-points {
+  font-size: 26px;
+  font-weight: 600;
+  color: #6366f1;
+  line-height: 1.15;
+}
+
+.flight-price-taxes {
+  font-size: 15px;
+  font-weight: 500;
+  color: #374151;
+  line-height: 1.3;
+}
+
+.flight-value-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  flex-shrink: 0;
+}
+
+.flight-value-badge__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #047857;
+  letter-spacing: 0.01em;
+}
+
+.flight-value-badge__value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #059669;
+}
+
+.flight-price-cash-comparison {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.flight-price-meta {
+  margin: 0;
+  font-size: 13px;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+
+.redemption-partners-module {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: #f9fafb;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+}
+
+.redemption-partners-module-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.redemption-partners-module-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.redemption-partners-list {
   list-style: none;
-  margin: 8px 0 0;
+  margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.redemption-partner-item {
+.redemption-partner-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-height: 44px;
+}
+
+.redemption-partner-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  flex: 1;
+}
+
+.redemption-partner-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.transfer-partner-logo {
+  display: block;
+  width: auto;
+  height: 36px;
+  max-width: 200px;
+  object-fit: contain;
+  object-position: left center;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+}
+
+.transfer-partner-logo--fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid #e5e7eb;
+}
+
+.partner-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+}
+
+.partner-tag .transfer-partner-logo {
+  max-width: 130px;
+  border: none;
+  border-radius: 0;
+}
+
+.transfer-partner-logo--bilt {
+  max-width: 94px;
+}
+
+.partner-tag .transfer-partner-logo--bilt {
+  max-width: 68px;
+}
+
+.redemption-partner-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  min-width: 0;
 }
 
 .redemption-partner-name {
   font-size: 0.9375rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.redemption-partner-baseline {
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.redemption-grid-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.redemption-grid-header--cpp {
+  display: flex;
+  justify-content: center;
+  text-align: center;
+}
+
+.redemption-grid-header--grade {
+  text-align: right;
+}
+
+.redemption-grid-label {
+  font-size: 0.9375rem;
   color: #374151;
+  min-width: 0;
+}
+
+.redemption-grid-label--base {
+  font-weight: 600;
+  color: #111827;
+}
+
+.redemption-grid-cpp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  text-align: center;
+}
+
+.redemption-grid-cpp--base {
+  font-size: 15px;
+  font-weight: 600;
+  color: #059669;
+}
+
+.redemption-grid-divider {
+  grid-column: 1 / -1;
+  height: 0;
+  border-bottom: 1px solid #eef2f7;
+  margin: 2px 0 4px;
+}
+
+.redemption-grid-grade {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.redemption-partner-header-custom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.redemption-cpp-help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.redemption-cpp-help:hover {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #4f46e5;
+}
+
+.redemption-partner-benchmark {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.redemption-partner-default {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ca3af;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #f3f4f6;
 }
 
 .redemption-partner-unrated {
@@ -1742,6 +2033,11 @@ html {
   font-weight: 700;
   letter-spacing: 0.01em;
   white-space: nowrap;
+}
+
+.redemption-grade--compact {
+  padding: 3px 8px;
+  font-size: 0.6875rem;
 }
 
 .redemption-grade--very-good {
@@ -2045,4 +2341,97 @@ html {
   margin: 12px 0 0;
   font-size: 0.875rem;
   color: #6b7280;
+}
+
+.faq-shell {
+  min-height: 100vh;
+  background: #f9fafb;
+}
+
+.faq-main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 104px 24px 48px;
+}
+
+.faq-header {
+  margin-bottom: 32px;
+}
+
+.faq-back-link {
+  display: inline-block;
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+  color: #6366f1;
+  text-decoration: none;
+}
+
+.faq-back-link:hover {
+  text-decoration: underline;
+}
+
+.faq-title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+
+.faq-article {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 28px;
+}
+
+.faq-article-title {
+  margin: 0 0 16px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.faq-article p {
+  margin: 0 0 14px;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: #374151;
+}
+
+.faq-article p:last-child {
+  margin-bottom: 0;
+}
+
+.faq-list {
+  margin: 0 0 14px;
+  padding-left: 1.25rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: #374151;
+}
+
+.faq-list li + li {
+  margin-top: 6px;
+}
+
+.faq-inline-default {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ca3af;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  vertical-align: middle;
+}
+
+.faq-article a {
+  color: #6366f1;
+  text-decoration: none;
+}
+
+.faq-article a:hover {
+  text-decoration: underline;
 }
