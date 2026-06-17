@@ -1569,6 +1569,13 @@ export default function App() {
         )}
               </div>
             </div>
+
+            {loading && (
+              <div className="flight-search-loader" style={styles.flightSearchLoader} role="status" aria-live="polite">
+                <PlacesSearchLoader size={112} />
+                <span style={styles.flightSearchLoaderText}>Searching flights...</span>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -1583,7 +1590,7 @@ export default function App() {
             Showing {displayedFlights.length} of {flights.length} flight{flights.length === 1 ? '' : 's'}
           </p>
         )}
-        {displayedFlights.length > 0 ? (
+        {!loading && displayedFlights.length > 0 ? (
           displayedFlights.map((flight) => (
             <div key={flight.id} className="flight-card" style={styles.flightCard}>
               <div className="flight-card-body" style={styles.flightCardBody}>
@@ -1748,14 +1755,9 @@ export default function App() {
               </div>
             </div>
           ))
-        ) : loading ? (
-          <div style={styles.flightSearchLoader} role="status" aria-live="polite">
-            <PlacesSearchLoader size={112} />
-            <span style={styles.flightSearchLoaderText}>Searching flights...</span>
-          </div>
-        ) : hasSearched && flights.length === 0 ? (
+        ) : !loading && hasSearched && flights.length === 0 ? (
           <div style={styles.emptyState}>No flights were found for your search. Try different dates or airports.</div>
-        ) : hasSearched && flights.length > 0 ? (
+        ) : !loading && hasSearched && flights.length > 0 ? (
           <div style={styles.emptyState}>No flights match your advanced filters. Try allowing more stops.</div>
         ) : (
           !hasSearched && <div style={styles.emptyState}>Enter your route details above to explore options.</div>
@@ -2254,13 +2256,14 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '16px',
-    padding: '56px 24px',
+    padding: '24px 24px 8px',
+    marginTop: '8px',
     textAlign: 'center',
   },
   flightSearchLoaderText: {
     fontSize: '16px',
     fontWeight: 500,
-    color: '#5f6368',
+    color: 'rgba(255, 255, 255, 0.88)',
   },
   flightCard: {
     display: 'flex',

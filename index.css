@@ -653,6 +653,10 @@ html {
   border-radius: 0 0 12px 12px;
 }
 
+.flight-search-loader {
+  width: 100%;
+}
+
 .suggestion-menu {
   z-index: 300;
   position: fixed;
