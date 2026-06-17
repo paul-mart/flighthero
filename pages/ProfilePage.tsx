@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import type { User } from 'firebase/auth';
 import type { Timestamp } from 'firebase/firestore';
 import { Link, useNavigate } from 'react-router-dom';
+import { AirportAutocomplete } from '../components/AirportAutocomplete';
 import { ProfileAvatar } from '../components/ProfileAvatar';
 import { TopNavbar } from '../components/TopNavbar';
 import { useAuth } from '../context/AuthContext';
+import { extractAirportCode } from '../lib/airportCode';
 import { TRANSFER_PARTNER_OPTIONS } from '../lib/cpp';
 import type { UserProfile } from '../lib/auth';
 
@@ -61,19 +63,36 @@ export default function ProfilePage() {
 
   const savedMilitaryTime = profile?.preferences?.militaryZuluTime ?? false;
   const savedCppValuations = profile?.preferences?.cppValuations ?? {};
+  const savedHomeAirport = profile?.preferences?.homeAirport ?? '';
+  const savedHomeAirportLabel = profile?.preferences?.homeAirportLabel ?? '';
 
   const [draftMilitaryTime, setDraftMilitaryTime] = useState(savedMilitaryTime);
   const [draftCppValuations, setDraftCppValuations] = useState(() => buildCppDraft(savedCppValuations));
+  const [draftHomeAirportLabel, setDraftHomeAirportLabel] = useState(savedHomeAirportLabel);
+  const [draftHomeAirport, setDraftHomeAirport] = useState(savedHomeAirport);
 
   useEffect(() => {
     setDraftMilitaryTime(profile?.preferences?.militaryZuluTime ?? false);
     setDraftCppValuations(buildCppDraft(profile?.preferences?.cppValuations ?? {}));
+    setDraftHomeAirportLabel(profile?.preferences?.homeAirportLabel ?? '');
+    setDraftHomeAirport(profile?.preferences?.homeAirport ?? '');
   }, [profile?.preferences]);
 
   const hasPreferenceChanges = useMemo(() => (
     draftMilitaryTime !== savedMilitaryTime
     || !cppValuesEqual(draftCppValuations, savedCppValuations)
-  ), [draftMilitaryTime, savedMilitaryTime, draftCppValuations, savedCppValuations]);
+    || draftHomeAirportLabel !== savedHomeAirportLabel
+    || draftHomeAirport !== savedHomeAirport
+  ), [
+    draftMilitaryTime,
+    savedMilitaryTime,
+    draftCppValuations,
+    savedCppValuations,
+    draftHomeAirportLabel,
+    savedHomeAirportLabel,
+    draftHomeAirport,
+    savedHomeAirport,
+  ]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -101,6 +120,13 @@ export default function ProfilePage() {
   const handleSavePreferences = async () => {
     setPreferenceNotice('');
 
+    const label = draftHomeAirportLabel.trim();
+    const code = draftHomeAirport || extractAirportCode(label) || '';
+    if (label && !code) {
+      setPreferenceNotice('Select your home airport from the suggestions list.');
+      return;
+    }
+
     const invalidPartner = TRANSFER_PARTNER_OPTIONS.find((partner) => {
       const value = draftCppValuations[partner.key];
       return !Number.isFinite(value) || value <= 0;
@@ -114,6 +140,8 @@ export default function ProfilePage() {
     try {
       const notice = await updatePreferences({
         militaryZuluTime: draftMilitaryTime,
+        homeAirport: code,
+        homeAirportLabel: label,
         cppValuations: Object.fromEntries(
           TRANSFER_PARTNER_OPTIONS.map((partner) => [
             partner.key,
@@ -212,6 +240,37 @@ export default function ProfilePage() {
           {activeSection === 'preferences' && (
             <div className="profile-preferences">
               <h2 className="profile-panel-title">Preferences</h2>
+
+              <div className="profile-home-airport-field">
+                <label className="profile-home-airport-label" htmlFor="home-airport-input">
+                  My home airport
+                </label>
+                <p className="profile-home-airport-description">
+                  Used as your default departure airport when you sign in or open the app.
+                </p>
+                <div className="profile-home-airport-input-wrap">
+                  <AirportAutocomplete
+                    value={draftHomeAirportLabel}
+                    onChange={(value) => {
+                      setPreferenceNotice('');
+                      setDraftHomeAirportLabel(value);
+                      if (!value.trim()) {
+                        setDraftHomeAirport('');
+                      }
+                    }}
+                    onSuggestionSelect={(suggestion) => {
+                      setDraftHomeAirport(suggestion.code);
+                    }}
+                    placeholder="Search city or airport"
+                    ariaLabel="Home airport"
+                    menuAnchorClassName="profile-home-airport-field"
+                    variant="profile"
+                    inputId="home-airport-input"
+                    disabled={savingPreference}
+                  />
+                </div>
+              </div>
+
               <div className="profile-preference-list">
                 <label className="profile-preference-item">
                   <input

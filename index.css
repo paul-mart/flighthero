@@ -1885,3 +1885,164 @@ html {
   font-size: 12px;
   color: #94a3b8;
 }
+
+.airport-autocomplete {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: visible;
+}
+
+.airport-autocomplete-loader {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.route-airport-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 12px 0;
+  outline: none;
+  height: 48px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #111827;
+  letter-spacing: -0.01em;
+}
+
+.route-airport-input--loading {
+  padding-right: 34px;
+}
+
+.suggestion-menu {
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(60, 64, 67, 0.18);
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 500;
+}
+
+.suggestion-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 10px 14px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.suggestion-option--hover {
+  background: #f3f4ff;
+}
+
+.suggestion-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.suggestion-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #3c4043;
+}
+
+.suggestion-subtitle {
+  font-size: 13px;
+  color: #80868b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-loader-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px 14px;
+}
+
+.suggestion-loader-text {
+  font-size: 14px;
+  color: #80868b;
+}
+
+.profile-home-airport-field {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.profile-home-airport-label {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.profile-home-airport-description {
+  margin: 0 0 12px;
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.profile-home-airport-input-wrap {
+  position: relative;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0 12px;
+}
+
+.profile-home-airport-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 12px 0;
+  outline: none;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.9375rem;
+  color: #111827;
+}
+
+.profile-home-airport-input--loading {
+  padding-right: 34px;
+}
+
+.profile-settings-actions {
+  margin-top: 20px;
+}
+
+.profile-setting-notice {
+  margin: 12px 0 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}

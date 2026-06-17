@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from 'react-dom';
 import { apiFetch, apiUrl } from './api';
 import DatePicker from './DatePicker';
+import { AirportAutocomplete, PlacesSearchLoader } from './components/AirportAutocomplete';
 import { FlightHeroLogo } from './components/FlightHeroLogo';
 import { FlightItineraryTimeline, type FlightItinerary } from './components/FlightItineraryTimeline';
 import { FlightTimeRange } from './components/FlightTimeRange';
@@ -182,344 +183,6 @@ function FilterDropdown<T extends string | number>({
                 </button>
               </li>
             ))}
-          </ul>,
-          document.body
-        )}
-    </div>
-  );
-}
-
-interface PlaceSuggestion {
-  id: string;
-  code: string;
-  name: string;
-  subtitle: string;
-  type: 'airport' | 'city';
-}
-
-interface AirportAutocompleteProps {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  ariaLabel: string;
-  swapGeneration?: number;
-}
-
-function formatPlaceLabel(suggestion: PlaceSuggestion): string {
-  return `${suggestion.name} (${suggestion.code})`;
-}
-
-function PlacesSearchLoader({ size = 32 }: { size?: number }) {
-  return (
-    <svg
-      className="places-search-loader"
-      width={size}
-      height={size}
-      viewBox="0 0 56 56"
-      overflow="visible"
-      aria-hidden
-    >
-      <circle
-        cx="28"
-        cy="28"
-        r="15"
-        fill="none"
-        stroke="#c7d2fe"
-        strokeWidth="2"
-        strokeDasharray="2.5 4.5"
-        strokeLinecap="round"
-      />
-      <g className="places-search-loader__orbit">
-        <g transform="translate(28, 28)">
-          <g transform="translate(0, -15) rotate(90)">
-            <g transform="translate(-12, -12) scale(0.54)">
-              <path
-                d="M21 16v-2l-8-5V3.5a1.5 1.5 0 00-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"
-                fill="#6366f1"
-              />
-            </g>
-          </g>
-        </g>
-      </g>
-    </svg>
-  );
-}
-
-function getCachedSuggestions(
-  query: string,
-  cache: Map<string, PlaceSuggestion[]>
-): PlaceSuggestion[] | null {
-  const normalized = query.toLowerCase();
-  const exact = cache.get(normalized);
-  if (exact) return exact;
-
-  for (let length = normalized.length - 1; length >= 2; length -= 1) {
-    const prefix = cache.get(normalized.slice(0, length));
-    if (prefix) return prefix;
-  }
-
-  return null;
-}
-
-function AirportAutocomplete({ value, onChange, placeholder, ariaLabel, swapGeneration = 0 }: AirportAutocompleteProps) {
-  const [open, setOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [highlightIndex, setHighlightIndex] = useState(-1);
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const menuRef = useRef<HTMLUListElement>(null);
-  const [menuPosition, setMenuPosition] = useState<React.CSSProperties>({});
-  const suppressFetchRef = useRef(false);
-  const cacheRef = useRef<Map<string, PlaceSuggestion[]>>(new Map());
-  const abortRef = useRef<AbortController | null>(null);
-  const requestIdRef = useRef(0);
-
-  const updateMenuPosition = useCallback(() => {
-    if (!rootRef.current) return;
-    const inputRect = rootRef.current.getBoundingClientRect();
-    const routeBlock = rootRef.current.closest('.route-block') as HTMLElement | null;
-    const anchorRect = routeBlock?.getBoundingClientRect() ?? inputRect;
-    setMenuPosition({
-      position: 'fixed',
-      top: inputRect.bottom + 6,
-      left: anchorRect.left,
-      width: anchorRect.width,
-    });
-  }, []);
-
-  useLayoutEffect(() => {
-    if (!open) return;
-    updateMenuPosition();
-    window.addEventListener('scroll', updateMenuPosition, true);
-    window.addEventListener('resize', updateMenuPosition);
-    return () => {
-      window.removeEventListener('scroll', updateMenuPosition, true);
-      window.removeEventListener('resize', updateMenuPosition);
-    };
-  }, [open, updateMenuPosition]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const dismissMenu = () => {
-      abortRef.current?.abort();
-      setOpen(false);
-      setHighlightIndex(-1);
-      setLoading(false);
-    };
-
-    const handlePointerDown = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return;
-      dismissMenu();
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        dismissMenu();
-        inputRef.current?.blur();
-      }
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [open]);
-
-  const lastSwapGenerationRef = useRef(swapGeneration);
-
-  useEffect(() => {
-    const swapJustHappened = swapGeneration !== lastSwapGenerationRef.current;
-    if (swapJustHappened) {
-      lastSwapGenerationRef.current = swapGeneration;
-      abortRef.current?.abort();
-      requestIdRef.current += 1;
-      setOpen(false);
-      setSuggestions([]);
-      setHighlightIndex(-1);
-      setLoading(false);
-      return;
-    }
-
-    const query = value.trim();
-    if (suppressFetchRef.current) {
-      suppressFetchRef.current = false;
-      return;
-    }
-
-    if (query.length < 2) {
-      abortRef.current?.abort();
-      setSuggestions([]);
-      setOpen(false);
-      setLoading(false);
-      return;
-    }
-
-    const normalizedQuery = query.toLowerCase();
-    const cached = getCachedSuggestions(normalizedQuery, cacheRef.current);
-    if (cached) {
-      setSuggestions(cached);
-      setOpen(cached.length > 0);
-      setHighlightIndex(-1);
-    }
-
-    const timer = window.setTimeout(async () => {
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-      const requestId = ++requestIdRef.current;
-
-      if (!cached) {
-        setLoading(true);
-        setOpen(true);
-      }
-
-      try {
-        const response = await apiFetch(
-          apiUrl(`/api/places/suggestions?q=${encodeURIComponent(query)}`),
-          { signal: controller.signal }
-        );
-        const data = await response.json();
-        if (requestId !== requestIdRef.current) return;
-        if (!response.ok) {
-          if (!cached) {
-            setSuggestions([]);
-            setOpen(false);
-          }
-          return;
-        }
-        const nextSuggestions = Array.isArray(data) ? data : [];
-        cacheRef.current.set(normalizedQuery, nextSuggestions);
-        setSuggestions(nextSuggestions);
-        setOpen(nextSuggestions.length > 0);
-        setHighlightIndex(-1);
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          return;
-        }
-        if (!cached) {
-          setSuggestions([]);
-          setOpen(false);
-        }
-      } finally {
-        if (requestId === requestIdRef.current) {
-          setLoading(false);
-        }
-      }
-    }, 120);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [value, swapGeneration]);
-
-  const selectSuggestion = (suggestion: PlaceSuggestion) => {
-    suppressFetchRef.current = true;
-    abortRef.current?.abort();
-    requestIdRef.current += 1;
-    onChange(formatPlaceLabel(suggestion));
-    setOpen(false);
-    setSuggestions([]);
-    setHighlightIndex(-1);
-    setLoading(false);
-  };
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!open || suggestions.length === 0) return;
-
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      setHighlightIndex((prev) => (prev + 1) % suggestions.length);
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      setHighlightIndex((prev) => (prev <= 0 ? suggestions.length - 1 : prev - 1));
-    } else if (event.key === 'Enter' && highlightIndex >= 0) {
-      event.preventDefault();
-      selectSuggestion(suggestions[highlightIndex]);
-    }
-  };
-
-  return (
-    <div ref={rootRef} style={styles.airportAutocomplete}>
-      <input
-        ref={inputRef}
-        type="text"
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={() => {
-          if (suggestions.length > 0 || loading) setOpen(true);
-        }}
-        onKeyDown={handleKeyDown}
-        style={{
-          ...styles.routeInput,
-          ...(loading ? styles.routeInputLoading : {}),
-        }}
-        aria-label={ariaLabel}
-        aria-autocomplete="list"
-        aria-expanded={open}
-        aria-busy={loading}
-        aria-controls={open ? `${ariaLabel}-suggestions` : undefined}
-        role="combobox"
-        autoComplete="off"
-      />
-      {loading && (
-        <div style={styles.suggestionInputLoader} aria-hidden>
-          <PlacesSearchLoader size={26} />
-        </div>
-      )}
-      {(open || loading) &&
-        createPortal(
-          <ul
-            ref={menuRef}
-            id={`${ariaLabel}-suggestions`}
-            className="suggestion-menu"
-            style={{ ...styles.suggestionMenu, ...menuPosition }}
-            role="listbox"
-            aria-label={`${ariaLabel} suggestions`}
-          >
-            {loading && suggestions.length === 0 ? (
-              <li style={styles.suggestionLoaderRow} role="presentation">
-                <PlacesSearchLoader size={40} />
-                <span style={styles.suggestionLoaderText}>Searching places...</span>
-              </li>
-            ) : (
-              suggestions.map((suggestion, index) => {
-                const highlighted = highlightIndex === index || hoveredIndex === index;
-                return (
-                  <li key={suggestion.id} role="none">
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={highlightIndex === index}
-                      style={{
-                        ...styles.suggestionOption,
-                        ...(highlighted ? styles.suggestionOptionHover : {}),
-                      }}
-                      onMouseEnter={() => {
-                        setHoveredIndex(index);
-                        setHighlightIndex(index);
-                      }}
-                      onMouseLeave={() => setHoveredIndex(null)}
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => selectSuggestion(suggestion)}
-                    >
-                      <span style={styles.suggestionText}>
-                        <span style={styles.suggestionName}>{formatPlaceLabel(suggestion)}</span>
-                        {suggestion.subtitle && (
-                          <span style={styles.suggestionSubtitle}>{suggestion.subtitle}</span>
-                        )}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })
-            )}
           </ul>,
           document.body
         )}
@@ -1467,8 +1130,9 @@ async function fetchReturnLegBatches(
 }
 
 export default function App() {
-  const { profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const militaryZuluTime = profile?.preferences?.militaryZuluTime ?? false;
+  const homeAirportLabel = profile?.preferences?.homeAirportLabel ?? '';
   const [adults, setAdults] = useState(1);
   const [childrenCount, setChildrenCount] = useState(0);
   const passengers = adults + childrenCount;
@@ -1499,6 +1163,23 @@ export default function App() {
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [routeSwapGeneration, setRouteSwapGeneration] = useState(0);
   const searchSeqRef = useRef(0);
+  const originPrefillRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      originPrefillRef.current = null;
+      return;
+    }
+    if (!homeAirportLabel) return;
+    if (originPrefillRef.current === user.uid) return;
+
+    setRoute((prev) => {
+      originPrefillRef.current = user.uid;
+      if (prev.origin.trim()) return prev;
+      return { ...prev, origin: homeAirportLabel };
+    });
+  }, [authLoading, user, homeAirportLabel]);
 
   const showDialog = (title: string, message: string) => {
     setModalTitle(title);

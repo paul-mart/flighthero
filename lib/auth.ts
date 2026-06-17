@@ -17,6 +17,8 @@ import { auth, db } from './firebase';
 export interface UserPreferences {
   militaryZuluTime?: boolean;
   cppValuations?: Record<string, number>;
+  homeAirport?: string;
+  homeAirportLabel?: string;
 }
 
 export interface UserProfile {
