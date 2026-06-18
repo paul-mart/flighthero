@@ -1273,6 +1273,30 @@ export default function App() {
     setRouteSwapGeneration((generation) => generation + 1);
   };
 
+  const hasSearchInput = Boolean(
+    origin.trim() || destination.trim() || date || returnDate,
+  );
+
+  const clearSearchForm = () => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    setRoute({ origin: '', destination: '' });
+    setDate('');
+    setReturnDate('');
+    setTripType('round-trip');
+    setAdults(1);
+    setChildrenCount(0);
+    setCabinClass('economy');
+    setRouteSwapGeneration((generation) => generation + 1);
+    setFlights([]);
+    setHasSearched(false);
+    setLoading(false);
+    setLoadingReturnDetails(false);
+    setSelectedFlight(null);
+    setValidationWarning(null);
+  };
+
   const handleSearchTypeChange = (next: 'cash' | 'points') => {
     if (next === searchType) return;
     setSearchType(next);
@@ -1481,6 +1505,7 @@ export default function App() {
               >
               <form onSubmit={handleSearch} style={styles.form}>
           <div className="filter-bar" style={styles.filterBar}>
+            <div className="filter-bar-options">
             <FilterDropdown
               value={tripType}
               onChange={(value) => {
@@ -1516,6 +1541,16 @@ export default function App() {
               ariaLabel="Cabin class"
               minTriggerWidth={168}
             />
+            </div>
+            <button
+              type="button"
+              className="search-clear-link"
+              onClick={clearSearchForm}
+              disabled={!hasSearchInput || loading}
+              aria-label="Clear search form"
+            >
+              Clear
+            </button>
           </div>
 
           <div className="main-bar" style={styles.mainBar}>
@@ -2002,7 +2037,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     flexWrap: 'wrap',
     alignItems: 'center',
-    gap: '4px 20px',
+    justifyContent: 'space-between',
+    gap: '8px 12px',
     padding: '10px 20px 4px',
     borderBottom: '1px solid #f0f0f0',
   },
