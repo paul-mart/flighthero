@@ -12,6 +12,7 @@ import { ContinueSearching } from './components/ContinueSearching';
 import { TopNavbar } from './components/TopNavbar';
 import { SiteFooter } from './components/SiteFooter';
 import { useAuth } from './context/AuthContext';
+import { HomeSearchResetProvider } from './context/HomeSearchContext';
 import {
   calculateCpp,
   GRADE_LABELS,
@@ -1297,6 +1298,38 @@ export default function App() {
     setValidationWarning(null);
   };
 
+  const resetHomePage = useCallback(() => {
+    searchSeqRef.current += 1;
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    setDate('');
+    setReturnDate('');
+    setTripType('round-trip');
+    setAdults(1);
+    setChildrenCount(0);
+    setCabinClass('economy');
+    setSearchType('points');
+    setFlights([]);
+    setHasSearched(false);
+    setLoading(false);
+    setLoadingReturnDetails(false);
+    setSelectedFlight(null);
+    setValidationWarning(null);
+    setAdvancedEnabled(false);
+    setStopsFilter('2-or-fewer');
+    setSortOption('price-asc');
+    setMaxTaxes(150);
+    setRouteSwapGeneration((generation) => generation + 1);
+    originPrefillRef.current = null;
+    const nextOrigin = user && homeAirportLabel ? homeAirportLabel : '';
+    if (user && homeAirportLabel) {
+      originPrefillRef.current = user.uid;
+    }
+    setRoute({ origin: nextOrigin, destination: '' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [user, homeAirportLabel]);
+
   const handleSearchTypeChange = (next: 'cash' | 'points') => {
     if (next === searchType) return;
     setSearchType(next);
@@ -1485,6 +1518,7 @@ export default function App() {
   };
 
   return (
+    <HomeSearchResetProvider value={resetHomePage}>
     <div className="app-page">
       <TopNavbar />
 
@@ -1954,6 +1988,7 @@ export default function App() {
       )}
       <SiteFooter />
     </div>
+    </HomeSearchResetProvider>
   );
 }
 

@@ -1,18 +1,32 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useHomeSearchReset } from '../context/HomeSearchContext';
 import { FlightHeroLogo } from './FlightHeroLogo';
 import { ProfileAvatar } from './ProfileAvatar';
 
 export function TopNavbar() {
   const { user, profile, loading } = useAuth();
+  const location = useLocation();
+  const resetHomePage = useHomeSearchReset();
 
   const displayName = profile?.displayName || user?.displayName || '';
   const email = profile?.email || user?.email || '';
 
+  const handleLogoClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (location.pathname !== '/') return;
+    event.preventDefault();
+    resetHomePage?.();
+  };
+
   return (
     <header className="top-nav">
       <div className="top-nav-inner">
-        <Link to="/" className="top-nav-brand" aria-label="FlightHero home">
+        <Link
+          to="/"
+          className="top-nav-brand"
+          aria-label="FlightHero home"
+          onClick={handleLogoClick}
+        >
           <FlightHeroLogo variant="nav" />
         </Link>
         <nav className="top-nav-links" aria-label="Main navigation">
