@@ -8,6 +8,7 @@ import { FlightHeroLogo } from './components/FlightHeroLogo';
 import { FlightItineraryTimeline, type FlightItinerary } from './components/FlightItineraryTimeline';
 import { FlightTimeRange } from './components/FlightTimeRange';
 import { TransferPartnerLogo } from './components/TransferPartnerLogo';
+import { ContinueSearching } from './components/ContinueSearching';
 import { TopNavbar } from './components/TopNavbar';
 import { SiteFooter } from './components/SiteFooter';
 import { useAuth } from './context/AuthContext';
@@ -18,6 +19,13 @@ import {
   type RedemptionGrade,
 } from './lib/cpp';
 import { getDepartureSortMinutes } from './lib/flightTimes';
+import {
+  getRecentSearches,
+  getSearchCount,
+  MIN_SEARCHES_TO_SHOW_CONTINUE,
+  recordRecentSearch,
+  type RecentSearch,
+} from './lib/recentSearches';
 import { ChevronDownIcon, PlaneArriveIcon, PlaneDepartIcon, CalendarIcon, SwapIcon, SearchIcon, ArrowRightIcon } from './icons';
 
 interface AwardDetails {
@@ -1205,6 +1213,11 @@ export default function App() {
   const [routeSwapGeneration, setRouteSwapGeneration] = useState(0);
   const searchSeqRef = useRef(0);
   const originPrefillRef = useRef<string | null>(null);
+  const [recentSearches, setRecentSearches] = useState(() => getRecentSearches());
+  const [searchCount, setSearchCount] = useState(() => getSearchCount());
+  const showContinueSearching = !hasSearched
+    && searchCount >= MIN_SEARCHES_TO_SHOW_CONTINUE
+    && recentSearches.length > 0;
 
   useEffect(() => {
     if (authLoading) return;
@@ -1271,43 +1284,54 @@ export default function App() {
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const trimmedOrigin = origin.trim();
-    const trimmedDestination = destination.trim();
-    const missing: string[] = [];
-    if (!trimmedOrigin) missing.push('From');
-    if (!trimmedDestination) missing.push('To');
-    if (!date) missing.push('Departure date');
-    if (tripType === 'round-trip' && !returnDate) missing.push('Return date');
-
-    if (missing.length > 0) {
-      showDialog(
-        'Missing information',
-        `Please complete all required fields before searching.\n\nMissing: ${missing.join(', ')}`
-      );
-      return;
-    }
-
+  const runFlightSearch = async (request: {
+    origin: string;
+    destination: string;
+    departureDate: string;
+    returnDate: string;
+    tripType: 'one-way' | 'round-trip';
+    searchType: 'cash' | 'points';
+    cabinClass: string;
+    adults: number;
+    childrenCount: number;
+  }) => {
+    const trimmedOrigin = request.origin.trim();
+    const trimmedDestination = request.destination.trim();
+    const passengersTotal = request.adults + request.childrenCount;
     const searchSeq = ++searchSeqRef.current;
+
     setLoading(true);
     setLoadingReturnDetails(false);
     setFlights([]);
+
+    const recorded = recordRecentSearch({
+      origin: trimmedOrigin,
+      destination: trimmedDestination,
+      departureDate: request.departureDate,
+      returnDate: request.returnDate,
+      tripType: request.tripType,
+      searchType: request.searchType,
+      cabinClass: request.cabinClass,
+      adults: request.adults,
+      childrenCount: request.childrenCount,
+    });
+    setRecentSearches(recorded.recent);
+    setSearchCount(recorded.searchCount);
+
     try {
       const params = new URLSearchParams({
         origin: trimmedOrigin,
         destination: trimmedDestination,
-        departure_date: date,
-        search_type: searchType,
-        passengers: String(passengers),
-        adults: String(adults),
-        children: String(childrenCount),
-        trip_type: tripType,
-        cabin_class: cabinClass,
+        departure_date: request.departureDate,
+        search_type: request.searchType,
+        passengers: String(passengersTotal),
+        adults: String(request.adults),
+        children: String(request.childrenCount),
+        trip_type: request.tripType,
+        cabin_class: request.cabinClass,
       });
-      if (tripType === 'round-trip') {
-        params.set('return_date', returnDate);
+      if (request.tripType === 'round-trip') {
+        params.set('return_date', request.returnDate);
       }
       const response = await apiFetch(apiUrl(`/api/search?${params}`));
       const data = await response.json();
@@ -1327,7 +1351,7 @@ export default function App() {
           'No flights found',
           'No flights were found for your search. Try different dates or airports.'
         );
-      } else if (tripType === 'round-trip' && searchType === 'cash') {
+      } else if (request.tripType === 'round-trip' && request.searchType === 'cash') {
         const tokens = [...new Set(
           results.map((flight) => flight.departure_token).filter((token): token is string => Boolean(token))
         )];
@@ -1340,8 +1364,8 @@ export default function App() {
                 {
                   origin: trimmedOrigin,
                   destination: trimmedDestination,
-                  departureDate: date,
-                  returnDate,
+                  departureDate: request.departureDate,
+                  returnDate: request.returnDate,
                 },
                 (returnData) => {
                   setFlights((prev) =>
@@ -1367,7 +1391,7 @@ export default function App() {
         }
       }
     } catch (error) {
-      console.error("Error fetching flights:", error);
+      console.error('Error fetching flights:', error);
       showDialog(
         'Connection error',
         'Could not reach the flight search server. Make sure the Python backend is running.'
@@ -1376,6 +1400,64 @@ export default function App() {
       setHasSearched(true);
       setLoading(false);
     }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const trimmedOrigin = origin.trim();
+    const trimmedDestination = destination.trim();
+    const missing: string[] = [];
+    if (!trimmedOrigin) missing.push('From');
+    if (!trimmedDestination) missing.push('To');
+    if (!date) missing.push('Departure date');
+    if (tripType === 'round-trip' && !returnDate) missing.push('Return date');
+
+    if (missing.length > 0) {
+      showDialog(
+        'Missing information',
+        `Please complete all required fields before searching.\n\nMissing: ${missing.join(', ')}`
+      );
+      return;
+    }
+
+    await runFlightSearch({
+      origin: trimmedOrigin,
+      destination: trimmedDestination,
+      departureDate: date,
+      returnDate,
+      tripType,
+      searchType,
+      cabinClass,
+      adults,
+      childrenCount,
+    });
+  };
+
+  const handleResumeSearch = async (search: RecentSearch) => {
+    setRoute({ origin: search.origin, destination: search.destination });
+    setDate(search.departureDate);
+    setReturnDate(search.returnDate);
+    setTripType(search.tripType);
+    setSearchType(search.searchType);
+    setCabinClass(search.cabinClass);
+    setAdults(search.adults);
+    setChildrenCount(search.childrenCount);
+    setRouteSwapGeneration((generation) => generation + 1);
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    await runFlightSearch({
+      origin: search.origin,
+      destination: search.destination,
+      departureDate: search.departureDate,
+      returnDate: search.returnDate,
+      tripType: search.tripType,
+      searchType: search.searchType,
+      cabinClass: search.cabinClass,
+      adults: search.adults,
+      childrenCount: search.childrenCount,
+    });
   };
 
   return (
@@ -1599,6 +1681,10 @@ export default function App() {
           </div>
         </div>
       </section>
+
+      {showContinueSearching && (
+        <ContinueSearching searches={recentSearches} onSelect={handleResumeSearch} />
+      )}
 
       {!hasSearched && <TrendingDeals />}
 
