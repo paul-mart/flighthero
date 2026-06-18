@@ -5,5 +5,43 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    match /mail/{messageId} {
+      allow create: if isValidContactMail(request.resource.data);
+      allow read, update, delete: if false;
+    }
+
+    match /contactMessages/{messageId} {
+      allow create: if isValidContactMessage(request.resource.data);
+      allow read, update, delete: if false;
+    }
   }
+}
+
+function isValidContactMail(data) {
+  return data.keys().hasAll(['to', 'message'])
+    && data.to is list
+    && data.to.size() == 1
+    && data.to[0] is string
+    && data.to[0].size() > 3
+    && data.to[0].size() <= 254
+    && data.message.keys().hasAll(['subject', 'text'])
+    && data.message.subject is string
+    && data.message.subject.size() > 3
+    && data.message.subject.size() <= 200
+    && data.message.text is string
+    && data.message.text.size() >= 10
+    && data.message.text.size() <= 4000
+    && (!('replyTo' in data) || (data.replyTo is string && data.replyTo.size() <= 254));
+}
+
+function isValidContactMessage(data) {
+  return data.keys().hasAll(['email', 'message', 'source'])
+    && data.email is string
+    && data.email.size() > 3
+    && data.email.size() <= 254
+    && data.message is string
+    && data.message.size() >= 10
+    && data.message.size() <= 4000
+    && data.source == 'contact-form';
 }
