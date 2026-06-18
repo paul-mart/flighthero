@@ -19,8 +19,8 @@ export function SiteFooter() {
             <h2 className="site-footer-heading">Support</h2>
             <ul className="site-footer-links">
               <li><Link to="/faq">FAQ</Link></li>
-              <li><Link to="/auth/sign-in">Sign in</Link></li>
-              <li><Link to="/profile">Profile</Link></li>
+              <li><Link to="/legal">Legal</Link></li>
+              <li><Link to="/contact">Contact us</Link></li>
             </ul>
           </div>
         </div>

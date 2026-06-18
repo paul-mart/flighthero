@@ -9,6 +9,8 @@ import SignUpPage from './pages/SignUpPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ProfilePage from './pages/ProfilePage';
 import FaqPage from './pages/FaqPage';
+import LegalPage from './pages/LegalPage';
+import ContactUsPage from './pages/ContactUsPage';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -22,6 +24,8 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/faq" element={<FaqPage />} />
+          <Route path="/legal" element={<LegalPage />} />
+          <Route path="/contact" element={<ContactUsPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
