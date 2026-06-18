@@ -12,7 +12,8 @@ export function SiteFooter() {
               <li><Link to="/">Search flights</Link></li>
               <li><a href="/#deals">Deals</a></li>
               <li><a href="/#explore">Explore</a></li>
-              <li><a href="/#points-guide">Points Guide</a></li>
+              <li><a href="/#guide">Guide</a></li>
+              <li><Link to="/points-news">Points News</Link></li>
             </ul>
           </div>
           <div className="site-footer-column">

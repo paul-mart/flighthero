@@ -18,7 +18,8 @@ export function TopNavbar() {
         <nav className="top-nav-links" aria-label="Main navigation">
           <a href="/#deals" className="top-nav-link">Deals</a>
           <a href="/#explore" className="top-nav-link">Explore</a>
-          <a href="/#points-guide" className="top-nav-link">Points Guide</a>
+          <a href="/#guide" className="top-nav-link">Guide</a>
+          <Link to="/points-news" className="top-nav-link">Points News</Link>
           {!loading && user ? (
             <Link
               to="/profile"

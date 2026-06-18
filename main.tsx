@@ -11,6 +11,7 @@ import ProfilePage from './pages/ProfilePage';
 import FaqPage from './pages/FaqPage';
 import LegalPage from './pages/LegalPage';
 import ContactUsPage from './pages/ContactUsPage';
+import PointsNewsPage from './pages/PointsNewsPage';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -26,6 +27,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/faq" element={<FaqPage />} />
           <Route path="/legal" element={<LegalPage />} />
           <Route path="/contact" element={<ContactUsPage />} />
+          <Route path="/points-news" element={<PointsNewsPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
