@@ -3,6 +3,15 @@ import { extractAirportCode } from '../lib/airportCode';
 const DEFAULT_IMAGE = '/deals/default.jpg';
 
 const LOCAL_IMAGES_BY_CODE: Record<string, string> = {
+  BOS: '/deals/bos.jpg',
+  JFK: '/deals/jfk.jpg',
+  LGA: '/deals/jfk.jpg',
+  EWR: '/deals/jfk.jpg',
+  LAX: '/deals/lax.jpg',
+  SFO: '/deals/sfo.jpg',
+  SEA: '/deals/sea.jpg',
+  MIA: '/deals/mia.jpg',
+  ORD: '/deals/ord.jpg',
   CDG: '/deals/cdg.jpg',
   ORY: '/deals/cdg.jpg',
   LHR: '/deals/lhr.jpg',
