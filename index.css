@@ -1589,6 +1589,48 @@ html {
   border-radius: 10px;
 }
 
+.auth-divider-label {
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-align: center;
+}
+
+.auth-google-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #111827;
+  background: #fff;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-google-btn:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+}
+
+.auth-google-icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+.auth-google-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .auth-submit {
   margin-top: 4px;
   padding: 13px 20px;

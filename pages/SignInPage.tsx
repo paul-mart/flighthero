@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthShell } from '../components/AuthShell';
 import { useAuth } from '../context/AuthContext';
-import { getAuthErrorMessage, signInWithEmail } from '../lib/auth';
+import { getAuthErrorMessage, signInWithEmail, signInWithGoogle } from '../lib/auth';
 
 export default function SignInPage() {
   const navigate = useNavigate();
@@ -30,6 +30,25 @@ export default function SignInPage() {
     setSubmitting(true);
     try {
       await signInWithEmail(email.trim(), password);
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(getAuthErrorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError('');
+
+    if (!configured) {
+      setError('Firebase is not configured. Add your Firebase keys to .env.local.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await signInWithGoogle();
       navigate('/', { replace: true });
     } catch (err) {
       setError(getAuthErrorMessage(err));
@@ -91,6 +110,24 @@ export default function SignInPage() {
             <Link to="/auth/forgot-password" className="auth-forgot-link">Forgot password?</Link>
           </p>
         </div>
+
+        <p className="auth-divider-label">or</p>
+
+        <button
+          type="button"
+          className="auth-google-btn"
+          onClick={handleGoogleSignIn}
+          disabled={submitting || !configured}
+        >
+          <img
+            className="auth-google-icon"
+            src="/auth/google-g.svg"
+            alt=""
+            width={18}
+            height={18}
+          />
+          Sign in with Google
+        </button>
 
         {error && (
           <p className="auth-error" role="alert">

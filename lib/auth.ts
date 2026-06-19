@@ -1,7 +1,9 @@
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut as firebaseSignOut,
   updateProfile,
   type User,
@@ -155,6 +157,14 @@ export async function signInWithEmail(email: string, password: string): Promise<
   return credential.user;
 }
 
+export async function signInWithGoogle(): Promise<User> {
+  const { auth: firebaseAuth } = requireAuth();
+  const provider = new GoogleAuthProvider();
+  const credential = await signInWithPopup(firebaseAuth, provider);
+  await updateUserLogin(credential.user);
+  return credential.user;
+}
+
 export async function signOut(): Promise<void> {
   const { auth: firebaseAuth } = requireAuth();
   await firebaseSignOut(firebaseAuth);
@@ -183,6 +193,12 @@ export function getAuthErrorMessage(error: unknown): string {
       return 'Incorrect email or password.';
     case 'auth/too-many-requests':
       return 'Too many attempts. Please try again later.';
+    case 'auth/popup-closed-by-user':
+      return 'Sign-in was cancelled. Please try again.';
+    case 'auth/popup-blocked':
+      return 'Pop-up was blocked. Allow pop-ups for this site and try again.';
+    case 'auth/account-exists-with-different-credential':
+      return 'An account already exists with this email using a different sign-in method.';
     default:
       return error instanceof Error ? error.message : 'Something went wrong. Please try again.';
   }
