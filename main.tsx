@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import './index.css';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
+import { ScrollToTop } from './components/ScrollToTop';
 import SignInPage from './pages/SignInPage';
 import SignUpPage from './pages/SignUpPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -16,6 +17,7 @@ import PointsNewsPage from './pages/PointsNewsPage';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
+      <ScrollToTop />
       <AuthProvider>
         <Routes>
           <Route path="/" element={<App />} />
