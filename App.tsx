@@ -23,8 +23,7 @@ import {
 import { getDepartureSortMinutes } from './lib/flightTimes';
 import {
   getRecentSearches,
-  getSearchCount,
-  MIN_SEARCHES_TO_SHOW_CONTINUE,
+  shouldShowContinueSearching,
   recordRecentSearch,
   type RecentSearch,
 } from './lib/recentSearches';
@@ -1119,11 +1118,18 @@ export default function App() {
   const [routeSwapGeneration, setRouteSwapGeneration] = useState(0);
   const searchSeqRef = useRef(0);
   const originPrefillRef = useRef<string | null>(null);
-  const [recentSearches, setRecentSearches] = useState(() => getRecentSearches());
-  const [searchCount, setSearchCount] = useState(() => getSearchCount());
-  const showContinueSearching = !hasSearched
-    && searchCount >= MIN_SEARCHES_TO_SHOW_CONTINUE
-    && recentSearches.length > 0;
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const showContinueSearching = !hasSearched && shouldShowContinueSearching(user?.uid);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setRecentSearches([]);
+      originPrefillRef.current = null;
+      return;
+    }
+    setRecentSearches(getRecentSearches(user.uid));
+  }, [authLoading, user]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -1266,19 +1272,20 @@ export default function App() {
     setLoadingReturnDetails(false);
     setFlights([]);
 
-    const recorded = recordRecentSearch({
-      origin: trimmedOrigin,
-      destination: trimmedDestination,
-      departureDate: request.departureDate,
-      returnDate: request.returnDate,
-      tripType: request.tripType,
-      searchType: request.searchType,
-      cabinClass: request.cabinClass,
-      adults: request.adults,
-      childrenCount: request.childrenCount,
-    });
-    setRecentSearches(recorded.recent);
-    setSearchCount(recorded.searchCount);
+    if (user) {
+      const recorded = recordRecentSearch(user.uid, {
+        origin: trimmedOrigin,
+        destination: trimmedDestination,
+        departureDate: request.departureDate,
+        returnDate: request.returnDate,
+        tripType: request.tripType,
+        searchType: request.searchType,
+        cabinClass: request.cabinClass,
+        adults: request.adults,
+        childrenCount: request.childrenCount,
+      });
+      setRecentSearches(recorded.recent);
+    }
 
     try {
       const params = new URLSearchParams({

@@ -25,10 +25,18 @@ export interface RecentSearchInput {
   childrenCount: number;
 }
 
-const RECENT_KEY = 'flighthero:recent-searches';
-const COUNT_KEY = 'flighthero:search-count';
+const RECENT_KEY_PREFIX = 'flighthero:recent-searches';
+const COUNT_KEY_PREFIX = 'flighthero:search-count';
 export const MAX_RECENT_SEARCHES = 4;
 export const MIN_SEARCHES_TO_SHOW_CONTINUE = 4;
+
+function recentStorageKey(userId: string): string {
+  return `${RECENT_KEY_PREFIX}:${userId}`;
+}
+
+function countStorageKey(userId: string): string {
+  return `${COUNT_KEY_PREFIX}:${userId}`;
+}
 
 function searchFingerprint(input: RecentSearchInput): string {
   return [
@@ -44,9 +52,9 @@ function searchFingerprint(input: RecentSearchInput): string {
   ].join('|');
 }
 
-function readRecentSearches(): RecentSearch[] {
+function readRecentSearches(userId: string): RecentSearch[] {
   try {
-    const raw = localStorage.getItem(RECENT_KEY);
+    const raw = localStorage.getItem(recentStorageKey(userId));
     if (!raw) return [];
     const parsed = JSON.parse(raw) as RecentSearch[];
     if (!Array.isArray(parsed)) return [];
@@ -73,9 +81,10 @@ function isRecentSearch(value: unknown): value is RecentSearch {
   );
 }
 
-export function getSearchCount(): number {
+export function getSearchCount(userId: string | null | undefined): number {
+  if (!userId) return 0;
   try {
-    const raw = localStorage.getItem(COUNT_KEY);
+    const raw = localStorage.getItem(countStorageKey(userId));
     const parsed = raw ? Number.parseInt(raw, 10) : 0;
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
   } catch {
@@ -83,20 +92,26 @@ export function getSearchCount(): number {
   }
 }
 
-export function getRecentSearches(): RecentSearch[] {
-  return readRecentSearches();
+export function getRecentSearches(userId: string | null | undefined): RecentSearch[] {
+  if (!userId) return [];
+  return readRecentSearches(userId);
 }
 
-export function shouldShowContinueSearching(): boolean {
-  return getSearchCount() >= MIN_SEARCHES_TO_SHOW_CONTINUE && getRecentSearches().length > 0;
+export function shouldShowContinueSearching(userId: string | null | undefined): boolean {
+  if (!userId) return false;
+  return getSearchCount(userId) >= MIN_SEARCHES_TO_SHOW_CONTINUE
+    && getRecentSearches(userId).length > 0;
 }
 
-export function recordRecentSearch(input: RecentSearchInput): {
+export function recordRecentSearch(
+  userId: string,
+  input: RecentSearchInput,
+): {
   recent: RecentSearch[];
   searchCount: number;
 } {
   const fingerprint = searchFingerprint(input);
-  const existing = readRecentSearches().filter(
+  const existing = readRecentSearches(userId).filter(
     (item) => searchFingerprint(item) !== fingerprint,
   );
   const entry: RecentSearch = {
@@ -106,10 +121,10 @@ export function recordRecentSearch(input: RecentSearchInput): {
     searchedAt: Date.now(),
   };
   const recent = [entry, ...existing].slice(0, MAX_RECENT_SEARCHES);
-  const searchCount = getSearchCount() + 1;
+  const searchCount = getSearchCount(userId) + 1;
 
-  localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
-  localStorage.setItem(COUNT_KEY, String(searchCount));
+  localStorage.setItem(recentStorageKey(userId), JSON.stringify(recent));
+  localStorage.setItem(countStorageKey(userId), String(searchCount));
 
   return { recent, searchCount };
 }
