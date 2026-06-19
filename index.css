@@ -483,6 +483,60 @@ body:has(.auth-section) {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
+  flex: 1;
+  min-width: 0;
+}
+
+.trending-deals-carousel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.trending-deals-nav {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #fff;
+  color: #374151;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.trending-deals-nav:hover {
+  color: #4338ca;
+  border-color: #c7d2fe;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
+}
+
+.trending-deals-nav:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+.trending-deals-slide-indicator {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: #9ca3af;
+}
+
+.trending-deal-card-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  background: none;
 }
 
 .trending-deal-card {

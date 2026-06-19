@@ -9,6 +9,7 @@ import { FlightItineraryTimeline, type FlightItinerary } from './components/Flig
 import { FlightTimeRange } from './components/FlightTimeRange';
 import { TransferPartnerLogo } from './components/TransferPartnerLogo';
 import { ContinueSearching } from './components/ContinueSearching';
+import { TrendingDeals } from './components/TrendingDeals';
 import { TopNavbar } from './components/TopNavbar';
 import { SiteFooter } from './components/SiteFooter';
 import { useAuth } from './context/AuthContext';
@@ -27,6 +28,7 @@ import {
   recordRecentSearch,
   type RecentSearch,
 } from './lib/recentSearches';
+import type { TrendingDeal } from './data/trendingDeals';
 import { ChevronDownIcon, PlaneArriveIcon, PlaneDepartIcon, CalendarIcon, SwapIcon, SearchIcon, ArrowRightIcon } from './icons';
 
 interface AwardDetails {
@@ -400,103 +402,6 @@ function PassengerDropdown({ adults, childCount, onChange }: PassengerDropdownPr
 
 function formatRouteLabel(origin: string, destination: string): string {
   return `${origin} – ${destination}`;
-}
-
-const TRENDING_DEALS = [
-  {
-    city: 'Tokyo',
-    country: 'Japan',
-    image: 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=900&q=80',
-    points: 'From 30k Points',
-    cash: 'From $589',
-  },
-  {
-    city: 'Paris',
-    country: 'France',
-    image: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=900&q=80',
-    points: 'From 28k Points',
-    cash: 'From $512',
-  },
-  {
-    city: 'London',
-    country: 'United Kingdom',
-    image: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=900&q=80',
-    points: 'From 25k Points',
-    cash: 'From $468',
-  },
-  {
-    city: 'New York',
-    country: 'United States',
-    image: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=900&q=80',
-    points: 'From 12k Points',
-    cash: 'From $198',
-  },
-] as const;
-
-function TrendingDeals() {
-  const ref = useRef<HTMLElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.15 }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <section
-      ref={ref}
-      className={`trending-deals${visible ? ' trending-deals--visible' : ''}`}
-      id="deals"
-      aria-labelledby="trending-deals-title"
-    >
-      <div className="trending-deals-inner">
-        <div className="trending-deals-header">
-          <h2 id="trending-deals-title" className="trending-deals-title">Trending Deals</h2>
-          <p className="trending-deals-subtitle">Popular routes with sample award and cash fares</p>
-        </div>
-        <div className="trending-deals-grid">
-          {TRENDING_DEALS.map((deal, index) => (
-            <article
-              key={deal.city}
-              className="trending-deal-card"
-              style={{ ['--deal-index' as string]: index }}
-            >
-              <img
-                className="trending-deal-image"
-                src={deal.image}
-                alt=""
-                loading="lazy"
-              />
-              <div className="trending-deal-overlay" aria-hidden />
-              <div className="trending-deal-content">
-                <div>
-                  <h3 className="trending-deal-city">{deal.city}</h3>
-                  <p className="trending-deal-country">{deal.country}</p>
-                </div>
-                <div className="trending-deal-tags">
-                  <span className="trending-deal-tag trending-deal-tag-points">{deal.points}</span>
-                  <span className="trending-deal-tag trending-deal-tag-cash">{deal.cash}</span>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
 }
 
 function HeroCopyBlock() {
@@ -1517,6 +1422,32 @@ export default function App() {
     });
   };
 
+  const handleTrendingDealSelect = async (deal: TrendingDeal) => {
+    setRoute({ origin: deal.origin, destination: deal.destination });
+    setDate(deal.departureDate);
+    setReturnDate(deal.returnDate);
+    setTripType(deal.tripType);
+    setSearchType(deal.searchType);
+    setCabinClass(deal.cabinClass);
+    setAdults(1);
+    setChildrenCount(0);
+    setRouteSwapGeneration((generation) => generation + 1);
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    await runFlightSearch({
+      origin: deal.origin,
+      destination: deal.destination,
+      departureDate: deal.departureDate,
+      returnDate: deal.returnDate,
+      tripType: deal.tripType,
+      searchType: deal.searchType,
+      cabinClass: deal.cabinClass,
+      adults: 1,
+      childrenCount: 0,
+    });
+  };
+
   return (
     <HomeSearchResetProvider value={resetHomePage}>
     <div className="app-page">
@@ -1755,7 +1686,7 @@ export default function App() {
         <ContinueSearching searches={recentSearches} onSelect={handleResumeSearch} />
       )}
 
-      {!hasSearched && <TrendingDeals />}
+      {!hasSearched && <TrendingDeals onSelectDeal={handleTrendingDealSelect} />}
 
       <div className="app-content" style={styles.container}>
       {/* Results Section */}

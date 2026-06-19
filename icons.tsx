@@ -37,6 +37,22 @@ export function ChevronDownIcon({ size = 14, strokeWidth = 2 }: IconProps) {
   );
 }
 
+export function ChevronLeftIcon({ size = 14, strokeWidth = 2 }: IconProps) {
+  return (
+    <FeatherIcon size={size} strokeWidth={strokeWidth}>
+      <path d="M15 18l-6-6 6-6" />
+    </FeatherIcon>
+  );
+}
+
+export function ChevronRightIcon({ size = 14, strokeWidth = 2 }: IconProps) {
+  return (
+    <FeatherIcon size={size} strokeWidth={strokeWidth}>
+      <path d="M9 18l6-6-6-6" />
+    </FeatherIcon>
+  );
+}
+
 export function PlaneDepartIcon({ size = FORM_ICON_SIZE }: IconProps) {
   return (
     <FeatherIcon size={size}>
