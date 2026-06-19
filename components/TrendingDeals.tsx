@@ -65,7 +65,7 @@ export function TrendingDeals({ onSelectDeal }: TrendingDealsProps) {
             onClick={goToPrevious}
             aria-label="Show previous deals"
           >
-            <ChevronLeftIcon size={20} />
+            <ChevronLeftIcon size={28} />
           </button>
 
           <div
@@ -109,7 +109,7 @@ export function TrendingDeals({ onSelectDeal }: TrendingDealsProps) {
             onClick={goToNext}
             aria-label="Show next deals"
           >
-            <ChevronRightIcon size={20} />
+            <ChevronRightIcon size={28} />
           </button>
         </div>
 
