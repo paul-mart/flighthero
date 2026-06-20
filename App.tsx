@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { apiFetch, apiUrl } from './api';
 import DatePicker from './DatePicker';
 import { AirportAutocomplete, PlacesSearchLoader } from './components/AirportAutocomplete';
@@ -11,9 +11,12 @@ import { TransferPartnerLogo } from './components/TransferPartnerLogo';
 import { TransferBonusBadge, TransferBonusMath, TransferBonusPartnerChip } from './components/TransferBonusBadge';
 import { ContinueSearching } from './components/ContinueSearching';
 import { TrendingDeals } from './components/TrendingDeals';
+import { TrackedDealsSection } from './components/TrackedDealsSection';
+import { TrackDealButton } from './components/TrackDealButton';
 import { TopNavbar } from './components/TopNavbar';
 import { SiteFooter } from './components/SiteFooter';
 import { useAuth } from './context/AuthContext';
+import { useTrackedDeals } from './context/TrackedDealsContext';
 import { HomeSearchResetProvider } from './context/HomeSearchContext';
 import {
   calculateCpp,
@@ -28,6 +31,11 @@ import {
   recordRecentSearch,
   type RecentSearch,
 } from './lib/recentSearches';
+import {
+  trackedDealToSearchInput,
+  type TrackedDeal,
+  type TrackedDealInput,
+} from './lib/trackedDeals';
 import type { TrendingDeal } from './data/trendingDeals';
 import {
   getApplicableTransferBonuses,
@@ -773,6 +781,7 @@ function FlightDetailModal({
   searchType,
   tripType,
   returnDate,
+  searchContext,
   militaryZuluTime,
   onClose,
 }: {
@@ -780,6 +789,7 @@ function FlightDetailModal({
   searchType: 'cash' | 'points';
   tripType: 'one-way' | 'round-trip';
   returnDate: string;
+  searchContext: TrackedDealInput;
   militaryZuluTime: boolean;
   onClose: () => void;
 }) {
@@ -816,6 +826,19 @@ function FlightDetailModal({
   const bestTransferBonus = transferBonuses[0] ?? null;
   const hasReturn = tripType === 'round-trip'
     && (flight.return_flight_number || flight.return_departure_time);
+  const trackDealInput: TrackedDealInput = {
+    ...searchContext,
+    departureDate: flight.departure_date,
+    snapshot: flight.award_details
+      ? {
+        pointsRequired: flight.award_details.points_required,
+        taxesAndFees: flight.award_details.taxes_and_fees,
+        mileageProgram: flight.award_details.mileage_program,
+        carrier: flight.carrier,
+        flightNumber: flight.flight_number,
+      }
+      : undefined,
+  };
 
   return (
     <div
@@ -1027,6 +1050,9 @@ function FlightDetailModal({
         </div>
 
         <div style={styles.flightDetailActions}>
+          {searchType === 'points' && (
+            <TrackDealButton dealInput={trackDealInput} />
+          )}
           {searchType === 'cash' ? (
             <>
               <a
@@ -1136,7 +1162,9 @@ async function fetchReturnLegBatches(
 }
 
 export default function App() {
+  const location = useLocation();
   const { user, profile, loading: authLoading } = useAuth();
+  const { deals: trackedDeals } = useTrackedDeals();
   const militaryZuluTime = profile?.preferences?.militaryZuluTime ?? false;
   const homeAirportLabel = profile?.preferences?.homeAirportLabel ?? '';
   const [adults, setAdults] = useState(1);
@@ -1172,6 +1200,8 @@ export default function App() {
   const originPrefillRef = useRef<string | null>(null);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const showContinueSearching = !hasSearched && shouldShowContinueSearching(user?.uid);
+  const showTrackedDeals = !hasSearched && user && trackedDeals.length > 0;
+  const resumeTrackedDealRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -1454,6 +1484,35 @@ export default function App() {
       childrenCount,
     });
   };
+
+  const handleResumeTrackedDeal = async (deal: TrackedDeal) => {
+    const input = trackedDealToSearchInput(deal);
+    setRoute({ origin: input.origin, destination: input.destination });
+    setDate(input.departureDate);
+    setReturnDate(input.returnDate);
+    setTripType(input.tripType);
+    setSearchType('points');
+    setCabinClass(input.cabinClass);
+    setAdults(input.adults);
+    setChildrenCount(input.childrenCount);
+    setRouteSwapGeneration((generation) => generation + 1);
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    await runFlightSearch({
+      ...input,
+      searchType: 'points',
+    });
+  };
+
+  useEffect(() => {
+    const state = location.state as { resumeTrackedDeal?: TrackedDeal } | null;
+    const deal = state?.resumeTrackedDeal;
+    if (!deal || resumeTrackedDealRef.current === deal.id) return;
+    resumeTrackedDealRef.current = deal.id;
+    window.history.replaceState({}, document.title);
+    void handleResumeTrackedDeal(deal);
+  }, [location.state]);
 
   const handleResumeSearch = async (search: RecentSearch) => {
     setRoute({ origin: search.origin, destination: search.destination });
@@ -1745,15 +1804,39 @@ export default function App() {
         <ContinueSearching searches={recentSearches} onSelect={handleResumeSearch} />
       )}
 
+      {showTrackedDeals && (
+        <TrackedDealsSection
+          deals={trackedDeals}
+          onSelect={handleResumeTrackedDeal}
+        />
+      )}
+
       {!hasSearched && <TrendingDeals onSelectDeal={handleTrendingDealSelect} />}
 
       <div className="app-content" style={styles.container}>
       {/* Results Section */}
       <main className="results-container" style={styles.resultsContainer}>
         {hasSearched && flights.length > 0 && (
-          <p style={styles.resultsCount}>
-            Showing {displayedFlights.length} of {flights.length} flight{flights.length === 1 ? '' : 's'}
-          </p>
+          <div className="results-header-row" style={styles.resultsHeaderRow}>
+            <p style={styles.resultsCount}>
+              Showing {displayedFlights.length} of {flights.length} flight{flights.length === 1 ? '' : 's'}
+            </p>
+            {searchType === 'points' && (
+              <TrackDealButton
+                dealInput={{
+                  origin,
+                  destination,
+                  departureDate: date,
+                  returnDate,
+                  tripType,
+                  cabinClass,
+                  adults,
+                  childrenCount,
+                }}
+                className="results-track-deal"
+              />
+            )}
+          </div>
         )}
         {!loading && displayedFlights.length > 0 ? (
           displayedFlights.map((flight) => {
@@ -1959,6 +2042,16 @@ export default function App() {
           searchType={searchType}
           tripType={tripType}
           returnDate={returnDate}
+          searchContext={{
+            origin,
+            destination,
+            departureDate: selectedFlight.departure_date,
+            returnDate,
+            tripType,
+            cabinClass,
+            adults,
+            childrenCount,
+          }}
           militaryZuluTime={militaryZuluTime}
           onClose={() => setSelectedFlight(null)}
         />
@@ -2435,8 +2528,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginLeft: 'auto',
   },
   resultsContainer: { marginTop: '0' },
+  resultsHeaderRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+    flexWrap: 'wrap',
+    marginBottom: '10px',
+  },
   resultsCount: {
-    margin: '0 0 10px',
+    margin: 0,
     fontSize: '13px',
     color: '#6b7280',
     fontWeight: 500,

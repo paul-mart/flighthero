@@ -1,21 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { User } from 'firebase/auth';
 import type { Timestamp } from 'firebase/firestore';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AirportAutocomplete } from '../components/AirportAutocomplete';
 import { ProfileAvatar } from '../components/ProfileAvatar';
 import { TopNavbar } from '../components/TopNavbar';
 import { SiteFooter } from '../components/SiteFooter';
 import { useAuth } from '../context/AuthContext';
+import { useTrackedDeals } from '../context/TrackedDealsContext';
 import { extractAirportCode } from '../lib/airportCode';
+import { formatRecentDate, formatRecentRoute } from '../lib/recentSearches';
+import type { TrackedDeal } from '../lib/trackedDeals';
 import { TRANSFER_PARTNER_OPTIONS } from '../lib/cpp';
 import type { UserProfile } from '../lib/auth';
 
-type ProfileSection = 'settings' | 'preferences';
+type ProfileSection = 'settings' | 'preferences' | 'tracked';
 
 const PROFILE_NAV: { id: ProfileSection; label: string }[] = [
   { id: 'settings', label: 'Settings' },
   { id: 'preferences', label: 'Preferences' },
+  { id: 'tracked', label: 'Tracked deals' },
 ];
 
 function buildCppDraft(saved: Record<string, number> = {}): Record<string, number> {
@@ -56,8 +60,13 @@ function formatMemberSince(date: Date): string {
 
 export default function ProfilePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, profile, loading, signOut, updatePreferences } = useAuth();
-  const [activeSection, setActiveSection] = useState<ProfileSection>('settings');
+  const { deals: trackedDeals, removeDeal, loading: trackedLoading } = useTrackedDeals();
+  const [activeSection, setActiveSection] = useState<ProfileSection>(() => {
+    const section = searchParams.get('section');
+    return section === 'tracked' ? 'tracked' : 'settings';
+  });
   const [signingOut, setSigningOut] = useState(false);
   const [savingPreference, setSavingPreference] = useState(false);
   const [preferenceNotice, setPreferenceNotice] = useState('');
@@ -78,6 +87,12 @@ export default function ProfilePage() {
     setDraftHomeAirportLabel(profile?.preferences?.homeAirportLabel ?? '');
     setDraftHomeAirport(profile?.preferences?.homeAirport ?? '');
   }, [profile?.preferences]);
+
+  useEffect(() => {
+    if (searchParams.get('section') === 'tracked') {
+      setActiveSection('tracked');
+    }
+  }, [searchParams]);
 
   const hasPreferenceChanges = useMemo(() => (
     draftMilitaryTime !== savedMilitaryTime
@@ -160,6 +175,14 @@ export default function ProfilePage() {
     } finally {
       setSavingPreference(false);
     }
+  };
+
+  const handleSearchTrackedDeal = (deal: TrackedDeal) => {
+    navigate('/', { state: { resumeTrackedDeal: deal } });
+  };
+
+  const handleRemoveTrackedDeal = async (deal: TrackedDeal) => {
+    await removeDeal(deal.id);
   };
 
   if (loading || !user) {
@@ -342,6 +365,63 @@ export default function ProfilePage() {
 
               {preferenceNotice && (
                 <p className="profile-preference-notice" role="status">{preferenceNotice}</p>
+              )}
+            </div>
+          )}
+
+          {activeSection === 'tracked' && (
+            <div className="profile-tracked">
+              <h2 className="profile-panel-title">Tracked award deals</h2>
+              <p className="profile-panel-text">
+                Routes you saved from points searches. Search again anytime to check the latest award availability.
+              </p>
+              {trackedLoading ? (
+                <p className="profile-panel-text">Loading tracked deals…</p>
+              ) : trackedDeals.length === 0 ? (
+                <p className="profile-panel-text">
+                  No tracked routes yet. Run a points search and choose &ldquo;Track this route&rdquo; on a result or in flight details.
+                </p>
+              ) : (
+                <ul className="profile-tracked-list">
+                  {trackedDeals.map((deal) => {
+                    const route = formatRecentRoute(deal.origin, deal.destination);
+                    const dateLabel = formatRecentDate({
+                      ...deal,
+                      searchType: 'points',
+                      searchedAt: deal.updatedAt,
+                    });
+                    return (
+                      <li key={deal.id} className="profile-tracked-item">
+                        <div className="profile-tracked-copy">
+                          <span className="profile-tracked-route">{route}</span>
+                          <span className="profile-tracked-meta">{dateLabel}</span>
+                          {deal.snapshot && (
+                            <span className="profile-tracked-meta">
+                              Last seen: {deal.snapshot.pointsRequired.toLocaleString()} pts
+                              {deal.snapshot.mileageProgram ? ` · ${deal.snapshot.mileageProgram}` : ''}
+                            </span>
+                          )}
+                        </div>
+                        <div className="profile-tracked-actions">
+                          <button
+                            type="button"
+                            className="profile-tracked-search-btn"
+                            onClick={() => handleSearchTrackedDeal(deal)}
+                          >
+                            Search again
+                          </button>
+                          <button
+                            type="button"
+                            className="profile-tracked-remove-btn"
+                            onClick={() => { void handleRemoveTrackedDeal(deal); }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
             </div>
           )}

@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import './index.css';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
+import { TrackedDealsProvider } from './context/TrackedDealsContext';
 import { ScrollToTop } from './components/ScrollToTop';
 import SignInPage from './pages/SignInPage';
 import SignUpPage from './pages/SignUpPage';
@@ -19,6 +20,7 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <ScrollToTop />
       <AuthProvider>
+        <TrackedDealsProvider>
         <Routes>
           <Route path="/" element={<App />} />
           <Route path="/auth" element={<Navigate to="/auth/sign-in" replace />} />
@@ -31,6 +33,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/contact" element={<ContactUsPage />} />
           <Route path="/points-news" element={<PointsNewsPage />} />
         </Routes>
+        </TrackedDealsProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
