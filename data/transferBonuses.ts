@@ -5,6 +5,8 @@
  *
  * To update: edit ACTIVE_TRANSFER_BONUSES below (current/upcoming only).
  */
+import { partnerLabelToKey } from '../lib/cpp';
+
 export interface TransferBonus {
   transferFrom: string;
   transferTo: string;
@@ -135,4 +137,96 @@ export function transferFromToLogoPartner(transferFrom: string): string | null {
   if (lower.includes('capital one')) return 'Capital One';
   if (lower.includes('bilt')) return 'Bilt Rewards';
   return null;
+}
+
+export interface ApplicableTransferBonus {
+  partner: string;
+  bonus: TransferBonus;
+  awardPoints: number;
+  transferPointsNeeded: number;
+}
+
+function normalizeProgramName(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function programNamesMatch(a: string, b: string): boolean {
+  const left = normalizeProgramName(a);
+  const right = normalizeProgramName(b);
+  if (!left || !right) return false;
+  if (left === right) return true;
+  if (left.includes(right) || right.includes(left)) return true;
+
+  const leftTokens = left.split(' ').filter((token) => token.length > 2);
+  const rightTokens = right.split(' ').filter((token) => token.length > 2);
+  const [shorter, longer] = leftTokens.length <= rightTokens.length
+    ? [leftTokens, rightTokens]
+    : [rightTokens, leftTokens];
+  if (shorter.length === 0) return false;
+
+  return shorter.every((token) =>
+    longer.some((candidate) => candidate.includes(token) || token.includes(candidate)),
+  );
+}
+
+function transferFromMatches(bonusFrom: string, partnerLabel: string): boolean {
+  const mappedPartner = transferFromToLogoPartner(bonusFrom);
+  if (mappedPartner) {
+    const mappedKey = partnerLabelToKey(mappedPartner);
+    const partnerKey = partnerLabelToKey(partnerLabel);
+    if (mappedKey && partnerKey) return mappedKey === partnerKey;
+  }
+  return programNamesMatch(bonusFrom, partnerLabel);
+}
+
+export function isTransferBonusActive(
+  bonus: TransferBonus,
+  todayIso = new Date().toISOString().slice(0, 10),
+): boolean {
+  return todayIso >= bonus.startDate && todayIso <= bonus.endDate;
+}
+
+export function calculateTransferPointsNeeded(
+  awardPoints: number,
+  bonusPercent: number,
+): number {
+  if (awardPoints <= 0 || bonusPercent <= 0) return awardPoints;
+  return Math.ceil(awardPoints / (1 + bonusPercent / 100));
+}
+
+export function getApplicableTransferBonuses(
+  transferPartners: string[],
+  mileageProgram: string,
+  awardPoints: number,
+  referenceDate = new Date(),
+): ApplicableTransferBonus[] {
+  const todayIso = referenceDate.toISOString().slice(0, 10);
+  const results: ApplicableTransferBonus[] = [];
+
+  for (const partner of transferPartners) {
+    const bonus = ACTIVE_TRANSFER_BONUSES.find((candidate) =>
+      isTransferBonusActive(candidate, todayIso)
+      && isFlightHeroTransferProgram(candidate.transferFrom)
+      && transferFromMatches(candidate.transferFrom, partner)
+      && programNamesMatch(candidate.transferTo, mileageProgram),
+    );
+
+    if (!bonus) continue;
+
+    results.push({
+      partner,
+      bonus,
+      awardPoints,
+      transferPointsNeeded: calculateTransferPointsNeeded(awardPoints, bonus.bonusPercent),
+    });
+  }
+
+  return results.sort((a, b) => a.transferPointsNeeded - b.transferPointsNeeded);
+}
+
+export function getTransferBonusForPartner(
+  applicableBonuses: ApplicableTransferBonus[],
+  partner: string,
+): ApplicableTransferBonus | undefined {
+  return applicableBonuses.find((entry) => entry.partner === partner);
 }

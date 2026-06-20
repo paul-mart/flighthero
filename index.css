@@ -2265,6 +2265,7 @@ html {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   padding: 0;
   background: transparent;
 }
@@ -2281,6 +2282,130 @@ html {
 
 .partner-tag .transfer-partner-logo--bilt {
   max-width: 68px;
+}
+
+.transfer-bonus-badge {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #059669;
+  letter-spacing: 0.01em;
+}
+
+.transfer-bonus-partner-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.transfer-bonus-partner-chip-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.transfer-bonus-partner-chip-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid #111827;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.transfer-bonus-partner-chip-box .transfer-partner-logo {
+  max-width: 110px;
+}
+
+.transfer-bonus-partner-chip-box .transfer-partner-logo--bilt {
+  max-width: 58px;
+}
+
+.transfer-bonus-math {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.transfer-bonus-math--compact {
+  font-size: 0.8125rem;
+}
+
+.transfer-bonus-math-struck {
+  color: #9ca3af;
+  text-decoration: line-through;
+  font-weight: 500;
+}
+
+.transfer-bonus-math-effective {
+  color: #059669;
+}
+
+.transfer-bonus-math-arrow {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.transfer-bonus-math-award {
+  color: #111827;
+}
+
+.transfer-bonus-callout {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  background: #f0fdf4;
+}
+
+.transfer-bonus-callout-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.transfer-bonus-callout-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #166534;
+}
+
+.transfer-bonus-callout-meta {
+  margin: 8px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #166534;
+}
+
+.transfer-bonus-callout-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #047857;
+  text-decoration: none;
+}
+
+.transfer-bonus-callout-link:hover {
+  text-decoration: underline;
+}
+
+.redemption-partner-bonus-line {
+  display: block;
+  width: 100%;
 }
 
 .redemption-partner-copy {

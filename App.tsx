@@ -8,6 +8,7 @@ import { FlightHeroLogo } from './components/FlightHeroLogo';
 import { FlightItineraryTimeline, type FlightItinerary } from './components/FlightItineraryTimeline';
 import { FlightTimeRange } from './components/FlightTimeRange';
 import { TransferPartnerLogo } from './components/TransferPartnerLogo';
+import { TransferBonusBadge, TransferBonusMath, TransferBonusPartnerChip } from './components/TransferBonusBadge';
 import { ContinueSearching } from './components/ContinueSearching';
 import { TrendingDeals } from './components/TrendingDeals';
 import { TopNavbar } from './components/TopNavbar';
@@ -28,6 +29,10 @@ import {
   type RecentSearch,
 } from './lib/recentSearches';
 import type { TrendingDeal } from './data/trendingDeals';
+import {
+  getApplicableTransferBonuses,
+  getTransferBonusForPartner,
+} from './data/transferBonuses';
 import { ChevronDownIcon, PlaneArriveIcon, PlaneDepartIcon, CalendarIcon, SwapIcon, SearchIcon, ArrowRightIcon } from './icons';
 
 interface AwardDetails {
@@ -801,6 +806,14 @@ function FlightDetailModal({
   const partnerRatings = flight.award_details
     ? rateTransferPartners(flight.award_details.transfer_partners, flightCpp, cppValuations)
     : [];
+  const transferBonuses = flight.award_details?.mileage_program
+    ? getApplicableTransferBonuses(
+      flight.award_details.transfer_partners,
+      flight.award_details.mileage_program,
+      flight.award_details.points_required,
+    )
+    : [];
+  const bestTransferBonus = transferBonuses[0] ?? null;
   const hasReturn = tripType === 'round-trip'
     && (flight.return_flight_number || flight.return_departure_time);
 
@@ -932,6 +945,25 @@ function FlightDetailModal({
                   </p>
                 )}
               </div>
+              {bestTransferBonus && (
+                <div className="transfer-bonus-callout">
+                  <div className="transfer-bonus-callout-header">
+                    <span className="transfer-bonus-callout-title">Transfer bonus</span>
+                    <TransferBonusBadge percent={bestTransferBonus.bonus.bonusPercent} />
+                  </div>
+                  <TransferBonusMath
+                    awardPoints={bestTransferBonus.awardPoints}
+                    transferPointsNeeded={bestTransferBonus.transferPointsNeeded}
+                  />
+                  <p className="transfer-bonus-callout-meta">
+                    Transfer {bestTransferBonus.transferPointsNeeded.toLocaleString()} via{' '}
+                    {bestTransferBonus.partner} to book {bestTransferBonus.awardPoints.toLocaleString()} miles
+                  </p>
+                  <Link to="/points-news" className="transfer-bonus-callout-link" onClick={onClose}>
+                    View all current bonuses
+                  </Link>
+                </div>
+              )}
               {partnerRatings.length > 0 && (
                 <div className="redemption-partners-module">
                   <div className="redemption-partners-module-header">
@@ -947,12 +979,31 @@ function FlightDetailModal({
                     </Link>
                   </div>
                   <ul className="redemption-partners-list">
-                    {partnerRatings.map((rating) => (
+                    {partnerRatings.map((rating) => {
+                      const partnerBonus = getTransferBonusForPartner(transferBonuses, rating.partner);
+                      return (
                       <li key={rating.partner} className="redemption-partner-row">
                         <div className="redemption-partner-info">
-                          <TransferPartnerLogo partner={rating.partner} size={36} />
+                          {partnerBonus ? (
+                            <TransferBonusPartnerChip
+                              partner={rating.partner}
+                              percent={partnerBonus.bonus.bonusPercent}
+                              logoSize={36}
+                            />
+                          ) : (
+                            <TransferPartnerLogo partner={rating.partner} size={36} />
+                          )}
                           <div className="redemption-partner-copy">
                             <span className="redemption-partner-name">{rating.partner}</span>
+                            {partnerBonus ? (
+                              <span className="redemption-partner-bonus-line">
+                                <TransferBonusMath
+                                  awardPoints={partnerBonus.awardPoints}
+                                  transferPointsNeeded={partnerBonus.transferPointsNeeded}
+                                  compact
+                                />
+                              </span>
+                            ) : null}
                             {rating.benchmarkCpp != null ? (
                               <span className="redemption-partner-baseline">
                                 (Your Baseline: {rating.benchmarkCpp.toFixed(2)}¢/pt)
@@ -966,7 +1017,8 @@ function FlightDetailModal({
                           <span className="redemption-partner-unrated">Grade unavailable</span>
                         )}
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 </div>
               )}
@@ -1704,7 +1756,16 @@ export default function App() {
           </p>
         )}
         {!loading && displayedFlights.length > 0 ? (
-          displayedFlights.map((flight) => (
+          displayedFlights.map((flight) => {
+            const cardTransferBonuses = flight.award_details?.mileage_program
+              ? getApplicableTransferBonuses(
+                flight.award_details.transfer_partners,
+                flight.award_details.mileage_program,
+                flight.award_details.points_required,
+              )
+              : [];
+
+            return (
             <div key={flight.id} className="flight-card" style={styles.flightCard}>
               <div className="flight-card-body" style={styles.flightCardBody}>
                 <div className="flight-info" style={styles.flightInfo}>
@@ -1845,11 +1906,24 @@ export default function App() {
                           <div style={styles.programTag}>{flight.award_details.mileage_program}</div>
                         )}
                         <div className="partner-container" style={styles.partnerContainer}>
-                          {flight.award_details.transfer_partners.map((p, i) => (
+                          {flight.award_details.transfer_partners.map((p, i) => {
+                            const partnerBonus = getTransferBonusForPartner(cardTransferBonuses, p);
+                            if (partnerBonus) {
+                              return (
+                                <TransferBonusPartnerChip
+                                  key={i}
+                                  partner={p}
+                                  percent={partnerBonus.bonus.bonusPercent}
+                                  logoSize={25}
+                                />
+                              );
+                            }
+                            return (
                             <span key={i} className="partner-tag" style={styles.partnerTag} title={p}>
                               <TransferPartnerLogo partner={p} size={25} />
                             </span>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )
@@ -1867,7 +1941,8 @@ export default function App() {
               </div>
               </div>
             </div>
-          ))
+            );
+          })
         ) : !loading && hasSearched && flights.length === 0 ? (
           <div style={styles.emptyState}>No flights were found for your search. Try different dates or airports.</div>
         ) : !loading && hasSearched && flights.length > 0 ? (
@@ -2596,7 +2671,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginTop: '4px',
     textAlign: 'right',
   },
-  partnerContainer: { display: 'flex', gap: '7px', flexWrap: 'wrap', marginTop: '6px', justifyContent: 'flex-end' },
+  partnerContainer: { display: 'flex', gap: '11px', flexWrap: 'wrap', marginTop: '6px', justifyContent: 'flex-end' },
   partnerTag: { display: 'inline-flex', alignItems: 'center', padding: 0, background: 'transparent' },
   emptyState: { textAlign: 'center', padding: '40px', color: '#888' },
   modalOverlay: {
