@@ -97,6 +97,10 @@ export default function ProfilePage() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeSection]);
+
   const hasPreferenceChanges = useMemo(() => (
     draftMilitaryTime !== savedMilitaryTime
     || !cppValuesEqual(draftCppValuations, savedCppValuations)
