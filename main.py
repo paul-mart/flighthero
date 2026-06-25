@@ -1,4 +1,7 @@
 from pathlib import Path
+import os
+import secrets
+from threading import Lock
 
 from dotenv import load_dotenv
 
@@ -52,6 +55,11 @@ _rate_limiter = RateLimiter(
     max_requests=env_int("RATE_LIMIT_REQUESTS", 60),
     window_seconds=env_int("RATE_LIMIT_WINDOW_SECONDS", 60),
 )
+_internal_rate_limiter = RateLimiter(
+    max_requests=env_int("INTERNAL_RATE_LIMIT_REQUESTS", 6),
+    window_seconds=env_int("INTERNAL_RATE_LIMIT_WINDOW_SECONDS", 3600),
+)
+_tracked_deals_alert_lock = Lock()
 
 app.add_middleware(
     CORSMiddleware,
@@ -65,6 +73,7 @@ app.add_middleware(
     allowed_origins=_allowed_origins,
     app_api_key=get_app_api_key(),
     rate_limiter=_rate_limiter,
+    internal_rate_limiter=_internal_rate_limiter,
 )
 
 
@@ -207,19 +216,26 @@ def place_suggestions(q: str = Query("", min_length=0)):
 
 @app.post("/api/internal/check-tracked-deals")
 def check_tracked_deals(request: Request):
-    import os
-
     from tracked_deal_alerts import run_tracked_deal_alerts
 
     secret = (os.getenv("ALERTS_CRON_SECRET") or "").strip()
     provided = (request.headers.get("x-alerts-cron-secret") or "").strip()
-    if not secret or provided != secret:
+    if (
+        not secret
+        or len(provided) != len(secret)
+        or not secrets.compare_digest(provided, secret)
+    ):
         raise HTTPException(status_code=403, detail="Forbidden")
+
+    if not _tracked_deals_alert_lock.acquire(blocking=False):
+        raise HTTPException(status_code=409, detail="Alert check already in progress.")
 
     try:
         stats = run_tracked_deal_alerts()
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    finally:
+        _tracked_deals_alert_lock.release()
 
     return {"status": "ok", "stats": stats}
 

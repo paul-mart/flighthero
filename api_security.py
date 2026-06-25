@@ -82,28 +82,36 @@ class ApiSecurityMiddleware(BaseHTTPMiddleware):
         allowed_origins: list[str],
         app_api_key: str,
         rate_limiter: RateLimiter,
+        internal_rate_limiter: RateLimiter | None = None,
     ) -> None:
         super().__init__(app)
         self.allowed_origins = allowed_origins
         self.app_api_key = app_api_key
         self.rate_limiter = rate_limiter
+        self.internal_rate_limiter = internal_rate_limiter or RateLimiter(
+            max_requests=env_int("INTERNAL_RATE_LIMIT_REQUESTS", 6),
+            window_seconds=env_int("INTERNAL_RATE_LIMIT_WINDOW_SECONDS", 3600),
+        )
 
     async def dispatch(self, request: Request, call_next):
         if request.method == "OPTIONS":
             return await call_next(request)
 
         path = request.url.path
-        if path.startswith("/api/internal/"):
-            return await call_next(request)
-
         if not path.startswith("/api/") or path == "/api/health":
             return await call_next(request)
 
-        if not self.rate_limiter.allow(client_ip(request)):
+        is_internal = path.startswith("/api/internal/")
+        limiter = self.internal_rate_limiter if is_internal else self.rate_limiter
+        if not limiter.allow(client_ip(request)):
             return JSONResponse(
                 status_code=429,
                 content={"detail": "Too many requests. Please try again later."},
             )
+
+        if is_internal:
+            # Cron/server callers authenticate per-route; skip browser origin/app key checks.
+            return await call_next(request)
 
         origin = (request.headers.get("origin") or "").strip()
         if origin and origin not in self.allowed_origins:
