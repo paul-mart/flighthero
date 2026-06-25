@@ -29,8 +29,11 @@ export function TrackDealButton({ dealInput, className = '' }: TrackDealButtonPr
         await removeDeal(trackedDeal.id);
         setNotice('Route removed from tracking.');
       } else {
-        const error = await saveDeal(dealInput);
-        setNotice(error ?? 'Route is now tracked.');
+        const error = await saveDeal({
+          ...dealInput,
+          alertsEnabled: false,
+        });
+        setNotice(error ?? 'Route saved. Use the bell on your tracked routes to get price-drop emails.');
       }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Could not update tracking.');

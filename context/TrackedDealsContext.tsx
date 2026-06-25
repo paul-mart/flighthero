@@ -13,6 +13,7 @@ import {
   removeTrackedDeal,
   saveTrackedDeal,
   subscribeTrackedDeals,
+  updateTrackedDealAlerts,
   type TrackedDeal,
   type TrackedDealInput,
 } from '../lib/trackedDeals';
@@ -22,6 +23,7 @@ interface TrackedDealsContextValue {
   loading: boolean;
   saveDeal: (input: TrackedDealInput) => Promise<string | null>;
   removeDeal: (dealId: string) => Promise<void>;
+  setDealAlerts: (dealId: string, alertsEnabled: boolean) => Promise<string | null>;
   isTracked: (input: TrackedDealInput) => boolean;
 }
 
@@ -81,6 +83,15 @@ export function TrackedDealsProvider({ children }: { children: React.ReactNode }
     setDeals((current) => current.filter((deal) => deal.id !== dealId));
   }, [user]);
 
+  const setDealAlerts = useCallback(async (dealId: string, alertsEnabled: boolean) => {
+    if (!user) {
+      throw new Error('Sign in to manage price alerts.');
+    }
+    const result = await updateTrackedDealAlerts(user.uid, dealId, alertsEnabled);
+    setDeals(result.deals);
+    return result.error ?? null;
+  }, [user]);
+
   const isTracked = useCallback(
     (input: TrackedDealInput) => isTrackedDealSaved(deals, input),
     [deals],
@@ -91,8 +102,9 @@ export function TrackedDealsProvider({ children }: { children: React.ReactNode }
     loading,
     saveDeal,
     removeDeal,
+    setDealAlerts,
     isTracked,
-  }), [deals, loading, saveDeal, removeDeal, isTracked]);
+  }), [deals, loading, saveDeal, removeDeal, setDealAlerts, isTracked]);
 
   return (
     <TrackedDealsContext.Provider value={value}>

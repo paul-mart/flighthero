@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getDestinationCityLabel, getDestinationImage } from '../data/destinationImages';
-import { formatRecentDate, formatRecentRoute } from '../lib/recentSearches';
-import type { TrackedDeal } from '../lib/trackedDeals';
+import { TrackedDealCard } from './TrackedDealCard';
+import { useTrackedDeals } from '../context/TrackedDealsContext';
+import { findDealWithAlerts, type TrackedDeal } from '../lib/trackedDeals';
 
 interface TrackedDealsSectionProps {
   deals: TrackedDeal[];
@@ -11,19 +11,18 @@ interface TrackedDealsSectionProps {
   showManageLink?: boolean;
 }
 
-function formatSnapshotPoints(deal: TrackedDeal): string | null {
-  if (!deal.snapshot) return null;
-  return `${deal.snapshot.pointsRequired.toLocaleString()} pts`;
-}
-
 export function TrackedDealsSection({
   deals,
   onSelect,
   onRemove,
   showManageLink = true,
 }: TrackedDealsSectionProps) {
+  const { setDealAlerts } = useTrackedDeals();
   const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
+  const [alertPending, setAlertPending] = useState(false);
+
+  const activeAlertDealId = findDealWithAlerts(deals)?.id ?? null;
 
   useEffect(() => {
     const el = ref.current;
@@ -43,6 +42,15 @@ export function TrackedDealsSection({
     return () => observer.disconnect();
   }, []);
 
+  const handleAlertToggle = async (deal: TrackedDeal) => {
+    setAlertPending(true);
+    try {
+      await setDealAlerts(deal.id, !deal.alertsEnabled);
+    } finally {
+      setAlertPending(false);
+    }
+  };
+
   if (deals.length === 0) return null;
 
   return (
@@ -59,7 +67,7 @@ export function TrackedDealsSection({
               Tracked Award Deals
             </h2>
             <p className="tracked-deals-subtitle">
-              Routes you are watching — search again to check latest availability
+              Tap the bell on one route for daily price-drop emails. Free accounts include 1 alert — Premium (coming soon) unlocks more.
             </p>
           </div>
           {showManageLink && (
@@ -69,59 +77,19 @@ export function TrackedDealsSection({
           )}
         </div>
         <div className="trending-deals-grid">
-          {deals.map((deal, index) => {
-            const city = getDestinationCityLabel(deal.destination);
-            const route = formatRecentRoute(deal.origin, deal.destination);
-            const dateLabel = formatRecentDate({
-              ...deal,
-              searchType: 'points',
-              searchedAt: deal.updatedAt,
-            });
-            const snapshotLabel = formatSnapshotPoints(deal);
-            return (
-              <div
-                key={deal.id}
-                className="tracked-deal-card-wrap"
-                style={{ ['--deal-index' as string]: index }}
-              >
-                <button
-                  type="button"
-                  className="trending-deal-card tracked-deal-card"
-                  onClick={() => onSelect(deal)}
-                >
-                  <img
-                    className="trending-deal-image"
-                    src={getDestinationImage(deal.destination)}
-                    alt=""
-                    loading="lazy"
-                  />
-                  <div className="trending-deal-overlay" aria-hidden />
-                  <div className="trending-deal-content">
-                    <div>
-                      <h3 className="trending-deal-city">{route}</h3>
-                      <p className="trending-deal-country">{city}</p>
-                    </div>
-                    <div className="trending-deal-tags">
-                      <span className="trending-deal-tag continue-search-date-tag">{dateLabel}</span>
-                      {snapshotLabel && (
-                        <span className="trending-deal-tag tracked-deal-points-tag">{snapshotLabel}</span>
-                      )}
-                    </div>
-                  </div>
-                </button>
-                {onRemove && (
-                  <button
-                    type="button"
-                    className="tracked-deal-remove-btn"
-                    aria-label={`Stop tracking ${route}`}
-                    onClick={() => onRemove(deal)}
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-            );
-          })}
+          {deals.map((deal, index) => (
+            <TrackedDealCard
+              key={deal.id}
+              deal={deal}
+              index={index}
+              activeAlertDealId={activeAlertDealId}
+              onSelect={onSelect}
+              onAlertToggle={(selected) => { void handleAlertToggle(selected); }}
+              onRemove={onRemove}
+              alertPending={alertPending}
+              className={visible ? 'tracked-deal-card--visible' : ''}
+            />
+          ))}
         </div>
       </div>
     </section>

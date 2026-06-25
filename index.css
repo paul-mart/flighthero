@@ -500,14 +500,91 @@ body:has(.auth-section) {
   position: relative;
 }
 
-.tracked-deal-card {
-  opacity: 0;
-  transform: translateY(20px);
+.tracked-deal-card.trending-deal-card {
+  position: relative;
 }
 
-.tracked-deals-section--visible .tracked-deal-card {
+.tracked-deals-section--visible .tracked-deal-card,
+.tracked-deal-card--visible .tracked-deal-card {
   animation: trending-deals-rise-in 0.75s ease forwards;
   animation-delay: calc(0.08s * var(--deal-index, 0));
+}
+
+.tracked-deal-alert-bell-wrap {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+}
+
+.tracked-deal-alert-bell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #4338ca;
+  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.18);
+  cursor: pointer;
+}
+
+.tracked-deal-alert-bell:hover:not(:disabled) {
+  background: #fff;
+  color: #3730a3;
+}
+
+.tracked-deal-alert-bell--active {
+  background: #eef2ff;
+  color: #4338ca;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.45);
+}
+
+.tracked-deal-alert-bell--blocked {
+  color: #9ca3af;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.tracked-deal-alert-bell--blocked:hover:not(:disabled) {
+  color: #6366f1;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.tracked-deal-alert-bell:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.tracked-deal-alert-bell-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: max-content;
+  max-width: 240px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(17, 24, 39, 0.94);
+  color: #f9fafb;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 4;
+}
+
+.tracked-deal-alert-bell-wrap:hover .tracked-deal-alert-bell-tooltip,
+.tracked-deal-alert-bell-wrap:focus-within .tracked-deal-alert-bell-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tracked-deal-cabin-sep {
+  opacity: 0.75;
 }
 
 .tracked-deal-points-tag {
@@ -518,7 +595,7 @@ body:has(.auth-section) {
 .tracked-deal-remove-btn {
   position: absolute;
   top: 10px;
-  right: 10px;
+  left: 10px;
   width: 28px;
   height: 28px;
   border: none;
@@ -581,6 +658,23 @@ body:has(.auth-section) {
   font-size: 12px;
   color: #6b7280;
   text-align: center;
+}
+
+.track-deal-alerts-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #4b5563;
+  cursor: pointer;
+}
+
+.track-deal-alerts-option input {
+  width: 15px;
+  height: 15px;
+  accent-color: #6366f1;
+  cursor: pointer;
 }
 
 .results-track-deal .track-deal-btn {
@@ -3019,6 +3113,68 @@ html {
   color: #6b7280;
 }
 
+.profile-premium-section {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 28px;
+  padding: 18px 20px;
+  border: 1px dashed #d1d5db;
+  border-radius: 12px;
+  background: #f9fafb;
+  opacity: 0.72;
+}
+
+.profile-premium-title {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.profile-premium-description {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #9ca3af;
+  line-height: 1.5;
+  max-width: 420px;
+}
+
+.profile-premium-btn {
+  flex-shrink: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #9ca3af;
+  padding: 8px 14px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: not-allowed;
+  font-family: inherit;
+}
+
+.profile-tracked-grid {
+  margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+  .profile-tracked-grid.trending-deals-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .profile-premium-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .profile-tracked-grid.trending-deals-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .profile-tracked-list {
   list-style: none;
   margin: 20px 0 0;
@@ -3055,6 +3211,23 @@ html {
 .profile-tracked-meta {
   font-size: 13px;
   color: #6b7280;
+}
+
+.profile-tracked-alerts-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+}
+
+.profile-tracked-alerts-toggle input {
+  width: 15px;
+  height: 15px;
+  accent-color: #6366f1;
+  cursor: pointer;
 }
 
 .profile-tracked-actions {

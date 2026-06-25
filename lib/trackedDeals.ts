@@ -26,6 +26,9 @@ export interface TrackedDeal {
   cabinClass: string;
   adults: number;
   childrenCount: number;
+  alertsEnabled?: boolean;
+  lastAlertSentAt?: number;
+  lastCheckedAt?: number;
   snapshot?: TrackedDealSnapshot & { trackedAt: number };
   createdAt: number;
   updatedAt: number;
@@ -40,15 +43,52 @@ export interface TrackedDealInput {
   cabinClass: string;
   adults: number;
   childrenCount: number;
+  alertsEnabled?: boolean;
   snapshot?: TrackedDealSnapshot;
 }
 
 export const MAX_TRACKED_DEALS = 20;
+export const MAX_PRICE_ALERTS = 1;
+
+export const PRICE_ALERT_TOOLTIP_ACTIVE = 'Price alerts on for this route — click to turn off';
+export const PRICE_ALERT_TOOLTIP_AVAILABLE = 'Notify me when prices drop';
+export const PRICE_ALERT_TOOLTIP_SWITCH = 'Free accounts include 1 price-drop alert. Click to switch alerts to this route. Track multiple routes with Premium (coming soon).';
 
 const LOCAL_KEY_PREFIX = 'flighthero:tracked-deals';
 
 function localStorageKey(userId: string): string {
   return `${LOCAL_KEY_PREFIX}:${userId}`;
+}
+
+export function findDealWithAlerts(deals: TrackedDeal[]): TrackedDeal | undefined {
+  return deals.find((deal) => deal.alertsEnabled);
+}
+
+export function formatTrackedCabinClass(cabinClass: string): string {
+  const labels: Record<string, string> = {
+    economy: 'Economy',
+    'premium-economy': 'Premium economy',
+    business: 'Business',
+    first: 'First',
+  };
+  return labels[cabinClass] ?? cabinClass;
+}
+
+export function applyExclusivePriceAlerts(
+  deals: TrackedDeal[],
+  dealId: string,
+  alertsEnabled: boolean,
+  now: number,
+): TrackedDeal[] {
+  return deals.map((deal) => {
+    if (deal.id === dealId) {
+      return { ...deal, alertsEnabled, updatedAt: now };
+    }
+    if (alertsEnabled && deal.alertsEnabled) {
+      return { ...deal, alertsEnabled: false, updatedAt: now };
+    }
+    return deal;
+  });
 }
 
 function userDocRef(userId: string) {
@@ -142,6 +182,9 @@ function normalizeDeal(raw: Record<string, unknown>, id: string): TrackedDeal | 
     cabinClass: String(raw.cabinClass ?? 'economy'),
     adults: typeof raw.adults === 'number' ? raw.adults : 1,
     childrenCount: typeof raw.childrenCount === 'number' ? raw.childrenCount : 0,
+    alertsEnabled: raw.alertsEnabled === true,
+    lastAlertSentAt: typeof raw.lastAlertSentAt === 'number' ? raw.lastAlertSentAt : undefined,
+    lastCheckedAt: typeof raw.lastCheckedAt === 'number' ? raw.lastCheckedAt : undefined,
     createdAt,
     updatedAt,
   };
@@ -200,6 +243,16 @@ function toFirestoreDeal(deal: TrackedDeal): Record<string, unknown> {
     createdAt: deal.createdAt,
     updatedAt: deal.updatedAt,
   };
+
+  if (deal.alertsEnabled) {
+    payload.alertsEnabled = true;
+  }
+  if (deal.lastAlertSentAt != null) {
+    payload.lastAlertSentAt = deal.lastAlertSentAt;
+  }
+  if (deal.lastCheckedAt != null) {
+    payload.lastCheckedAt = deal.lastCheckedAt;
+  }
 
   if (deal.snapshot) {
     payload.snapshot = omitUndefinedFields({
@@ -280,6 +333,7 @@ export async function saveTrackedDeal(
     cabinClass: input.cabinClass,
     adults: input.adults,
     childrenCount: input.childrenCount,
+    alertsEnabled: input.alertsEnabled ?? previous?.alertsEnabled ?? false,
     snapshot: input.snapshot
       ? { ...input.snapshot, trackedAt: now }
       : previous?.snapshot,
@@ -287,7 +341,12 @@ export async function saveTrackedDeal(
     updatedAt: now,
   };
 
-  const next = sortDeals([deal, ...withoutDuplicate]).slice(0, MAX_TRACKED_DEALS);
+  const next = sortDeals(applyExclusivePriceAlerts(
+    [deal, ...withoutDuplicate],
+    deal.id,
+    Boolean(deal.alertsEnabled),
+    now,
+  )).slice(0, MAX_TRACKED_DEALS);
   writeLocalTrackedDeals(userId, next);
 
   if (!isFirebaseConfigured() || !db) {
@@ -314,6 +373,36 @@ export async function removeTrackedDeal(userId: string, dealId: string): Promise
   }
 
   await writeCloudTrackedDeals(userId, next);
+}
+
+export async function updateTrackedDealAlerts(
+  userId: string,
+  dealId: string,
+  alertsEnabled: boolean,
+): Promise<{ deals: TrackedDeal[]; error?: string }> {
+  const existing = readLocalTrackedDeals(userId);
+  const index = existing.findIndex((deal) => deal.id === dealId);
+  if (index < 0) {
+    return { deals: existing };
+  }
+
+  const now = Date.now();
+  const next = sortDeals(applyExclusivePriceAlerts(existing, dealId, alertsEnabled, now));
+  writeLocalTrackedDeals(userId, next);
+
+  if (!isFirebaseConfigured() || !db) {
+    return { deals: next };
+  }
+
+  try {
+    await writeCloudTrackedDeals(userId, next);
+    return { deals: next };
+  } catch (error) {
+    return {
+      deals: next,
+      error: error instanceof Error ? error.message : 'Could not sync alert preference.',
+    };
+  }
 }
 
 export async function migrateLocalTrackedDealsToCloud(userId: string): Promise<void> {

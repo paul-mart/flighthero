@@ -6,11 +6,11 @@ import { AirportAutocomplete } from '../components/AirportAutocomplete';
 import { ProfileAvatar } from '../components/ProfileAvatar';
 import { TopNavbar } from '../components/TopNavbar';
 import { SiteFooter } from '../components/SiteFooter';
+import { TrackedDealCard } from '../components/TrackedDealCard';
 import { useAuth } from '../context/AuthContext';
 import { useTrackedDeals } from '../context/TrackedDealsContext';
 import { extractAirportCode } from '../lib/airportCode';
-import { formatRecentDate, formatRecentRoute } from '../lib/recentSearches';
-import type { TrackedDeal } from '../lib/trackedDeals';
+import { findDealWithAlerts, type TrackedDeal } from '../lib/trackedDeals';
 import { TRANSFER_PARTNER_OPTIONS } from '../lib/cpp';
 import type { UserProfile } from '../lib/auth';
 
@@ -62,7 +62,7 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, profile, loading, signOut, updatePreferences } = useAuth();
-  const { deals: trackedDeals, removeDeal, loading: trackedLoading } = useTrackedDeals();
+  const { deals: trackedDeals, removeDeal, setDealAlerts, loading: trackedLoading } = useTrackedDeals();
   const [activeSection, setActiveSection] = useState<ProfileSection>(() => {
     const section = searchParams.get('section');
     return section === 'tracked' ? 'tracked' : 'settings';
@@ -70,6 +70,9 @@ export default function ProfilePage() {
   const [signingOut, setSigningOut] = useState(false);
   const [savingPreference, setSavingPreference] = useState(false);
   const [preferenceNotice, setPreferenceNotice] = useState('');
+  const [alertPending, setAlertPending] = useState(false);
+
+  const activeAlertDealId = findDealWithAlerts(trackedDeals)?.id ?? null;
 
   const savedMilitaryTime = profile?.preferences?.militaryZuluTime ?? false;
   const savedCppValuations = profile?.preferences?.cppValuations ?? {};
@@ -185,6 +188,15 @@ export default function ProfilePage() {
     await removeDeal(deal.id);
   };
 
+  const handleToggleAlerts = async (deal: TrackedDeal) => {
+    setAlertPending(true);
+    try {
+      await setDealAlerts(deal.id, !deal.alertsEnabled);
+    } finally {
+      setAlertPending(false);
+    }
+  };
+
   if (loading || !user) {
     return (
       <div className="app-page profile-shell">
@@ -259,6 +271,18 @@ export default function ProfilePage() {
                   <dd>{email || '—'}</dd>
                 </div>
               </dl>
+
+              <div className="profile-premium-section" aria-disabled="true">
+                <div className="profile-premium-copy">
+                  <h3 className="profile-premium-title">Premium subscription</h3>
+                  <p className="profile-premium-description">
+                    Track multiple routes for price-drop alerts, advanced notifications, and more.
+                  </p>
+                </div>
+                <button type="button" className="profile-premium-btn" disabled>
+                  Coming soon
+                </button>
+              </div>
             </div>
           )}
 
@@ -373,7 +397,7 @@ export default function ProfilePage() {
             <div className="profile-tracked">
               <h2 className="profile-panel-title">Tracked award deals</h2>
               <p className="profile-panel-text">
-                Routes you saved from points searches. Search again anytime to check the latest award availability.
+                Saved routes from points searches. Use the bell on one route for daily price-drop emails — free accounts include 1 alert.
               </p>
               {trackedLoading ? (
                 <p className="profile-panel-text">Loading tracked deals…</p>
@@ -382,46 +406,21 @@ export default function ProfilePage() {
                   No tracked routes yet. Run a points search and choose &ldquo;Track this route&rdquo; on a result or in flight details.
                 </p>
               ) : (
-                <ul className="profile-tracked-list">
-                  {trackedDeals.map((deal) => {
-                    const route = formatRecentRoute(deal.origin, deal.destination);
-                    const dateLabel = formatRecentDate({
-                      ...deal,
-                      searchType: 'points',
-                      searchedAt: deal.updatedAt,
-                    });
-                    return (
-                      <li key={deal.id} className="profile-tracked-item">
-                        <div className="profile-tracked-copy">
-                          <span className="profile-tracked-route">{route}</span>
-                          <span className="profile-tracked-meta">{dateLabel}</span>
-                          {deal.snapshot && (
-                            <span className="profile-tracked-meta">
-                              Last seen: {deal.snapshot.pointsRequired.toLocaleString()} pts
-                              {deal.snapshot.mileageProgram ? ` · ${deal.snapshot.mileageProgram}` : ''}
-                            </span>
-                          )}
-                        </div>
-                        <div className="profile-tracked-actions">
-                          <button
-                            type="button"
-                            className="profile-tracked-search-btn"
-                            onClick={() => handleSearchTrackedDeal(deal)}
-                          >
-                            Search again
-                          </button>
-                          <button
-                            type="button"
-                            className="profile-tracked-remove-btn"
-                            onClick={() => { void handleRemoveTrackedDeal(deal); }}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <div className="profile-tracked-grid trending-deals-grid">
+                  {trackedDeals.map((deal, index) => (
+                    <TrackedDealCard
+                      key={deal.id}
+                      deal={deal}
+                      index={index}
+                      activeAlertDealId={activeAlertDealId}
+                      onSelect={handleSearchTrackedDeal}
+                      onAlertToggle={(selected) => { void handleToggleAlerts(selected); }}
+                      onRemove={(selected) => { void handleRemoveTrackedDeal(selected); }}
+                      alertPending={alertPending}
+                      className="tracked-deal-card--visible"
+                    />
+                  ))}
+                </div>
               )}
             </div>
           )}

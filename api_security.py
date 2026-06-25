@@ -23,7 +23,22 @@ def get_allowed_origins() -> list[str]:
         os.getenv("ALLOWED_ORIGINS")
         or "http://localhost:5173,http://127.0.0.1:5173"
     )
-    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+    origins = [origin.strip() for origin in raw.split(",") if origin.strip()]
+    return _expand_local_dev_origins(origins)
+
+
+def _expand_local_dev_origins(origins: list[str]) -> list[str]:
+    """Mirror localhost <-> 127.0.0.1 so either dev URL works."""
+    expanded: list[str] = []
+    for origin in origins:
+        expanded.append(origin)
+        if origin.startswith("http://localhost:"):
+            port = origin.rsplit(":", 1)[-1]
+            expanded.append(f"http://127.0.0.1:{port}")
+        elif origin.startswith("http://127.0.0.1:"):
+            port = origin.rsplit(":", 1)[-1]
+            expanded.append(f"http://localhost:{port}")
+    return list(dict.fromkeys(expanded))
 
 
 def get_app_api_key() -> str:
@@ -78,6 +93,9 @@ class ApiSecurityMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         path = request.url.path
+        if path.startswith("/api/internal/"):
+            return await call_next(request)
+
         if not path.startswith("/api/") or path == "/api/health":
             return await call_next(request)
 

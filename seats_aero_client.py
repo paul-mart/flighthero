@@ -86,6 +86,9 @@ PROGRAM_LABELS: dict[str, str] = {
     "velocity": "Virgin Australia Velocity",
 }
 
+# Cached Partner API rows for these programs are often stale or unbookable on seats.aero.
+EXCLUDED_MILEAGE_SOURCES = frozenset({"spirit", "frontier"})
+
 PROGRAM_BOOKING_URLS: dict[str, str] = {
     "aeroplan": "https://www.aircanada.com/aeroplan/redeem/availability/outbound",
     "alaska": "https://www.alaskaair.com/search/results",
@@ -389,6 +392,8 @@ def _parse_availability(
     origin = (route.get("OriginAirport") or origin_code).upper()
     destination = (route.get("DestinationAirport") or destination_code).upper()
     source = str(item.get("Source") or route.get("Source") or "unknown").lower()
+    if source in EXCLUDED_MILEAGE_SOURCES:
+        return None
     airlines = str(item.get(f"{cabin_prefix}Airlines") or "").strip()
     is_direct = bool(item.get(f"{cabin_prefix}Direct"))
     seats = _parse_int(item.get(f"{cabin_prefix}RemainingSeats"))

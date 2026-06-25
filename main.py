@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel, Field
@@ -203,6 +203,25 @@ def place_suggestions(q: str = Query("", min_length=0)):
     except SerpAPIError as exc:
         status = exc.status_code if exc.status_code and exc.status_code < 500 else 502
         raise HTTPException(status_code=status, detail=str(exc)) from exc
+
+
+@app.post("/api/internal/check-tracked-deals")
+def check_tracked_deals(request: Request):
+    import os
+
+    from tracked_deal_alerts import run_tracked_deal_alerts
+
+    secret = (os.getenv("ALERTS_CRON_SECRET") or "").strip()
+    provided = (request.headers.get("x-alerts-cron-secret") or "").strip()
+    if not secret or provided != secret:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    try:
+        stats = run_tracked_deal_alerts()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return {"status": "ok", "stats": stats}
 
 
 if __name__ == "__main__":
