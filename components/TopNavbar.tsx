@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useHomeSearchReset } from '../context/HomeSearchContext';
+import { homeHashUrl } from '../lib/publicUrl';
 import { FlightHeroLogo } from './FlightHeroLogo';
 import { ProfileAvatar } from './ProfileAvatar';
 
@@ -30,9 +31,9 @@ export function TopNavbar() {
           <FlightHeroLogo variant="nav" />
         </Link>
         <nav className="top-nav-links" aria-label="Main navigation">
-          <a href="/#deals" className="top-nav-link">Deals</a>
+          <a href={homeHashUrl('deals')} className="top-nav-link">Deals</a>
           <Link to="/faq" className="top-nav-link">FAQ</Link>
-          <a href="/#guide" className="top-nav-link">Guide</a>
+          <a href={homeHashUrl('guide')} className="top-nav-link">Guide</a>
           <Link to="/points-news" className="top-nav-link">Points News</Link>
           {!loading && user ? (
             <Link

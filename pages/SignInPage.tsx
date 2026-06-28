@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthShell } from '../components/AuthShell';
 import { useAuth } from '../context/AuthContext';
 import { getAuthErrorMessage, signInWithEmail, signInWithGoogle } from '../lib/auth';
+import { publicUrl } from '../lib/publicUrl';
 
 export default function SignInPage() {
   const navigate = useNavigate();
@@ -121,7 +122,7 @@ export default function SignInPage() {
         >
           <img
             className="auth-google-icon"
-            src="/auth/google-g.svg"
+            src={publicUrl('auth/google-g.svg')}
             alt=""
             width={18}
             height={18}

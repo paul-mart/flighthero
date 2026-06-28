@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { FlightHeroLogo } from './FlightHeroLogo';
+import { homeHashUrl } from '../lib/publicUrl';
 
 export function SiteFooter() {
   return (
@@ -10,9 +11,9 @@ export function SiteFooter() {
             <h2 className="site-footer-heading">Product</h2>
             <ul className="site-footer-links">
               <li><Link to="/">Search flights</Link></li>
-              <li><a href="/#deals">Deals</a></li>
-              <li><a href="/#explore">Explore</a></li>
-              <li><a href="/#guide">Guide</a></li>
+              <li><a href={homeHashUrl('deals')}>Deals</a></li>
+              <li><a href={homeHashUrl('explore')}>Explore</a></li>
+              <li><a href={homeHashUrl('guide')}>Guide</a></li>
               <li><Link to="/points-news">Points News</Link></li>
             </ul>
           </div>
