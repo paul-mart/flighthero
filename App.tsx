@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { apiFetch, apiUrl } from './api';
 import DatePicker from './DatePicker';
 import { AirportAutocomplete, PlacesSearchLoader } from './components/AirportAutocomplete';
@@ -25,6 +25,12 @@ import {
   type RedemptionGrade,
 } from './lib/cpp';
 import { getDepartureSortMinutes } from './lib/flightTimes';
+import {
+  getFlightSearchValidationError,
+  openFlightSearchInNewTab,
+  parseFlightSearchFromParams,
+  type FlightSearchRequest,
+} from './lib/searchUrl';
 import {
   getRecentSearches,
   shouldShowContinueSearching,
@@ -1163,6 +1169,7 @@ async function fetchReturnLegBatches(
 
 export default function App() {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { user, profile, loading: authLoading } = useAuth();
   const { deals: trackedDeals } = useTrackedDeals();
   const militaryZuluTime = profile?.preferences?.militaryZuluTime ?? false;
@@ -1198,6 +1205,7 @@ export default function App() {
   const [routeSwapGeneration, setRouteSwapGeneration] = useState(0);
   const searchSeqRef = useRef(0);
   const originPrefillRef = useRef<string | null>(null);
+  const initialUrlSearchRanRef = useRef(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const showContinueSearching = !hasSearched && shouldShowContinueSearching(user?.uid);
   const showTrackedDeals = !hasSearched && user && trackedDeals.length > 0;
@@ -1334,17 +1342,19 @@ export default function App() {
     }
   };
 
-  const runFlightSearch = async (request: {
-    origin: string;
-    destination: string;
-    departureDate: string;
-    returnDate: string;
-    tripType: 'one-way' | 'round-trip';
-    searchType: 'cash' | 'points';
-    cabinClass: string;
-    adults: number;
-    childrenCount: number;
-  }) => {
+  const applyFormFromSearch = useCallback((request: FlightSearchRequest) => {
+    setRoute({ origin: request.origin, destination: request.destination });
+    setDate(request.departureDate);
+    setReturnDate(request.returnDate);
+    setTripType(request.tripType);
+    setSearchType(request.searchType);
+    setCabinClass(request.cabinClass);
+    setAdults(request.adults);
+    setChildrenCount(request.childrenCount);
+    setRouteSwapGeneration((generation) => generation + 1);
+  }, []);
+
+  const runFlightSearch = async (request: FlightSearchRequest) => {
     const trimmedOrigin = request.origin.trim();
     const trimmedDestination = request.destination.trim();
     const passengersTotal = request.adults + request.childrenCount;
@@ -1453,28 +1463,12 @@ export default function App() {
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const trimmedOrigin = origin.trim();
-    const trimmedDestination = destination.trim();
-    const missing: string[] = [];
-    if (!trimmedOrigin) missing.push('From');
-    if (!trimmedDestination) missing.push('To');
-    if (!date) missing.push('Departure date');
-    if (tripType === 'round-trip' && !returnDate) missing.push('Return date');
-
-    if (missing.length > 0) {
-      showDialog(
-        'Missing information',
-        `Please complete all required fields before searching.\n\nMissing: ${missing.join(', ')}`
-      );
-      return;
-    }
-
-    await runFlightSearch({
-      origin: trimmedOrigin,
-      destination: trimmedDestination,
+    const request: FlightSearchRequest = {
+      origin: origin.trim(),
+      destination: destination.trim(),
       departureDate: date,
       returnDate,
       tripType,
@@ -1482,28 +1476,43 @@ export default function App() {
       cabinClass,
       adults,
       childrenCount,
-    });
+    };
+
+    const validationError = getFlightSearchValidationError(request);
+    if (validationError) {
+      showDialog('Missing information', validationError);
+      return;
+    }
+
+    openFlightSearchInNewTab(request);
   };
 
-  const handleResumeTrackedDeal = async (deal: TrackedDeal) => {
+  const handleResumeTrackedDeal = async (deal: TrackedDeal, openInNewTab = false) => {
     const input = trackedDealToSearchInput(deal);
-    setRoute({ origin: input.origin, destination: input.destination });
-    setDate(input.departureDate);
-    setReturnDate(input.returnDate);
-    setTripType(input.tripType);
-    setSearchType('points');
-    setCabinClass(input.cabinClass);
-    setAdults(input.adults);
-    setChildrenCount(input.childrenCount);
-    setRouteSwapGeneration((generation) => generation + 1);
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    await runFlightSearch({
+    const request: FlightSearchRequest = {
       ...input,
       searchType: 'points',
-    });
+    };
+
+    if (openInNewTab) {
+      openFlightSearchInNewTab(request);
+      return;
+    }
+
+    applyFormFromSearch(request);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    await runFlightSearch(request);
   };
+
+  useEffect(() => {
+    if (initialUrlSearchRanRef.current) return;
+    const parsed = parseFlightSearchFromParams(searchParams);
+    if (!parsed) return;
+    initialUrlSearchRanRef.current = true;
+    applyFormFromSearch(parsed);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    void runFlightSearch(parsed);
+  }, [searchParams, applyFormFromSearch]);
 
   useEffect(() => {
     const state = location.state as { resumeTrackedDeal?: TrackedDeal } | null;
@@ -1514,20 +1523,8 @@ export default function App() {
     void handleResumeTrackedDeal(deal);
   }, [location.state]);
 
-  const handleResumeSearch = async (search: RecentSearch) => {
-    setRoute({ origin: search.origin, destination: search.destination });
-    setDate(search.departureDate);
-    setReturnDate(search.returnDate);
-    setTripType(search.tripType);
-    setSearchType(search.searchType);
-    setCabinClass(search.cabinClass);
-    setAdults(search.adults);
-    setChildrenCount(search.childrenCount);
-    setRouteSwapGeneration((generation) => generation + 1);
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    await runFlightSearch({
+  const handleResumeSearch = (search: RecentSearch) => {
+    openFlightSearchInNewTab({
       origin: search.origin,
       destination: search.destination,
       departureDate: search.departureDate,
@@ -1540,20 +1537,8 @@ export default function App() {
     });
   };
 
-  const handleTrendingDealSelect = async (deal: TrendingDeal) => {
-    setRoute({ origin: deal.origin, destination: deal.destination });
-    setDate(deal.departureDate);
-    setReturnDate(deal.returnDate);
-    setTripType(deal.tripType);
-    setSearchType(deal.searchType);
-    setCabinClass(deal.cabinClass);
-    setAdults(1);
-    setChildrenCount(0);
-    setRouteSwapGeneration((generation) => generation + 1);
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    await runFlightSearch({
+  const handleTrendingDealSelect = (deal: TrendingDeal) => {
+    openFlightSearchInNewTab({
       origin: deal.origin,
       destination: deal.destination,
       departureDate: deal.departureDate,
@@ -1807,7 +1792,7 @@ export default function App() {
       {showTrackedDeals && (
         <TrackedDealsSection
           deals={trackedDeals}
-          onSelect={handleResumeTrackedDeal}
+          onSelect={(deal) => { void handleResumeTrackedDeal(deal, true); }}
         />
       )}
 
