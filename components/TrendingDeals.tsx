@@ -41,8 +41,6 @@ export function TrendingDeals({ onSelectDeal }: TrendingDealsProps) {
     setSlideIndex((index) => (index + 1) % TRENDING_DEAL_SLIDE_COUNT);
   };
 
-  const deals = TRENDING_DEAL_SLIDES[slideIndex];
-
   return (
     <section
       ref={ref}
@@ -69,38 +67,48 @@ export function TrendingDeals({ onSelectDeal }: TrendingDealsProps) {
           </button>
 
           <div
-            className="trending-deals-grid"
-            key={slideIndex}
+            className="trending-deals-carousel-viewport"
             aria-live="polite"
             aria-label={`Deal set ${slideIndex + 1} of ${TRENDING_DEAL_SLIDE_COUNT}`}
           >
-            {deals.map((deal, index) => (
-              <button
-                key={deal.id}
-                type="button"
-                className="trending-deal-card trending-deal-card-btn"
-                style={{ ['--deal-index' as string]: index }}
-                onClick={() => onSelectDeal(deal)}
-              >
-                <img
-                  className="trending-deal-image"
-                  src={deal.image}
-                  alt=""
-                  loading="lazy"
-                />
-                <div className="trending-deal-overlay" aria-hidden />
-                <div className="trending-deal-content">
-                  <div>
-                    <h3 className="trending-deal-city">{deal.city}</h3>
-                    <p className="trending-deal-country">{deal.routeLabel} · {deal.country}</p>
-                  </div>
-                  <div className="trending-deal-tags">
-                    <span className="trending-deal-tag trending-deal-tag-points">{deal.pointsLabel}</span>
-                    <span className="trending-deal-tag trending-deal-tag-cash">{deal.cashLabel}</span>
+            <div
+              className="trending-deals-carousel-track"
+              style={{ transform: `translateX(-${slideIndex * 100}%)` }}
+            >
+              {TRENDING_DEAL_SLIDES.map((deals, slideIdx) => (
+                <div key={slideIdx} className="trending-deals-slide">
+                  <div className="trending-deals-grid">
+                    {deals.map((deal, index) => (
+                      <button
+                        key={deal.id}
+                        type="button"
+                        className="trending-deal-card trending-deal-card-btn"
+                        style={{ ['--deal-index' as string]: index }}
+                        onClick={() => onSelectDeal(deal)}
+                      >
+                        <img
+                          className="trending-deal-image"
+                          src={deal.image}
+                          alt=""
+                          loading="lazy"
+                        />
+                        <div className="trending-deal-overlay" aria-hidden />
+                        <div className="trending-deal-content">
+                          <div>
+                            <h3 className="trending-deal-city">{deal.city}</h3>
+                            <p className="trending-deal-country">{deal.routeLabel} · {deal.country}</p>
+                          </div>
+                          <div className="trending-deal-tags">
+                            <span className="trending-deal-tag trending-deal-tag-points">{deal.pointsLabel}</span>
+                            <span className="trending-deal-tag trending-deal-tag-cash">{deal.cashLabel}</span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </button>
-            ))}
+              ))}
+            </div>
           </div>
 
           <button

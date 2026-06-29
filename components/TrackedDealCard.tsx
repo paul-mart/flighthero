@@ -49,7 +49,7 @@ export function TrackedDealCard({
     >
       <button
         type="button"
-        className="trending-deal-card tracked-deal-card"
+        className="trending-deal-card trending-deal-card-btn tracked-deal-card"
         onClick={() => onSelect(deal)}
       >
         <img

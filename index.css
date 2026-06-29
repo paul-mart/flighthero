@@ -445,9 +445,8 @@ body:has(.auth-section) {
 }
 
 .tracked-deals-section {
-  padding: 48px 24px 0;
-  max-width: 1200px;
-  margin: 0 auto;
+  padding: 32px clamp(16px, 2.5vw, 40px) 24px;
+  background: #f9fafb;
 }
 
 .tracked-deals-inner {
@@ -498,10 +497,13 @@ body:has(.auth-section) {
 
 .tracked-deal-card-wrap {
   position: relative;
+  width: 100%;
+  min-width: 0;
 }
 
 .tracked-deal-card.trending-deal-card {
   position: relative;
+  width: 100%;
 }
 
 .tracked-deals-section--visible .tracked-deal-card,
@@ -750,6 +752,23 @@ body:has(.auth-section) {
   gap: 4px;
 }
 
+.trending-deals-carousel-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.trending-deals-carousel-track {
+  display: flex;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.trending-deals-slide {
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
 .trending-deals-nav {
   flex-shrink: 0;
   display: inline-flex;
@@ -844,6 +863,10 @@ body:has(.auth-section) {
   .trending-deals--visible .trending-deals-header,
   .trending-deals--visible .trending-deal-card {
     animation: none;
+  }
+
+  .trending-deals-carousel-track {
+    transition: none;
   }
 }
 
@@ -972,6 +995,10 @@ body:has(.auth-section) {
 
   .trending-deals {
     padding: 40px 16px 56px;
+  }
+
+  .tracked-deals-section {
+    padding: 24px 16px 16px;
   }
 
   .continue-searching {
