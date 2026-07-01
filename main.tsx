@@ -14,6 +14,7 @@ import FaqPage from './pages/FaqPage';
 import LegalPage from './pages/LegalPage';
 import ContactUsPage from './pages/ContactUsPage';
 import PointsNewsPage from './pages/PointsNewsPage';
+import AskHeroPage from './pages/AskHeroPage';
 
 function routerBasename(): string | undefined {
   const base = import.meta.env.BASE_URL;
@@ -38,6 +39,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/legal" element={<LegalPage />} />
           <Route path="/contact" element={<ContactUsPage />} />
           <Route path="/points-news" element={<PointsNewsPage />} />
+          <Route path="/ask-hero" element={<AskHeroPage />} />
         </Routes>
         </TrackedDealsProvider>
       </AuthProvider>

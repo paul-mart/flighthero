@@ -32,8 +32,8 @@ export function TopNavbar() {
         </Link>
         <nav className="top-nav-links" aria-label="Main navigation">
           <a href={homeHashUrl('deals')} className="top-nav-link">Deals</a>
+          <Link to="/ask-hero" className="top-nav-link">Ask Hero</Link>
           <Link to="/faq" className="top-nav-link">FAQ</Link>
-          <a href={homeHashUrl('guide')} className="top-nav-link">Guide</a>
           <Link to="/points-news" className="top-nav-link">Points News</Link>
           {!loading && user ? (
             <Link

@@ -48,6 +48,22 @@ class ReturnLegsRequest(BaseModel):
     return_date: str
     departure_tokens: list[str] = Field(..., max_length=50)
 
+
+class AskHeroMessage(BaseModel):
+    role: str
+    content: str
+
+
+class AskHeroUserContext(BaseModel):
+    homeAirport: str | None = None
+    homeAirportLabel: str | None = None
+    cppValuations: dict[str, float] | None = None
+
+
+class AskHeroRequest(BaseModel):
+    messages: list[AskHeroMessage] = Field(..., min_length=1, max_length=50)
+    userContext: AskHeroUserContext = Field(default_factory=AskHeroUserContext)
+
 app = FastAPI(title="PointsFlight Finder API")
 
 _allowed_origins = get_allowed_origins()
@@ -238,6 +254,27 @@ def check_tracked_deals(request: Request):
         _tracked_deals_alert_lock.release()
 
     return {"status": "ok", "stats": stats}
+
+
+@app.post("/api/ask-hero")
+def ask_hero(body: AskHeroRequest):
+    from ask_hero import chat_with_hero
+
+    messages = [
+        {"role": msg.role, "content": msg.content.strip()}
+        for msg in body.messages
+        if msg.content.strip() and msg.role in ("user", "assistant")
+    ]
+    if not messages or messages[-1]["role"] != "user":
+        raise HTTPException(status_code=400, detail="Last message must be from the user.")
+
+    user_context = body.userContext.model_dump()
+    try:
+        result = chat_with_hero(messages, user_context)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return result
 
 
 if __name__ == "__main__":
