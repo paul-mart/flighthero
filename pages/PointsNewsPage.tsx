@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { TransferPartnerLogo } from '../components/TransferPartnerLogo';
 import { TopNavbar } from '../components/TopNavbar';
 import { SiteFooter } from '../components/SiteFooter';
@@ -25,7 +24,6 @@ export default function PointsNewsPage() {
       <TopNavbar />
       <main className="faq-main points-news-main">
         <header className="faq-header">
-          <Link to="/" className="faq-back-link">← Back to search</Link>
           <h1 className="faq-title">Points News</h1>
           <p className="points-news-lede">
             Transfer bonuses, card offers, and points program updates for award travelers.

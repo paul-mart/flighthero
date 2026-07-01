@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { TopNavbar } from '../components/TopNavbar';
 import { SiteFooter } from '../components/SiteFooter';
 import { SearchIcon } from '../icons';
@@ -55,7 +54,6 @@ export default function FaqPage() {
       <TopNavbar />
       <main className="faq-main faq-main-wide">
         <header className="faq-header">
-          <Link to="/" className="faq-back-link">← Back to search</Link>
           <h1 className="faq-title">FAQ</h1>
           <p className="faq-lede">
             Answers about transfers, award booking, and how FlightHero grades redemptions.

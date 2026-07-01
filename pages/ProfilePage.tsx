@@ -257,10 +257,6 @@ export default function ProfilePage() {
       </aside>
 
       <div className="profile-main" aria-labelledby="profile-title">
-        <header className="profile-main-header">
-          <Link to="/" className="profile-back-link">← Back to search</Link>
-        </header>
-
         <div className="profile-panel">
           {activeSection === 'settings' && (
             <div className="profile-settings">

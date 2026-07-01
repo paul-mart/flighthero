@@ -74,7 +74,7 @@ body:has(.auth-section) {
 }
 
 .flighthero-logo--hero {
-  height: clamp(3rem, 8vw, 4.25rem);
+  height: clamp(2.7rem, 7.2vw, 3.825rem);
   margin: 0 auto;
 }
 
@@ -275,7 +275,7 @@ body:has(.auth-section) {
 }
 
 .hero-section--landing:not(.hero-section--searched) .hero-inner {
-  transform: translateY(-14px);
+  transform: translateY(-6px);
 }
 
 .hero-section--searched {
@@ -323,20 +323,21 @@ body:has(.auth-section) {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: min(1000px, 100%);
+  max-width: min(900px, 100%);
   overflow: visible;
 }
 
-.hero-search {
+.hero-inner--compact {
+  max-width: min(900px, 100%);
+}
+
+.hero-search--compact {
   width: 100%;
-  overflow: visible;
-  position: relative;
-  z-index: 2;
 }
 
 .hero-copy {
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   opacity: 0;
   transform: translateY(14px);
 }
@@ -357,19 +358,26 @@ body:has(.auth-section) {
 }
 
 .hero-headline {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   line-height: 0;
 }
 
 .hero-subheadline {
   margin: 0;
-  max-width: 480px;
+  max-width: 432px;
   margin-left: auto;
   margin-right: auto;
-  font-size: 0.9375rem;
+  font-size: 0.84375rem;
   font-weight: 400;
   line-height: 1.55;
   color: rgba(255, 255, 255, 0.78);
+}
+
+.hero-search {
+  width: 100%;
+  overflow: visible;
+  position: relative;
+  z-index: 2;
 }
 
 .trending-deals {
@@ -915,18 +923,25 @@ body:has(.auth-section) {
 }
 
 .trending-deal-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
 }
 
 .trending-deal-tag {
-  display: inline-block;
-  padding: 5px 10px;
-  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 4px 6px;
+  font-size: 0.6875rem;
   font-weight: 600;
-  border-radius: 6px;
-  letter-spacing: 0.01em;
+  border-radius: 5px;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .trending-deal-tag-points {
@@ -1121,11 +1136,11 @@ html {
 .search-mode-option {
   flex: 1;
   margin: 0;
-  padding: 12px 14px;
+  padding: 11px 13px;
   border: none;
   background: transparent;
   color: #6b7280;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   font-family: inherit;
   letter-spacing: -0.01em;
@@ -3574,6 +3589,53 @@ html {
   color: #6b7280;
 }
 
+.deals-page-main {
+  max-width: min(1240px, calc(100vw - 40px));
+  padding: 104px 18px 48px;
+}
+
+.deals-page-main .trending-deals-nav--prev {
+  margin-left: -6px;
+  margin-right: 4px;
+}
+
+.deals-page-main .trending-deals-nav--next {
+  margin-right: -6px;
+  margin-left: 4px;
+}
+
+.deals-page-main .trending-deals-grid {
+  gap: 20px;
+}
+
+.deals-page-lede {
+  margin: 12px 0 40px;
+  max-width: 640px;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: #6b7280;
+}
+
+.deals-region-section.trending-deals {
+  padding: 0 0 44px;
+  background: transparent;
+}
+
+.deals-region-section .trending-deals-header {
+  opacity: 1;
+  transform: none;
+}
+
+.deals-region-section .trending-deals-subtitle {
+  margin-bottom: 22px;
+}
+
+.deals-region-section:not(:first-of-type) {
+  margin-top: 12px;
+  padding-top: 40px;
+  border-top: 1px solid #e5e7eb;
+}
+
 .points-news-section {
   margin-bottom: 28px;
 }
@@ -4003,7 +4065,8 @@ body:has(.ask-hero-page) {
   display: flex;
   flex-direction: column;
   background: rgba(15, 23, 42, 0.95);
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(129, 140, 248, 0.38);
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.06);
   padding: 16px 12px;
   height: 100%;
   min-height: 0;

@@ -428,7 +428,7 @@ function HeroCopyBlock() {
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el) return undefined;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -1558,10 +1558,10 @@ export default function App() {
 
       <section className={`hero-section hero-section--landing${hasSearched ? ' hero-section--searched' : ''}`} aria-label="Flight search">
         <div className="hero-backdrop" aria-hidden />
-        <div className="hero-inner">
+        <div className="hero-inner hero-inner--compact">
           <HeroCopyBlock />
 
-          <div className="hero-search">
+          <div className="hero-search hero-search--compact">
             <div className="search-panel-wrap" style={styles.searchPanelWrap}>
               <SearchModeTabs value={searchType} onChange={handleSearchTypeChange} />
               <div
@@ -1798,7 +1798,7 @@ export default function App() {
 
       {!hasSearched && <TrendingDeals onSelectDeal={handleTrendingDealSelect} />}
 
-      <div className="app-content" style={styles.container}>
+      <div className="app-content app-content--compact" style={styles.container}>
       {/* Results Section */}
       <main className="results-container" style={styles.resultsContainer}>
         {hasSearched && flights.length > 0 && (
@@ -2087,7 +2087,7 @@ const FONT_FAMILY = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', san
 
 const fieldFont: React.CSSProperties = {
   fontFamily: FONT_FAMILY,
-  fontSize: '16px',
+  fontSize: '14px',
   fontWeight: 400,
   color: '#111827',
   letterSpacing: '-0.01em',
@@ -2096,14 +2096,14 @@ const fieldFont: React.CSSProperties = {
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     fontFamily: FONT_FAMILY,
-    maxWidth: '1100px',
+    maxWidth: '990px',
     margin: '0 auto',
-    padding: '24px 16px 48px',
+    padding: '22px 14px 43px',
     color: '#111827',
   },
   searchPanelWrap: {
     width: '100%',
-    maxWidth: '1000px',
+    maxWidth: '900px',
   },
   searchPanel: {
     background: '#fff',
@@ -2114,16 +2114,16 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   advancedSection: {
     borderTop: '1px solid #f0f0f0',
-    padding: '12px 20px 16px',
+    padding: '11px 18px 14px',
   },
   advancedToggle: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '8px',
-    marginBottom: '14px',
+    gap: '7px',
+    marginBottom: '13px',
     cursor: 'pointer',
-    fontSize: '15px',
+    fontSize: '14px',
     fontWeight: 500,
     color: '#3c4043',
     userSelect: 'none',
@@ -2149,7 +2149,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     flexShrink: 0,
   },
   advancedControlLabel: {
-    fontSize: '16px',
+    fontSize: '14px',
     fontWeight: 500,
     color: '#3c4043',
     fontFamily: 'inherit',
@@ -2164,8 +2164,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '8px 12px',
-    padding: '10px 20px 4px',
+    gap: '7px 11px',
+    padding: '9px 18px 4px',
     borderBottom: '1px solid #f0f0f0',
   },
   filterDropdown: {
@@ -2177,9 +2177,9 @@ const styles: { [key: string]: React.CSSProperties } = {
     gap: '8px',
     border: 'none',
     background: 'transparent',
-    padding: '6px 4px',
+    padding: '5px 4px',
     cursor: 'pointer',
-    fontSize: '15px',
+    fontSize: '14px',
     fontWeight: 500,
     color: '#3c4043',
     outline: 'none',
@@ -2195,7 +2195,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: '#6b7280',
   },
   passengerTrigger: {
-    minWidth: 132,
+    minWidth: 119,
   },
   filterTriggerOpen: {
     color: '#6366f1',
@@ -2233,10 +2233,10 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: 'none',
     background: '#fff',
     textAlign: 'left',
-    padding: '12px 16px',
+    padding: '11px 14px',
     borderRadius: 0,
     cursor: 'pointer',
-    fontSize: '15px',
+    fontSize: '14px',
     color: '#3c4043',
     fontFamily: 'inherit',
     outline: 'none',
@@ -2248,18 +2248,18 @@ const styles: { [key: string]: React.CSSProperties } = {
     background: '#ececec',
   },
   passengerMenu: {
-    minWidth: '280px',
+    minWidth: '252px',
     background: '#fff',
     borderRadius: '12px',
     boxShadow: '0 8px 30px rgba(99, 102, 241, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06)',
-    padding: '18px 20px',
+    padding: '16px 18px',
   },
   passengerRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '20px',
-    marginBottom: '14px',
+    gap: '18px',
+    marginBottom: '13px',
   },
   passengerRowLast: {
     marginBottom: 0,
@@ -2270,13 +2270,13 @@ const styles: { [key: string]: React.CSSProperties } = {
     gap: '2px',
   },
   passengerLabel: {
-    fontSize: '15px',
+    fontSize: '14px',
     fontWeight: 500,
     color: '#3c4043',
     whiteSpace: 'nowrap',
   },
   passengerSublabel: {
-    fontSize: '13px',
+    fontSize: '12px',
     color: '#888',
     whiteSpace: 'nowrap',
   },
@@ -2287,8 +2287,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     flexShrink: 0,
   },
   stepperBtn: {
-    width: '34px',
-    height: '34px',
+    width: '31px',
+    height: '31px',
     borderRadius: '6px',
     border: '1px solid #ddd',
     background: '#f5f5f5',
@@ -2308,17 +2308,17 @@ const styles: { [key: string]: React.CSSProperties } = {
     cursor: 'not-allowed',
   },
   stepperValue: {
-    minWidth: '24px',
+    minWidth: '22px',
     textAlign: 'center',
-    fontSize: '15px',
+    fontSize: '14px',
     fontWeight: 500,
     color: '#3c4043',
   },
   mainBar: {
     display: 'flex',
     alignItems: 'stretch',
-    gap: '10px',
-    padding: '6px 20px 24px',
+    gap: '9px',
+    padding: '5px 18px 22px',
     flexWrap: 'wrap',
     overflow: 'visible',
   },
@@ -2326,11 +2326,11 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'grid',
     gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
     alignItems: 'center',
-    flex: '2 1 300px',
-    minWidth: '260px',
+    flex: '2 1 270px',
+    minWidth: '234px',
     background: '#f5f5f5',
-    borderRadius: '10px',
-    padding: '6px 8px',
+    borderRadius: '9px',
+    padding: '5px 7px',
     columnGap: '4px',
     overflow: 'visible',
   },
@@ -2341,7 +2341,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     position: 'relative',
     zIndex: 2,
     flexShrink: 0,
-    width: '44px',
+    width: '40px',
   },
   routeField: {
     position: 'relative',
@@ -2392,19 +2392,19 @@ const styles: { [key: string]: React.CSSProperties } = {
     minWidth: 0,
   },
   suggestionName: {
-    fontSize: '15px',
+    fontSize: '14px',
     fontWeight: 500,
     color: '#3c4043',
   },
   suggestionSubtitle: {
-    fontSize: '13px',
+    fontSize: '12px',
     color: '#80868b',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
   },
   suggestionCode: {
-    fontSize: '14px',
+    fontSize: '13px',
     fontWeight: 600,
     color: '#6366f1',
     flexShrink: 0,
@@ -2451,7 +2451,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     background: 'transparent',
     padding: '12px 0',
     outline: 'none',
-    height: '48px',
+    height: '43px',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
@@ -2463,8 +2463,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '38px',
-    height: '38px',
+    width: '34px',
+    height: '34px',
     borderRadius: '50%',
     border: '1px solid #d1d5db',
     background: '#fff',
@@ -2477,11 +2477,11 @@ const styles: { [key: string]: React.CSSProperties } = {
   dateBlock: {
     display: 'flex',
     alignItems: 'center',
-    flex: '1 1 300px',
-    minWidth: '300px',
+    flex: '1 1 270px',
+    minWidth: '270px',
     background: '#f5f5f5',
-    borderRadius: '10px',
-    padding: '6px 14px',
+    borderRadius: '9px',
+    padding: '5px 13px',
     gap: '10px',
     position: 'relative',
   },
@@ -2502,12 +2502,12 @@ const styles: { [key: string]: React.CSSProperties } = {
     gap: '8px',
     color: '#fff',
     border: 'none',
-    padding: '0 28px',
-    fontSize: '15px',
+    padding: '0 25px',
+    fontSize: '14px',
     fontWeight: 600,
     cursor: 'pointer',
-    minHeight: '48px',
-    minWidth: '132px',
+    minHeight: '43px',
+    minWidth: '119px',
     flexShrink: 0,
     alignSelf: 'stretch',
     marginLeft: 'auto',
@@ -2523,7 +2523,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   resultsCount: {
     margin: 0,
-    fontSize: '13px',
+    fontSize: '12px',
     color: '#6b7280',
     fontWeight: 500,
   },
@@ -2546,12 +2546,12 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: '16px',
+    gap: '14px',
     background: '#fff',
-    padding: '16px 20px',
-    borderRadius: '10px',
+    padding: '14px 18px',
+    borderRadius: '9px',
     border: '1px solid #e5e7eb',
-    marginBottom: '10px',
+    marginBottom: '9px',
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
   },
   flightCardBody: {
@@ -2559,7 +2559,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     flex: 1,
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: '16px',
+    gap: '14px',
     minWidth: 0,
     width: '100%',
   },
@@ -2570,15 +2570,15 @@ const styles: { [key: string]: React.CSSProperties } = {
     justifyContent: 'center',
     gap: '8px',
     flexShrink: 0,
-    minWidth: '132px',
+    minWidth: '119px',
   },
   viewFlightBtn: {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '6px',
-    padding: '9px 16px',
-    minWidth: '124px',
+    gap: '5px',
+    padding: '8px 14px',
+    minWidth: '112px',
     cursor: 'pointer',
     fontFamily: 'inherit',
     whiteSpace: 'nowrap',
@@ -2710,10 +2710,10 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     flexDirection: 'column',
     gap: '1px',
-    paddingLeft: '52px',
+    paddingLeft: '47px',
   },
   flightReturnRouteRow: {
-    paddingLeft: '52px',
+    paddingLeft: '47px',
     marginTop: '6px',
   },
   carrierLogoGroup: {
@@ -2726,32 +2726,32 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   carrierBadge: {
     background: '#f3f4f6',
-    padding: '10px 12px',
+    padding: '9px 11px',
     borderRadius: '8px',
     fontWeight: 600,
-    fontSize: '12px',
+    fontSize: '11px',
     lineHeight: 1.2,
-    minHeight: '40px',
+    minHeight: '36px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     textAlign: 'center',
     color: '#374151',
   },
-  carrierLogo: { height: '40px', width: 'auto', maxWidth: '72px', objectFit: 'contain', display: 'block' },
+  carrierLogo: { height: '36px', width: 'auto', maxWidth: '65px', objectFit: 'contain', display: 'block' },
   carrierLogoOverflow: { fontSize: '12px', color: '#6b7280', fontWeight: 500 },
-  routeLabel: { fontSize: '16px', fontWeight: 600, color: '#111827', lineHeight: 1.25 },
-  returnRouteLabel: { fontSize: '15px', fontWeight: 600, color: '#111827', lineHeight: 1.25 },
-  returnLoading: { fontSize: '13px', color: '#6b7280', fontStyle: 'italic', paddingLeft: '52px' },
-  timeText: { fontSize: '14px', fontWeight: 500, color: '#374151', lineHeight: 1.35 },
-  subtext: { fontSize: '13px', color: '#6b7280', lineHeight: 1.35, fontWeight: 400 },
+  routeLabel: { fontSize: '14px', fontWeight: 600, color: '#111827', lineHeight: 1.25 },
+  returnRouteLabel: { fontSize: '14px', fontWeight: 600, color: '#111827', lineHeight: 1.25 },
+  returnLoading: { fontSize: '12px', color: '#6b7280', fontStyle: 'italic', paddingLeft: '47px' },
+  timeText: { fontSize: '13px', fontWeight: 500, color: '#374151', lineHeight: 1.35 },
+  subtext: { fontSize: '12px', color: '#6b7280', lineHeight: 1.35, fontWeight: 400 },
   pricingSection: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' },
-  priceText: { fontSize: '28px', fontWeight: 700, color: '#15803d', letterSpacing: '-0.02em' },
-  priceHint: { fontSize: '11px', color: '#6b7280', marginBottom: '2px', textAlign: 'right', fontWeight: 500 },
-  pointsText: { fontSize: '26px', fontWeight: 700, color: '#4338ca', letterSpacing: '-0.02em' },
-  cppText: { fontSize: '14px', fontWeight: 600, color: '#059669', marginTop: 2 },
+  priceText: { fontSize: '25px', fontWeight: 700, color: '#15803d', letterSpacing: '-0.02em' },
+  priceHint: { fontSize: '10px', color: '#6b7280', marginBottom: '2px', textAlign: 'right', fontWeight: 500 },
+  pointsText: { fontSize: '23px', fontWeight: 700, color: '#4338ca', letterSpacing: '-0.02em' },
+  cppText: { fontSize: '13px', fontWeight: 600, color: '#059669', marginTop: 2 },
   programTag: {
-    fontSize: '12px',
+    fontSize: '11px',
     color: '#4338ca',
     fontWeight: 600,
     marginTop: '4px',

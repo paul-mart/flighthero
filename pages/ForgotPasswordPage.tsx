@@ -107,9 +107,6 @@ export default function ForgotPasswordPage() {
         </p>
       )}
 
-      <p className="auth-footer">
-        <Link to="/" className="auth-back-link">← Back to search</Link>
-      </p>
     </AuthShell>
   );
 }

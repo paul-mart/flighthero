@@ -147,9 +147,6 @@ export default function SignUpPage() {
         <Link to="/auth/sign-in" className="auth-switch-link">Sign in</Link>
       </p>
 
-      <p className="auth-footer">
-        <Link to="/" className="auth-back-link">← Back to search</Link>
-      </p>
     </AuthShell>
   );
 }

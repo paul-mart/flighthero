@@ -18,7 +18,7 @@ export interface TrendingDeal {
   image: string;
 }
 
-function deal(
+export function createTrendingDeal(
   id: string,
   originCode: string,
   originName: string,
@@ -55,22 +55,22 @@ function deal(
 /** Three slides of four curated award routes. Fares are typical saver-level starting points. */
 export const TRENDING_DEAL_SLIDES: TrendingDeal[][] = [
   [
-    deal('bos-lhr', 'BOS', 'Boston', 'LHR', 'London', 'United Kingdom', '2026-09-12', '2026-09-19', 'From 30k pts', 'From $489', 'Aeroplan'),
-    deal('jfk-cdg', 'JFK', 'New York', 'CDG', 'Paris', 'France', '2026-10-03', '2026-10-10', 'From 25k pts', 'From $512', 'Flying Blue'),
-    deal('bos-dub', 'BOS', 'Boston', 'DUB', 'Dublin', 'Ireland', '2026-08-21', '2026-08-28', 'From 13k pts', 'From $398', 'Aer Lingus Avios'),
-    deal('ewr-fco', 'EWR', 'New York', 'FCO', 'Rome', 'Italy', '2026-11-07', '2026-11-14', 'From 33k pts', 'From $548', 'United MileagePlus'),
+    createTrendingDeal('bos-lhr', 'BOS', 'Boston', 'LHR', 'London', 'United Kingdom', '2026-09-12', '2026-09-19', 'From 30k pts', 'From $489', 'Aeroplan'),
+    createTrendingDeal('jfk-cdg', 'JFK', 'New York', 'CDG', 'Paris', 'France', '2026-10-03', '2026-10-10', 'From 25k pts', 'From $512', 'Flying Blue'),
+    createTrendingDeal('bos-dub', 'BOS', 'Boston', 'DUB', 'Dublin', 'Ireland', '2026-08-21', '2026-08-28', 'From 13k pts', 'From $398', 'Aer Lingus Avios'),
+    createTrendingDeal('ewr-fco', 'EWR', 'New York', 'FCO', 'Rome', 'Italy', '2026-11-07', '2026-11-14', 'From 33k pts', 'From $548', 'United MileagePlus'),
   ],
   [
-    deal('lax-hnd', 'LAX', 'Los Angeles', 'HND', 'Tokyo', 'Japan', '2026-10-18', '2026-10-28', 'From 40k pts', 'From $789', 'ANA via Amex'),
-    deal('sfo-icn', 'SFO', 'San Francisco', 'ICN', 'Seoul', 'South Korea', '2026-09-25', '2026-10-05', 'From 35k pts', 'From $672', 'United MileagePlus'),
-    deal('lax-syd', 'LAX', 'Los Angeles', 'SYD', 'Sydney', 'Australia', '2026-11-12', '2026-11-22', 'From 40k pts', 'From $899', 'Qantas'),
-    deal('sea-sin', 'SEA', 'Seattle', 'SIN', 'Singapore', 'Singapore', '2026-10-08', '2026-10-18', 'From 30k pts', 'From $718', 'Alaska Mileage Plan'),
+    createTrendingDeal('lax-hnd', 'LAX', 'Los Angeles', 'HND', 'Tokyo', 'Japan', '2026-10-18', '2026-10-28', 'From 40k pts', 'From $789', 'ANA via Amex'),
+    createTrendingDeal('sfo-icn', 'SFO', 'San Francisco', 'ICN', 'Seoul', 'South Korea', '2026-09-25', '2026-10-05', 'From 35k pts', 'From $672', 'United MileagePlus'),
+    createTrendingDeal('lax-syd', 'LAX', 'Los Angeles', 'SYD', 'Sydney', 'Australia', '2026-11-12', '2026-11-22', 'From 40k pts', 'From $899', 'Qantas'),
+    createTrendingDeal('sea-sin', 'SEA', 'Seattle', 'SIN', 'Singapore', 'Singapore', '2026-10-08', '2026-10-18', 'From 30k pts', 'From $718', 'Alaska Mileage Plan'),
   ],
   [
-    deal('jfk-sju', 'JFK', 'New York', 'SJU', 'San Juan', 'Puerto Rico', '2026-07-24', '2026-07-31', 'From 8k pts', 'From $178', 'JetBlue TrueBlue'),
-    deal('mia-cun', 'MIA', 'Miami', 'CUN', 'Cancún', 'Mexico', '2026-08-15', '2026-08-22', 'From 15k pts', 'From $219', 'United MileagePlus'),
-    deal('bos-lis', 'BOS', 'Boston', 'LIS', 'Lisbon', 'Portugal', '2026-09-05', '2026-09-12', 'From 30k pts', 'From $468', 'TAP Miles&Go'),
-    deal('ord-mex', 'ORD', 'Chicago', 'MEX', 'Mexico City', 'Mexico', '2026-10-01', '2026-10-08', 'From 12k pts', 'From $245', 'Aeroplan'),
+    createTrendingDeal('jfk-sju', 'JFK', 'New York', 'SJU', 'San Juan', 'Puerto Rico', '2026-07-24', '2026-07-31', 'From 8k pts', 'From $178', 'JetBlue TrueBlue'),
+    createTrendingDeal('mia-cun', 'MIA', 'Miami', 'CUN', 'Cancún', 'Mexico', '2026-08-15', '2026-08-22', 'From 15k pts', 'From $219', 'United MileagePlus'),
+    createTrendingDeal('bos-lis', 'BOS', 'Boston', 'LIS', 'Lisbon', 'Portugal', '2026-09-05', '2026-09-12', 'From 30k pts', 'From $468', 'TAP Miles&Go'),
+    createTrendingDeal('ord-mex', 'ORD', 'Chicago', 'MEX', 'Mexico City', 'Mexico', '2026-10-01', '2026-10-08', 'From 12k pts', 'From $245', 'Aeroplan'),
   ],
 ];
 

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon } from '../icons';
+import { DealsCarousel } from './DealsCarousel';
 import {
-  TRENDING_DEAL_SLIDE_COUNT,
   TRENDING_DEAL_SLIDES,
   type TrendingDeal,
 } from '../data/trendingDeals';
@@ -13,7 +12,6 @@ interface TrendingDealsProps {
 export function TrendingDeals({ onSelectDeal }: TrendingDealsProps) {
   const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
-  const [slideIndex, setSlideIndex] = useState(0);
 
   useEffect(() => {
     const el = ref.current;
@@ -33,14 +31,6 @@ export function TrendingDeals({ onSelectDeal }: TrendingDealsProps) {
     return () => observer.disconnect();
   }, []);
 
-  const goToPrevious = () => {
-    setSlideIndex((index) => (index - 1 + TRENDING_DEAL_SLIDE_COUNT) % TRENDING_DEAL_SLIDE_COUNT);
-  };
-
-  const goToNext = () => {
-    setSlideIndex((index) => (index + 1) % TRENDING_DEAL_SLIDE_COUNT);
-  };
-
   return (
     <section
       ref={ref}
@@ -56,74 +46,11 @@ export function TrendingDeals({ onSelectDeal }: TrendingDealsProps) {
           </p>
         </div>
 
-        <div className="trending-deals-carousel">
-          <button
-            type="button"
-            className="trending-deals-nav trending-deals-nav--prev"
-            onClick={goToPrevious}
-            aria-label="Show previous deals"
-          >
-            <ChevronLeftIcon size={28} />
-          </button>
-
-          <div
-            className="trending-deals-carousel-viewport"
-            aria-live="polite"
-            aria-label={`Deal set ${slideIndex + 1} of ${TRENDING_DEAL_SLIDE_COUNT}`}
-          >
-            <div
-              className="trending-deals-carousel-track"
-              style={{ transform: `translateX(-${slideIndex * 100}%)` }}
-            >
-              {TRENDING_DEAL_SLIDES.map((deals, slideIdx) => (
-                <div key={slideIdx} className="trending-deals-slide">
-                  <div className="trending-deals-grid">
-                    {deals.map((deal, index) => (
-                      <button
-                        key={deal.id}
-                        type="button"
-                        className="trending-deal-card trending-deal-card-btn"
-                        style={{ ['--deal-index' as string]: index }}
-                        onClick={() => onSelectDeal(deal)}
-                      >
-                        <img
-                          className="trending-deal-image"
-                          src={deal.image}
-                          alt=""
-                          loading="lazy"
-                        />
-                        <div className="trending-deal-overlay" aria-hidden />
-                        <div className="trending-deal-content">
-                          <div>
-                            <h3 className="trending-deal-city">{deal.city}</h3>
-                            <p className="trending-deal-country">{deal.routeLabel} · {deal.country}</p>
-                          </div>
-                          <div className="trending-deal-tags">
-                            <span className="trending-deal-tag trending-deal-tag-points">{deal.pointsLabel}</span>
-                            <span className="trending-deal-tag trending-deal-tag-cash">{deal.cashLabel}</span>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <button
-            type="button"
-            className="trending-deals-nav trending-deals-nav--next"
-            onClick={goToNext}
-            aria-label="Show next deals"
-          >
-            <ChevronRightIcon size={28} />
-          </button>
-        </div>
-
-        <p className="trending-deals-slide-indicator" aria-hidden>
-          {slideIndex + 1} / {TRENDING_DEAL_SLIDE_COUNT}
-        </p>
+        <DealsCarousel
+          slides={TRENDING_DEAL_SLIDES}
+          onSelectDeal={onSelectDeal}
+          titleId="trending-deals-title"
+        />
       </div>
     </section>
   );

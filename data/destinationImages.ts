@@ -29,6 +29,19 @@ const LOCAL_IMAGES_BY_CODE: Record<string, string> = {
   CUN: 'deals/cun.jpg',
   LIS: 'deals/lis.jpg',
   MEX: 'deals/mex.jpg',
+  BCN: 'deals/bcn.jpg',
+  DEL: 'deals/del.jpg',
+  BKK: 'deals/bkk.jpg',
+  DXB: 'deals/dxb.jpg',
+  IST: 'deals/ist.jpg',
+  CAI: 'deals/cai.jpg',
+  CPT: 'deals/cpt.jpg',
+  NBO: 'deals/nbo.jpg',
+  GRU: 'deals/gru.jpg',
+  ACC: 'deals/acc.jpg',
+  CMN: 'deals/cmn.jpg',
+  JNB: 'deals/jnb.jpg',
+  ADD: 'deals/add.jpg',
 };
 
 export function getDestinationImage(destinationLabel: string): string {

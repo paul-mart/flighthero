@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { TopNavbar } from '../components/TopNavbar';
 import { SiteFooter } from '../components/SiteFooter';
 
@@ -8,7 +7,6 @@ export default function LegalPage() {
       <TopNavbar />
       <main className="faq-main">
         <header className="faq-header">
-          <Link to="/" className="faq-back-link">← Back to search</Link>
           <h1 className="faq-title">Legal</h1>
         </header>
 
