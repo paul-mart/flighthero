@@ -133,6 +133,22 @@ export async function deleteHeroChat(userId: string, chatId: string): Promise<vo
   await deleteDoc(doc(db, 'users', userId, 'heroChats', chatId));
 }
 
+export async function renameHeroChat(
+  userId: string,
+  chatId: string,
+  title: string,
+): Promise<void> {
+  if (!isFirebaseConfigured() || !db) {
+    throw new Error('Sign in to manage conversations.');
+  }
+  const trimmed = truncateChatTitle(title);
+  if (!trimmed) {
+    throw new Error('Title cannot be empty.');
+  }
+  const ref = doc(db, 'users', userId, 'heroChats', chatId);
+  await setDoc(ref, { title: trimmed, updatedAt: Date.now() }, { merge: true });
+}
+
 export type ChatDateGroup = 'today' | 'yesterday' | 'last7' | 'older';
 
 export function getChatDateGroup(updatedAt: number, now = Date.now()): ChatDateGroup {

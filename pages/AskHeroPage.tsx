@@ -2,12 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TopNavbar } from '../components/TopNavbar';
 import { HeroChatSidebar } from '../components/HeroChatSidebar';
+import { HeroDeleteChatDialog } from '../components/HeroDeleteChatDialog';
 import { HeroChatThread } from '../components/HeroChatThread';
 import { useAuth } from '../context/AuthContext';
 import { sendAskHeroMessage } from '../lib/askHero';
 import {
   createHeroChat,
   deleteHeroChat,
+  renameHeroChat,
   saveHeroChatMessages,
   subscribeHeroChats,
   type HeroChat,
@@ -33,6 +35,8 @@ export default function AskHeroPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{ chatId: string; title: string } | null>(null);
+  const [isDeletingChat, setIsDeletingChat] = useState(false);
 
   const homeAirport = profile?.preferences?.homeAirport ?? '';
   const homeAirportLabel = profile?.preferences?.homeAirportLabel ?? '';
@@ -54,25 +58,51 @@ export default function AskHeroPage() {
     return subscribeHeroChats(user.uid, setChats);
   }, [user]);
 
-  const handleDeleteChat = useCallback(async () => {
-    if (!user || !activeChatId || isTyping) return;
+  const requestDeleteChat = useCallback((chatId: string) => {
+    if (!user || isTyping) return;
 
-    const chatTitle = activeChat?.title ?? 'this chat';
-    const confirmed = window.confirm(
-      `Delete "${chatTitle}" permanently?\n\nThis will remove the conversation and all its messages. This cannot be undone.`,
-    );
-    if (!confirmed) return;
+    const chat = chats.find((c) => c.id === chatId);
+    setPendingDelete({
+      chatId,
+      title: chat?.title ?? 'this chat',
+    });
+  }, [user, chats, isTyping]);
+
+  const cancelDeleteChat = useCallback(() => {
+    if (isDeletingChat) return;
+    setPendingDelete(null);
+  }, [isDeletingChat]);
+
+  const confirmDeleteChat = useCallback(async () => {
+    if (!user || !pendingDelete || isDeletingChat) return;
+
+    setError('');
+    setIsDeletingChat(true);
+    try {
+      await deleteHeroChat(user.uid, pendingDelete.chatId);
+      if (activeChatId === pendingDelete.chatId) {
+        setActiveChatId(null);
+        setInput('');
+      }
+      setSidebarOpen(false);
+      setPendingDelete(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete this chat.');
+    } finally {
+      setIsDeletingChat(false);
+    }
+  }, [user, pendingDelete, isDeletingChat, activeChatId]);
+
+  const handleRenameChat = useCallback(async (chatId: string, title: string) => {
+    if (!user) return;
 
     setError('');
     try {
-      await deleteHeroChat(user.uid, activeChatId);
-      setActiveChatId(null);
-      setInput('');
-      setSidebarOpen(false);
+      await renameHeroChat(user.uid, chatId, title);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not delete this chat.');
+      setError(err instanceof Error ? err.message : 'Could not rename this chat.');
     }
-  }, [user, activeChatId, activeChat?.title, isTyping]);
+  }, [user]);
 
   const handleNewChat = useCallback(async () => {
     if (!user) return;
@@ -165,7 +195,8 @@ export default function AskHeroPage() {
           homeAirportLabel={homeAirportLabel}
           onNewChat={() => { void handleNewChat(); }}
           onSelectChat={setActiveChatId}
-          onDeleteChat={() => { void handleDeleteChat(); }}
+          onRenameChat={(chatId, title) => { void handleRenameChat(chatId, title); }}
+          onDeleteChat={requestDeleteChat}
           mobileOpen={sidebarOpen}
           onCloseMobile={() => setSidebarOpen(false)}
         />
@@ -235,6 +266,15 @@ export default function AskHeroPage() {
           </div>
         </main>
       </div>
+
+      {pendingDelete && (
+        <HeroDeleteChatDialog
+          chatTitle={pendingDelete.title}
+          isDeleting={isDeletingChat}
+          onCancel={cancelDeleteChat}
+          onConfirm={() => { void confirmDeleteChat(); }}
+        />
+      )}
     </div>
   );
 }

@@ -4055,11 +4055,41 @@ body:has(.ask-hero-page) {
   list-style: none;
 }
 
+.hero-chat-nav-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: 8px;
+  position: relative;
+  transition: background 0.12s ease;
+}
+
+.hero-chat-nav-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.hero-chat-nav-row--active {
+  background: rgba(99, 102, 241, 0.22);
+}
+
+.hero-chat-nav-row--active:hover {
+  background: rgba(99, 102, 241, 0.28);
+}
+
+.hero-chat-nav-row--menu-open {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hero-chat-nav-row--renaming {
+  padding: 4px 6px;
+}
+
 .hero-chat-nav-item {
+  flex: 1;
+  min-width: 0;
   display: block;
-  width: 100%;
   text-align: left;
-  padding: 8px 10px;
+  padding: 8px 6px 8px 10px;
   border: none;
   border-radius: 8px;
   background: transparent;
@@ -4070,44 +4100,122 @@ body:has(.ask-hero-page) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: color 0.12s ease;
 }
 
-.hero-chat-nav-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+.hero-chat-nav-row:hover .hero-chat-nav-item,
+.hero-chat-nav-row--active .hero-chat-nav-item {
   color: #fff;
 }
 
-.hero-chat-nav-item--active {
-  background: rgba(99, 102, 241, 0.22);
+.hero-chat-nav-row--active .hero-chat-nav-item {
   color: #e0e7ff;
+  font-weight: 500;
+}
+
+.hero-chat-nav-actions {
+  position: relative;
+  flex-shrink: 0;
+  padding-right: 4px;
+}
+
+.hero-chat-nav-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 1.125rem;
+  line-height: 1;
+  font-family: inherit;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.hero-chat-nav-row:hover .hero-chat-nav-menu-btn,
+.hero-chat-nav-row--active .hero-chat-nav-menu-btn,
+.hero-chat-nav-row--menu-open .hero-chat-nav-menu-btn {
+  opacity: 1;
+}
+
+.hero-chat-nav-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.hero-chat-nav-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  min-width: 140px;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(30, 27, 75, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.hero-chat-nav-menu-item {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.hero-chat-nav-menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.hero-chat-nav-menu-item--danger {
+  color: rgba(252, 165, 165, 0.95);
+}
+
+.hero-chat-nav-menu-item--danger:hover {
+  background: rgba(248, 113, 113, 0.15);
+  color: #fecaca;
+}
+
+.hero-chat-rename-form {
+  width: 100%;
+}
+
+.hero-chat-rename-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid rgba(129, 140, 248, 0.5);
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.6);
+  color: #fff;
+  font-size: 0.875rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.hero-chat-rename-input:focus {
+  border-color: rgba(129, 140, 248, 0.75);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
 .hero-chat-sidebar-footer {
   padding: 12px 8px 4px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   margin-top: 8px;
-}
-
-.hero-delete-chat-btn {
-  width: 100%;
-  margin-top: 12px;
-  padding: 8px 12px;
-  border: 1px solid rgba(248, 113, 113, 0.35);
-  border-radius: 8px;
-  background: transparent;
-  color: rgba(252, 165, 165, 0.9);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-.hero-delete-chat-btn:hover {
-  background: rgba(248, 113, 113, 0.12);
-  border-color: rgba(248, 113, 113, 0.55);
-  color: #fecaca;
 }
 
 .hero-home-airport {
@@ -4635,4 +4743,88 @@ body:has(.ask-hero-page) {
   .ask-hero-composer {
     padding: 0 16px 16px;
   }
+}
+
+/* ── Ask Hero delete confirmation dialog ── */
+
+.hero-delete-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.hero-delete-dialog {
+  width: min(100%, 400px);
+  padding: 24px;
+  border-radius: 16px;
+  background: linear-gradient(165deg, #1e1b4b 0%, #0f172a 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+}
+
+.hero-delete-dialog-title {
+  margin: 0 0 12px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.hero-delete-dialog-desc {
+  margin: 0 0 24px;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.hero-delete-dialog-chat-title {
+  font-weight: 600;
+  color: #e0e7ff;
+}
+
+.hero-delete-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.hero-delete-dialog-btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.hero-delete-dialog-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.hero-delete-dialog-btn--cancel {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.hero-delete-dialog-btn--cancel:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hero-delete-dialog-btn--confirm {
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  background: rgba(220, 38, 38, 0.85);
+  color: #fff;
+}
+
+.hero-delete-dialog-btn--confirm:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 1);
 }
