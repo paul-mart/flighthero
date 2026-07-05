@@ -9,9 +9,11 @@ import { FlightItineraryTimeline, type FlightItinerary } from './components/Flig
 import { FlightTimeRange } from './components/FlightTimeRange';
 import { TransferPartnerLogo } from './components/TransferPartnerLogo';
 import { TransferBonusBadge, TransferBonusMath, TransferBonusPartnerChip } from './components/TransferBonusBadge';
+import { ActiveAlertHub } from './components/ActiveAlertHub';
 import { ContinueSearching } from './components/ContinueSearching';
+import { EcosystemBanner } from './components/EcosystemBanner';
+import { HowItWorksSection } from './components/HowItWorksSection';
 import { TrendingDeals } from './components/TrendingDeals';
-import { TrackedDealsSection } from './components/TrackedDealsSection';
 import { TrackDealButton } from './components/TrackDealButton';
 import { TopNavbar } from './components/TopNavbar';
 import { SiteFooter } from './components/SiteFooter';
@@ -39,6 +41,7 @@ import {
 } from './lib/recentSearches';
 import {
   trackedDealToSearchInput,
+  findDealWithAlerts,
   type TrackedDeal,
   type TrackedDealInput,
 } from './lib/trackedDeals';
@@ -422,11 +425,13 @@ function formatRouteLabel(origin: string, destination: string): string {
   return `${origin} – ${destination}`;
 }
 
-function HeroCopyBlock() {
+function HeroCopyBlock({ immediate = false }: { immediate?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(immediate);
 
   useEffect(() => {
+    if (immediate) return undefined;
+
     const el = ref.current;
     if (!el) return undefined;
 
@@ -441,7 +446,7 @@ function HeroCopyBlock() {
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [immediate]);
 
   return (
     <div
@@ -466,7 +471,7 @@ function SearchModeTabs({
   onChange: (next: 'cash' | 'points') => void;
 }) {
   return (
-    <div className="search-mode-bar" role="tablist" aria-label="Search type">
+    <div className="search-mode-bar search-mode-bar--refined" role="tablist" aria-label="Search type">
       <button
         type="button"
         role="tab"
@@ -1208,7 +1213,10 @@ export default function App() {
   const initialUrlSearchRanRef = useRef(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const showContinueSearching = !hasSearched && shouldShowContinueSearching(user?.uid);
-  const showTrackedDeals = !hasSearched && user && trackedDeals.length > 0;
+  const activeAlertDeal = useMemo(
+    () => findDealWithAlerts(trackedDeals),
+    [trackedDeals],
+  );
   const resumeTrackedDealRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -1556,13 +1564,14 @@ export default function App() {
     <div className="app-page">
       <TopNavbar />
 
-      <section className={`hero-section hero-section--landing${hasSearched ? ' hero-section--searched' : ''}`} aria-label="Flight search">
-        <div className="hero-backdrop" aria-hidden />
-        <div className="hero-inner hero-inner--compact">
-          <HeroCopyBlock />
-
-          <div className="hero-search hero-search--compact">
-            <div className="search-panel-wrap" style={styles.searchPanelWrap}>
+      {!hasSearched ? (
+        <>
+        <section className="hero-section hero-section--landing" aria-label="Flight search">
+          <div className="hero-backdrop" aria-hidden />
+          <div className="hero-inner hero-inner--landing">
+            <HeroCopyBlock immediate />
+            <div className="hero-search hero-search--landing home-dashboard-search">
+              <div className="search-panel-wrap search-panel-wrap--refined search-panel-wrap--full">
               <SearchModeTabs value={searchType} onChange={handleSearchTypeChange} />
               <div
                 id="search-panel-body"
@@ -1621,7 +1630,255 @@ export default function App() {
             </button>
           </div>
 
-          <div className="main-bar" style={styles.mainBar}>
+          <div className="main-bar main-bar--refined main-bar--dashboard" style={dashboardMainBar}>
+            <div className="route-block" style={dashboardRouteBlock}>
+              <div style={styles.routeField} className="route-field">
+                <span className="form-field-icon" style={styles.fieldIcon}><PlaneDepartIcon /></span>
+                <AirportAutocomplete
+                  value={origin}
+                  onChange={setOrigin}
+                  placeholder="From (city or airport)"
+                  ariaLabel="Origin"
+                  swapGeneration={routeSwapGeneration}
+                />
+              </div>
+
+              <div className="route-swap-slot" style={styles.routeSwapSlot}>
+                <button
+                  type="button"
+                  onClick={swapRoute}
+                  className="swap-btn"
+                  style={styles.swapBtn}
+                  aria-label="Swap origin and destination"
+                  title="Swap airports"
+                >
+                  <SwapIcon />
+                </button>
+              </div>
+
+              <div style={styles.routeField} className="route-field">
+                <span className="form-field-icon" style={styles.fieldIcon}><PlaneArriveIcon /></span>
+                <AirportAutocomplete
+                  value={destination}
+                  onChange={setDestination}
+                  placeholder="To (city or airport)"
+                  ariaLabel="Destination"
+                  swapGeneration={routeSwapGeneration}
+                />
+              </div>
+            </div>
+
+            <div className="date-block" style={dashboardDateBlock}>
+              <span className="form-field-icon" style={styles.fieldIcon}><CalendarIcon /></span>
+              <DatePicker
+                value={date}
+                onChange={(nextDate) => {
+                  setDate(nextDate);
+                  if (returnDate && nextDate && returnDate < nextDate) {
+                    setReturnDate('');
+                  }
+                }}
+                placeholder="Departure"
+                ariaLabel="Departure date"
+              />
+              <span style={{ ...styles.dateArrow, ...(tripType === 'one-way' ? styles.dateHidden : {}) }}>→</span>
+              <DatePicker
+                value={returnDate}
+                onChange={setReturnDate}
+                placeholder="Return"
+                ariaLabel="Return date"
+                minDate={date || undefined}
+                disabled={tripType === 'one-way'}
+                hidden={tripType === 'one-way'}
+              />
+            </div>
+
+            <button type="submit" className="search-btn" style={styles.searchBtn} disabled={loading}>
+              <SearchIcon />
+              {loading ? 'Searching...' : 'Search'}
+            </button>
+          </div>
+        </form>
+
+        {hasSearched && (
+          <div className="advanced-section" style={styles.advancedSection}>
+            <label style={styles.advancedToggle}>
+              <input
+                type="checkbox"
+                checked={advancedEnabled}
+                onChange={(e) => setAdvancedEnabled(e.target.checked)}
+                style={styles.advancedCheckbox}
+              />
+              <span>Advanced settings</span>
+            </label>
+
+            <div className="advanced-controls-row" style={styles.advancedControlsRow}>
+              <div className="advanced-control-item" style={styles.advancedControlItem}>
+                <span style={{
+                  ...styles.advancedControlLabel,
+                  ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
+                }}>
+                  Stops:
+                </span>
+                <FilterDropdown
+                  value={stopsFilter}
+                  onChange={setStopsFilter}
+                  options={[
+                    { value: 'nonstop', label: 'Nonstop' },
+                    { value: '1-or-fewer', label: '1 stop or fewer' },
+                    { value: '2-or-fewer', label: '2 stops or fewer' },
+                  ]}
+                  ariaLabel="Stops"
+                  disabled={!advancedEnabled}
+                />
+              </div>
+
+              <div className="advanced-control-item" style={styles.advancedControlItem}>
+                <span style={{
+                  ...styles.advancedControlLabel,
+                  ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
+                }}>
+                  Sort by:
+                </span>
+                <FilterDropdown
+                  value={sortOption}
+                  onChange={setSortOption}
+                  options={[
+                    { value: 'price-asc', label: 'Price: low to high' },
+                    { value: 'price-desc', label: 'Price: high to low' },
+                    { value: 'departure-asc', label: 'Departure: earliest first' },
+                    { value: 'departure-desc', label: 'Departure: latest first' },
+                    { value: 'duration-asc', label: 'Duration: shortest first' },
+                    { value: 'duration-desc', label: 'Duration: longest first' },
+                    ...(searchType === 'points'
+                      ? [
+                          { value: 'cpp-desc' as const, label: 'CPP: high to low' },
+                          { value: 'cpp-asc' as const, label: 'CPP: low to high' },
+                        ]
+                      : []),
+                  ]}
+                  ariaLabel="Sort by"
+                  disabled={!advancedEnabled}
+                />
+              </div>
+
+              {searchType === 'points' && (
+                <div className="advanced-control-item max-taxes-control" style={styles.advancedControlItem}>
+                  <span style={{
+                    ...styles.advancedControlLabel,
+                    ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
+                  }}>
+                    Max taxes:
+                  </span>
+                  <MaxTaxesSlider
+                    value={Math.min(maxTaxes, taxesSliderMax)}
+                    max={taxesSliderMax}
+                    disabled={!advancedEnabled}
+                    onChange={setMaxTaxes}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+              </div>
+            </div>
+
+            {loading && (
+              <div className="flight-search-loader" style={styles.flightSearchLoader} role="status" aria-live="polite">
+                <PlacesSearchLoader size={112} />
+                <span style={styles.flightSearchLoaderText}>Searching flights...</span>
+              </div>
+            )}
+            </div>
+          </div>
+        </section>
+
+        {!user ? (
+          <div className="home-landing-features">
+            <HowItWorksSection />
+            <EcosystemBanner />
+          </div>
+        ) : (
+          <section className="home-alert-strip" aria-label="Your active alert">
+            <div className="home-alert-strip-inner">
+              <ActiveAlertHub
+                variant="strip"
+                isSignedIn
+                activeDeal={activeAlertDeal}
+                onOpenDeal={(deal) => { void handleResumeTrackedDeal(deal, true); }}
+              />
+            </div>
+          </section>
+        )}
+
+        <TrendingDeals maxDeals={4} onSelectDeal={handleTrendingDealSelect} />
+        </>
+      ) : (
+        <section className="hero-section hero-section--landing hero-section--searched" aria-label="Flight search">
+          <div className="hero-backdrop" aria-hidden />
+          <div className="hero-inner hero-inner--compact">
+            <div className="hero-search hero-search--compact">
+              <div className="search-panel-wrap search-panel-wrap--refined" style={styles.searchPanelWrap}>
+              <SearchModeTabs value={searchType} onChange={handleSearchTypeChange} />
+              <div
+                id="search-panel-body"
+                className="search-panel"
+                style={styles.searchPanel}
+                role="tabpanel"
+                aria-labelledby={searchType === 'cash' ? 'search-tab-cash' : 'search-tab-points'}
+              >
+              <form onSubmit={handleSearch} style={styles.form}>
+          <div className="filter-bar" style={styles.filterBar}>
+            <div className="filter-bar-options">
+            <FilterDropdown
+              value={tripType}
+              onChange={(value) => {
+                setTripType(value);
+                if (value === 'one-way') setReturnDate('');
+              }}
+              options={[
+                { value: 'round-trip', label: 'Round trip' },
+                { value: 'one-way', label: 'One way' },
+              ]}
+              ariaLabel="Trip type"
+              minTriggerWidth={120}
+            />
+
+            <PassengerDropdown
+              adults={adults}
+              childCount={childrenCount}
+              onChange={(nextAdults, nextChildren) => {
+                setAdults(nextAdults);
+                setChildrenCount(nextChildren);
+              }}
+            />
+
+            <FilterDropdown
+              value={cabinClass}
+              onChange={setCabinClass}
+              options={[
+                { value: 'economy', label: 'Economy' },
+                { value: 'premium-economy', label: 'Premium economy' },
+                { value: 'business', label: 'Business' },
+                { value: 'first', label: 'First class' },
+              ]}
+              ariaLabel="Cabin class"
+              minTriggerWidth={168}
+            />
+            </div>
+            <button
+              type="button"
+              className="search-clear-link"
+              onClick={clearSearchForm}
+              disabled={!hasSearchInput || loading}
+              aria-label="Clear search form"
+            >
+              Clear
+            </button>
+          </div>
+
+          <div className="main-bar main-bar--refined" style={styles.mainBar}>
             <div className="route-block" style={styles.routeBlock}>
               <div style={styles.routeField} className="route-field">
                 <span className="form-field-icon" style={styles.fieldIcon}><PlaneDepartIcon /></span>
@@ -1781,22 +2038,14 @@ export default function App() {
                 <span style={styles.flightSearchLoaderText}>Searching flights...</span>
               </div>
             )}
+            </div>
           </div>
-        </div>
       </section>
+      )}
 
       {showContinueSearching && (
         <ContinueSearching searches={recentSearches} onSelect={handleResumeSearch} />
       )}
-
-      {showTrackedDeals && (
-        <TrackedDealsSection
-          deals={trackedDeals}
-          onSelect={(deal) => { void handleResumeTrackedDeal(deal, true); }}
-        />
-      )}
-
-      {!hasSearched && <TrendingDeals onSelectDeal={handleTrendingDealSelect} />}
 
       <div className="app-content app-content--compact" style={styles.container}>
       {/* Results Section */}
@@ -2793,3 +3042,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     width: '100%',
   },
 };
+
+const { flex: _routeFlex, minWidth: _routeMinWidth, ...dashboardRouteBlock } = styles.routeBlock;
+const { flex: _dateFlex, minWidth: _dateMinWidth, ...dashboardDateBlock } = styles.dateBlock;
+const dashboardMainBar = { ...styles.mainBar, flexWrap: 'nowrap' as const };

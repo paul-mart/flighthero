@@ -11,7 +11,7 @@ export function SiteFooter() {
             <h2 className="site-footer-heading">Product</h2>
             <ul className="site-footer-links">
               <li><Link to="/">Search flights</Link></li>
-              <li><a href={homeHashUrl('deals')}>Deals</a></li>
+              <li><Link to="/deals">Deals</Link></li>
               <li><a href={homeHashUrl('explore')}>Explore</a></li>
               <li><a href={homeHashUrl('guide')}>Guide</a></li>
               <li><Link to="/points-news">Points News</Link></li>

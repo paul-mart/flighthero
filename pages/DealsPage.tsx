@@ -24,7 +24,7 @@ export default function DealsPage() {
     <div className="app-page faq-shell">
       <TopNavbar />
       <main className="faq-main deals-page-main">
-        <header className="faq-header">
+        <header className="faq-header deals-page-header">
           <h1 className="faq-title">Deals</h1>
           <p className="deals-page-lede">
             Curated award routes by region — click any deal to search live availability and fares.
@@ -38,17 +38,13 @@ export default function DealsPage() {
             aria-labelledby={`deals-region-${section.id}`}
           >
             <div className="trending-deals-inner">
-              <div className="trending-deals-header">
-                <h2 id={`deals-region-${section.id}`} className="trending-deals-title">
-                  {section.title}
-                </h2>
-                <p className="trending-deals-subtitle">{section.description}</p>
-              </div>
-
               <DealsCarousel
                 slides={section.slides}
                 onSelectDeal={handleDealSelect}
                 titleId={`deals-region-${section.id}`}
+                title={section.title}
+                subtitle={section.description}
+                navPlacement="header"
               />
             </div>
           </section>

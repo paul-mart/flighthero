@@ -1,11 +1,11 @@
 import React from 'react';
 
-export const FORM_ICON_SIZE = 18;
-
 interface IconProps {
   size?: number;
   strokeWidth?: number;
 }
+
+export const FORM_ICON_SIZE = 18;
 
 function FeatherIcon({
   size = FORM_ICON_SIZE,
