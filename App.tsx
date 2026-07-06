@@ -45,7 +45,7 @@ import {
   type TrackedDeal,
   type TrackedDealInput,
 } from './lib/trackedDeals';
-import type { TrendingDeal } from './data/trendingDeals';
+import { HOME_TRENDING_DEALS, type TrendingDeal } from './data/trendingDeals';
 import {
   getApplicableTransferBonuses,
   getTransferBonusForPartner,
@@ -1812,7 +1812,7 @@ export default function App() {
           </section>
         )}
 
-        <TrendingDeals maxDeals={4} onSelectDeal={handleTrendingDealSelect} />
+        <TrendingDeals deals={HOME_TRENDING_DEALS} onSelectDeal={handleTrendingDealSelect} />
         </>
       ) : (
         <section className="hero-section hero-section--landing hero-section--searched" aria-label="Flight search">

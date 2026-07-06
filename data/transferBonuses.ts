@@ -1,17 +1,23 @@
 /**
  * Manually maintained transfer bonus list.
  * Source snapshot: https://frequentmiler.com/current-point-transfer-bonuses/
- * Last synced: June 2, 2026
+ * Last synced: July 5, 2026
  *
  * To update: edit ACTIVE_TRANSFER_BONUSES below (current/upcoming only).
  */
 import { partnerLabelToKey } from '../lib/cpp';
+
+export interface TransferRatio {
+  fromPoints: number;
+  toPoints: number;
+}
 
 export interface TransferBonus {
   transferFrom: string;
   transferTo: string;
   bonusPercent: number;
   summary: string;
+  baseTransferRatio: TransferRatio;
   detailsUrl?: string;
   startDate: string;
   endDate: string;
@@ -20,71 +26,28 @@ export interface TransferBonus {
 export const TRANSFER_BONUS_SOURCE = {
   name: 'Frequent Miler',
   url: 'https://frequentmiler.com/current-point-transfer-bonuses/',
-  lastUpdated: '2026-06-02',
+  lastUpdated: '2026-07-05',
 } as const;
 
 export const ACTIVE_TRANSFER_BONUSES: TransferBonus[] = [
   {
     transferFrom: 'Chase Ultimate Rewards',
-    transferTo: 'Marriott Bonvoy',
-    bonusPercent: 55,
-    summary: '55% transfer bonus to Marriott Bonvoy',
-    detailsUrl: 'https://frequentmiler.com/chase-ultimate-rewards-offering-65-transfer-bonus-to-marriott/',
-    startDate: '2026-05-16',
-    endDate: '2026-06-30',
-  },
-  {
-    transferFrom: 'Amex Membership Rewards',
-    transferTo: 'Marriott Bonvoy',
-    bonusPercent: 20,
-    summary: '20% transfer bonus to Marriott Bonvoy',
-    detailsUrl: 'https://frequentmiler.com/20-transfer-bonus-to-marriott-bonvoy-from-american-express-membership-rewards/',
-    startDate: '2026-06-01',
-    endDate: '2026-06-30',
-  },
-  {
-    transferFrom: 'Rove Miles',
-    transferTo: 'Turkish Airlines Miles & Smiles',
-    bonusPercent: 50,
-    summary: '50% transfer bonus to Turkish Miles & Smiles',
-    detailsUrl: 'https://frequentmiler.com/50-transfer-bonus-to-turkish-miles-smiles-from-rove-miles/',
-    startDate: '2026-06-01',
-    endDate: '2026-06-30',
-  },
-  {
-    transferFrom: 'Citi ThankYou Rewards',
-    transferTo: 'Qatar Privilege Club Avios',
-    bonusPercent: 30,
-    summary: '30% transfer bonus to Qatar Privilege Club Avios',
-    detailsUrl: 'https://frequentmiler.com/30-transfer-bonus-to-qatar-avios-from-citi-thankyou/',
-    startDate: '2026-06-01',
-    endDate: '2026-06-30',
-  },
-  {
-    transferFrom: 'Amex Membership Rewards',
-    transferTo: 'Air France KLM Flying Blue',
-    bonusPercent: 25,
-    summary: '25% transfer bonus to Air France KLM Flying Blue',
-    detailsUrl: 'https://frequentmiler.com/get-a-25-bonus-when-transferring-amex-membership-rewards-to-air-france-klm-flying-blue/',
-    startDate: '2026-06-02',
-    endDate: '2026-06-30',
-  },
-  {
-    transferFrom: 'Marriott Bonvoy',
-    transferTo: 'United MileagePlus',
-    bonusPercent: 25,
-    summary: '25% transfer bonus to United MileagePlus',
-    detailsUrl: 'https://frequentmiler.com/get-a-25-bonus-when-converting-hotel-points-to-united/',
-    startDate: '2026-06-01',
-    endDate: '2026-06-30',
-  },
-  {
-    transferFrom: 'Chase Ultimate Rewards',
     transferTo: 'Virgin Atlantic Flying Club',
     bonusPercent: 30,
     summary: '30% transfer bonus to Virgin Atlantic Flying Club',
+    baseTransferRatio: { fromPoints: 1_000, toPoints: 1_000 },
     detailsUrl: 'https://frequentmiler.com/chase-ultimate-rewards-virgin-atlantic-30-percent-transfer-bonus/',
     startDate: '2026-06-09',
+    endDate: '2026-07-14',
+  },
+  {
+    transferFrom: 'Amex Membership Rewards',
+    transferTo: 'Hilton Honors',
+    bonusPercent: 20,
+    summary: '20% transfer bonus to Hilton Honors',
+    baseTransferRatio: { fromPoints: 1_000, toPoints: 2_000 },
+    detailsUrl: 'https://frequentmiler.com/20-percent-transfer-bonus-american-express-membership-rewards-hilton-honors/',
+    startDate: '2026-07-01',
     endDate: '2026-07-14',
   },
   {
@@ -92,6 +55,7 @@ export const ACTIVE_TRANSFER_BONUSES: TransferBonus[] = [
     transferTo: 'Avianca LifeMiles',
     bonusPercent: 15,
     summary: '15% transfer bonus to Avianca LifeMiles',
+    baseTransferRatio: { fromPoints: 1_000, toPoints: 1_000 },
     detailsUrl: 'https://frequentmiler.com/15-transfer-bonus-from-amex-membership-rewards-to-avianca-lifemiles/',
     startDate: '2026-06-15',
     endDate: '2026-07-15',
@@ -101,9 +65,40 @@ export const ACTIVE_TRANSFER_BONUSES: TransferBonus[] = [
     transferTo: 'ALL Accor',
     bonusPercent: 50,
     summary: '50% transfer bonus to ALL Accor',
+    baseTransferRatio: { fromPoints: 1_000, toPoints: 1_000 },
     detailsUrl: 'https://frequentmiler.com/50-percent-transfer-bonus-citi-thankyou-accor-all/',
     startDate: '2026-06-14',
     endDate: '2026-07-18',
+  },
+  {
+    transferFrom: 'Rove Miles',
+    transferTo: 'Frontier Miles',
+    bonusPercent: 25,
+    summary: '25% transfer bonus to Frontier Miles',
+    baseTransferRatio: { fromPoints: 1_000, toPoints: 1_000 },
+    detailsUrl: 'https://frequentmiler.com/frontier-added-as-a-rove-transfer-partner-get-25-transfer-bonus-through-7-31-26/',
+    startDate: '2026-07-01',
+    endDate: '2026-07-31',
+  },
+  {
+    transferFrom: 'Capital One Miles',
+    transferTo: 'EVA Air Infinity MileageLands',
+    bonusPercent: 30,
+    summary: '30% transfer bonus to EVA Air Infinity MileageLands',
+    baseTransferRatio: { fromPoints: 1_000, toPoints: 750 },
+    detailsUrl: 'https://frequentmiler.com/30-transfer-bonus-capital-one-miles-eva-air/',
+    startDate: '2026-07-01',
+    endDate: '2026-07-31',
+  },
+  {
+    transferFrom: 'Amex Membership Rewards',
+    transferTo: 'Virgin Atlantic Flying Club',
+    bonusPercent: 30,
+    summary: '30% transfer bonus to Virgin Atlantic Flying Club',
+    baseTransferRatio: { fromPoints: 1_000, toPoints: 1_000 },
+    detailsUrl: 'https://frequentmiler.com/30-percent-transfer-bonus-american-express-membership-rewards-virgin-atlantic/',
+    startDate: '2026-07-01',
+    endDate: '2026-07-31',
   },
 ];
 
@@ -117,6 +112,17 @@ const FLIGHTHERO_PROGRAMS = new Set([
 
 export function isFlightHeroTransferProgram(transferFrom: string): boolean {
   return FLIGHTHERO_PROGRAMS.has(transferFrom);
+}
+
+export function calculateBonusTransferRatio(
+  baseRatio: TransferRatio,
+  bonusPercent: number,
+): { base: TransferRatio; withBonus: TransferRatio } {
+  const bonusToPoints = Math.round(baseRatio.toPoints * (1 + bonusPercent / 100));
+  return {
+    base: baseRatio,
+    withBonus: { fromPoints: baseRatio.fromPoints, toPoints: bonusToPoints },
+  };
 }
 
 export function formatBonusDate(isoDate: string): string {

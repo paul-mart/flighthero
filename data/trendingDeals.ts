@@ -74,4 +74,24 @@ export const TRENDING_DEAL_SLIDES: TrendingDeal[][] = [
   ],
 ];
 
+/** Home page picks — one standout route per region, not the Europe-heavy first carousel slide. */
+export const HOME_TRENDING_DEALS: TrendingDeal[] = [
+  TRENDING_DEAL_SLIDES[2][2], // BOS → LIS (Europe)
+  TRENDING_DEAL_SLIDES[1][0], // LAX → HND (Asia-Pacific)
+  TRENDING_DEAL_SLIDES[2][1], // MIA → CUN (Americas)
+  createTrendingDeal(
+    'home-jfk-dxb',
+    'JFK',
+    'New York',
+    'DXB',
+    'Dubai',
+    'United Arab Emirates',
+    '2026-10-09',
+    '2026-10-19',
+    'From 45k pts',
+    'From $698',
+    'Emirates Skywards',
+  ),
+];
+
 export const TRENDING_DEAL_SLIDE_COUNT = TRENDING_DEAL_SLIDES.length;

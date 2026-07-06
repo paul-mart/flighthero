@@ -7,11 +7,12 @@ import {
 interface TrendingDealsProps {
   onSelectDeal: (deal: TrendingDeal) => void;
   maxDeals?: number;
+  deals?: TrendingDeal[];
 }
 
 const ALL_TRENDING_DEALS = TRENDING_DEAL_SLIDES.flat();
 
-export function TrendingDeals({ onSelectDeal, maxDeals }: TrendingDealsProps) {
+export function TrendingDeals({ onSelectDeal, maxDeals, deals: dealsProp }: TrendingDealsProps) {
   const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -33,7 +34,7 @@ export function TrendingDeals({ onSelectDeal, maxDeals }: TrendingDealsProps) {
     return () => observer.disconnect();
   }, []);
 
-  const deals = maxDeals ? ALL_TRENDING_DEALS.slice(0, maxDeals) : ALL_TRENDING_DEALS;
+  const deals = dealsProp ?? (maxDeals ? ALL_TRENDING_DEALS.slice(0, maxDeals) : ALL_TRENDING_DEALS);
 
   return (
     <section

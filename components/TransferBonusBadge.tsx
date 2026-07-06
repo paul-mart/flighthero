@@ -38,6 +38,28 @@ export function TransferBonusPartnerChip({
   );
 }
 
+interface TransferBonusRatioProps {
+  base: { fromPoints: number; toPoints: number };
+  withBonus: { fromPoints: number; toPoints: number };
+  compact?: boolean;
+}
+
+export function TransferBonusRatio({
+  base,
+  withBonus,
+  compact = false,
+}: TransferBonusRatioProps) {
+  const formatRatio = (fromPoints: number, toPoints: number) =>
+    `${fromPoints.toLocaleString()} → ${toPoints.toLocaleString()}`;
+
+  return (
+    <p className={`transfer-bonus-ratio${compact ? ' transfer-bonus-ratio--compact' : ''}`}>
+      <span className="transfer-bonus-math-struck">{formatRatio(base.fromPoints, base.toPoints)}</span>
+      <span className="transfer-bonus-math-effective">{formatRatio(withBonus.fromPoints, withBonus.toPoints)}</span>
+    </p>
+  );
+}
+
 interface TransferBonusMathProps {
   awardPoints: number;
   transferPointsNeeded: number;
