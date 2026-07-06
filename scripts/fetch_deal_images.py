@@ -12,6 +12,10 @@ OUT_DIR = ROOT / "public" / "deals"
 MAX_WIDTH = 800
 JPEG_QUALITY = 80
 
+DEFAULT_IMAGE_URL = (
+    "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=900&q=80"
+)
+
 # Stable remote sources verified with HTTP 200.
 DEAL_IMAGE_URLS: dict[str, str] = {
     "LHR": "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=900&q=80",
@@ -34,6 +38,14 @@ DEAL_IMAGE_URLS: dict[str, str] = {
     "SEA": "https://images.unsplash.com/photo-1557801586-ccc9277d3c75?auto=format&fit=crop&w=900&q=80",
     "MIA": "https://images.unsplash.com/photo-1514214246283-d427a95c5d2f?auto=format&fit=crop&w=900&q=80",
     "ORD": "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=900&q=80",
+    # Asia-Pacific & Americas additions
+    "HAN": "https://images.unsplash.com/photo-1712576752855-bf4721d76a86?auto=format&fit=crop&w=900&q=80",
+    "SGN": "https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=900&q=80",
+    "TPE": "https://images.unsplash.com/photo-1552993873-0dd1110e025f?auto=format&fit=crop&w=900&q=80",
+    "EZE": "https://plus.unsplash.com/premium_photo-1697729901052-fe8900e24993?auto=format&fit=crop&w=900&q=80",
+    "BOG": "https://images.unsplash.com/photo-1568632234157-ce7aecd03d0d?auto=format&fit=crop&w=900&q=80",
+    "GUA": "https://images.unsplash.com/photo-1713063297072-051cb0e1f7f7?auto=format&fit=crop&w=900&q=80",
+    "DOH": "https://images.unsplash.com/photo-1647252262017-582a7dbb73d0?auto=format&fit=crop&w=900&q=80",
 }
 
 
@@ -56,6 +68,9 @@ def save_optimized(data: bytes, out: Path) -> int:
 
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    default_data = fetch(DEFAULT_IMAGE_URL)
+    default_size = save_optimized(default_data, OUT_DIR / "default.jpg")
+    print(f"DEFAULT: saved {default_size} bytes (from {len(default_data)} downloaded)")
     for code, url in DEAL_IMAGE_URLS.items():
         data = fetch(url)
         out = OUT_DIR / f"{code.lower()}.jpg"
