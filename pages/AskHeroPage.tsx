@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { TopNavbar } from '../components/TopNavbar';
+import { AskHeroSignInGate } from '../components/AskHeroSignInGate';
 import { HeroChatSidebar } from '../components/HeroChatSidebar';
 import { HeroDeleteChatDialog } from '../components/HeroDeleteChatDialog';
 import { HeroChatThread } from '../components/HeroChatThread';
@@ -27,7 +27,6 @@ function buildQuickPrompts(homeAirport: string): string[] {
 }
 
 export default function AskHeroPage() {
-  const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuth();
   const [chats, setChats] = useState<HeroChat[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -46,12 +45,6 @@ export default function AskHeroPage() {
     () => chats.find((c) => c.id === activeChatId) ?? null,
     [chats, activeChatId],
   );
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth/sign-in', { replace: true, state: { from: '/ask-hero' } });
-    }
-  }, [authLoading, user, navigate]);
 
   useEffect(() => {
     if (!user) return undefined;
@@ -173,11 +166,32 @@ export default function AskHeroPage() {
     void sendMessage(input);
   };
 
-  if (authLoading || !user) {
+  if (authLoading) {
     return (
       <div className="app-page ask-hero-page">
         <TopNavbar />
         <main className="ask-hero-loading">Loading…</main>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="app-page ask-hero-page">
+        <TopNavbar />
+        <div className="ask-hero-layout ask-hero-layout--gated">
+          <main className="ask-hero-main ask-hero-main--gated">
+            <div className="ask-hero-chat-shell">
+              <div className="ask-hero-empty ask-hero-empty--gated">
+                <h1 className="ask-hero-empty-heading">Where do you want to go?</h1>
+                <p className="ask-hero-gate-preview">
+                  Ask about routes, redemptions, and deal ideas — personalized to your home airport.
+                </p>
+              </div>
+            </div>
+          </main>
+        </div>
+        <AskHeroSignInGate />
       </div>
     );
   }

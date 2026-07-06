@@ -1,11 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthShell } from '../components/AuthShell';
 import { useAuth } from '../context/AuthContext';
 import { getAuthErrorMessage, signUpWithEmail } from '../lib/auth';
 
+function getRedirectPath(state: unknown): string {
+  const from = (state as { from?: string } | null)?.from;
+  return typeof from === 'string' && from.startsWith('/') ? from : '/';
+}
+
 export default function SignUpPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = getRedirectPath(location.state);
   const { user, loading: authLoading, configured } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -16,9 +23,9 @@ export default function SignUpPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate('/', { replace: true });
+      navigate(redirectTo, { replace: true });
     }
-  }, [authLoading, user, navigate]);
+  }, [authLoading, user, navigate, redirectTo]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -42,7 +49,7 @@ export default function SignUpPage() {
     setSubmitting(true);
     try {
       await signUpWithEmail(email.trim(), password, displayName.trim());
-      navigate('/', { replace: true });
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(getAuthErrorMessage(err));
     } finally {

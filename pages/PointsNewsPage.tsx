@@ -1,9 +1,11 @@
+import { useMemo } from 'react';
 import { TransferBonusRatio } from '../components/TransferBonusBadge';
+import { PointsNewsNav } from '../components/PointsNewsNav';
 import { TransferPartnerLogo } from '../components/TransferPartnerLogo';
 import { TopNavbar } from '../components/TopNavbar';
 import { SiteFooter } from '../components/SiteFooter';
 import { CARD_OFFERS, formatOfferDate } from '../data/cardOffers';
-import { PROGRAM_UPDATES } from '../data/programUpdates';
+import { TRANSFER_GUIDE_DESTINATIONS } from '../data/transferGuides';
 import {
   ACTIVE_TRANSFER_BONUSES,
   TRANSFER_BONUS_SOURCE,
@@ -22,22 +24,36 @@ export default function PointsNewsPage() {
     !isFlightHeroTransferProgram(bonus.transferFrom),
   );
 
+  const navSections = useMemo(
+    () => [
+      { id: 'transfer-bonuses', label: 'Transfer Bonuses' },
+      ...(otherBonuses.length > 0
+        ? [{ id: 'other-programs', label: 'Other Programs' }]
+        : []),
+      { id: 'card-offers', label: 'Hot Card Offers' },
+      { id: 'transfer-guide', label: 'Transfer Guide by Destination' },
+    ],
+    [otherBonuses.length],
+  );
+
   return (
     <div className="app-page faq-shell">
       <TopNavbar />
-      <main className="faq-main points-news-main">
-        <header className="faq-header">
-          <h1 className="faq-title">Points News</h1>
-          <p className="points-news-lede">
-            Transfer bonuses, card offers, and points program updates for award travelers.
-          </p>
-        </header>
+      <main className="faq-main page-shell-main points-news-main">
+        <div className="points-news-layout">
+          <PointsNewsNav sections={navSections} />
 
-        <div className="points-news-dashboard">
-          <div className="points-news-primary">
-            <section className="points-news-section">
+          <div className="points-news-content">
+            <header className="faq-header points-news-header">
+              <h1 className="faq-title">Points News</h1>
+              <p className="points-news-lede">
+                Transfer bonuses, card offers, and points program updates for award travelers.
+              </p>
+            </header>
+
+            <section id="transfer-bonuses" className="points-news-section">
               <div className="points-news-section-header">
-                <h2 className="points-news-section-title">Current Transfer Bonuses</h2>
+                <h2 className="points-news-section-title">Transfer Bonuses</h2>
                 <p className="points-news-section-copy">
                   Bonuses from programs FlightHero supports in award search.
                 </p>
@@ -54,9 +70,9 @@ export default function PointsNewsPage() {
             </section>
 
             {otherBonuses.length > 0 && (
-              <section className="points-news-section">
+              <section id="other-programs" className="points-news-section">
                 <div className="points-news-section-header">
-                  <h2 className="points-news-section-title">Other programs</h2>
+                  <h2 className="points-news-section-title">Other Programs</h2>
                   <p className="points-news-section-copy">
                     Active bonuses from programs outside FlightHero search.
                   </p>
@@ -69,9 +85,9 @@ export default function PointsNewsPage() {
               </section>
             )}
 
-            <section className="points-news-section">
+            <section id="card-offers" className="points-news-section">
               <div className="points-news-section-header">
-                <h2 className="points-news-section-title">Card Offers</h2>
+                <h2 className="points-news-section-title">Hot Card Offers</h2>
                 <p className="points-news-section-copy">
                   Featured welcome offers and what they mean for your next trip.
                 </p>
@@ -79,6 +95,28 @@ export default function PointsNewsPage() {
               <div className="card-offers-list">
                 {CARD_OFFERS.map((offer) => (
                   <CardOfferArticle key={offer.id} offer={offer} />
+                ))}
+              </div>
+            </section>
+
+            <section id="transfer-guide" className="points-news-section">
+              <div className="points-news-section-header">
+                <h2 className="points-news-section-title">Transfer Guide by Destination</h2>
+                <p className="points-news-section-copy">
+                  Where to move bank points for common trip goals — then search live award space on FlightHero.
+                </p>
+              </div>
+              <div className="transfer-guide-grid">
+                {TRANSFER_GUIDE_DESTINATIONS.map((guide) => (
+                  <article key={guide.id} className="transfer-guide-card">
+                    <p className="transfer-guide-region">{guide.region}</p>
+                    <h3 className="transfer-guide-destination">{guide.destination}</h3>
+                    <p className="transfer-guide-programs">
+                      <span className="transfer-guide-label">Top programs</span>
+                      {guide.topPrograms}
+                    </p>
+                    <p className="transfer-guide-tip">{guide.tip}</p>
+                  </article>
                 ))}
               </div>
             </section>
@@ -91,75 +129,10 @@ export default function PointsNewsPage() {
               . Card offer articles link to original reporting — confirm terms on the issuer site before applying.
             </p>
           </div>
-
-          <aside className="points-news-sidebar" aria-label="Card offers and program updates">
-            <div className="points-news-sidebar-panel">
-              <section className="points-news-sidebar-section">
-                <h2 className="points-news-sidebar-title">Top Card Offers</h2>
-                <ul className="points-news-sidebar-list">
-                  {CARD_OFFERS.map((offer) => (
-                    <li key={offer.id}>
-                      <SidebarOfferRow offer={offer} />
-                    </li>
-                  ))}
-                </ul>
-              </section>
-
-              <section className="points-news-sidebar-section">
-                <h2 className="points-news-sidebar-title">Program Updates</h2>
-                <ul className="points-news-sidebar-list">
-                  {PROGRAM_UPDATES.map((update) => (
-                    <li key={update.id}>
-                      <SidebarNewsRow update={update} />
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            </div>
-          </aside>
         </div>
       </main>
       <SiteFooter />
     </div>
-  );
-}
-
-function SidebarOfferRow({ offer }: { offer: typeof CARD_OFFERS[number] }) {
-  return (
-    <a
-      href={offer.sourceUrl}
-      className="points-news-sidebar-row"
-      target="_blank"
-      rel="noreferrer"
-    >
-      <span className="points-news-sidebar-row-logo">
-        <TransferPartnerLogo partner={offer.issuerPartner} size={22} />
-      </span>
-      <span className="points-news-sidebar-row-body">
-        <span className="points-news-sidebar-row-title">{offer.cardName}</span>
-        <span className="points-news-sidebar-row-meta">
-          {offer.offerHighlight} · {offer.spendRequirement}
-        </span>
-      </span>
-    </a>
-  );
-}
-
-function SidebarNewsRow({ update }: { update: typeof PROGRAM_UPDATES[number] }) {
-  return (
-    <a
-      href={update.sourceUrl}
-      className="points-news-sidebar-row points-news-sidebar-row--news"
-      target="_blank"
-      rel="noreferrer"
-    >
-      <span className="points-news-sidebar-row-body">
-        <span className="points-news-sidebar-row-title">{update.title}</span>
-        <span className="points-news-sidebar-row-meta">
-          {formatOfferDate(update.publishedDate)} · {update.sourceName}
-        </span>
-      </span>
-    </a>
   );
 }
 

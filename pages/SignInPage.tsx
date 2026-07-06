@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthShell } from '../components/AuthShell';
 import { useAuth } from '../context/AuthContext';
 import { getAuthErrorMessage, signInWithEmail, signInWithGoogle } from '../lib/auth';
 import { publicUrl } from '../lib/publicUrl';
 
+function getRedirectPath(state: unknown): string {
+  const from = (state as { from?: string } | null)?.from;
+  return typeof from === 'string' && from.startsWith('/') ? from : '/';
+}
+
 export default function SignInPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = getRedirectPath(location.state);
   const { user, loading: authLoading, configured } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,9 +22,9 @@ export default function SignInPage() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate('/', { replace: true });
+      navigate(redirectTo, { replace: true });
     }
-  }, [authLoading, user, navigate]);
+  }, [authLoading, user, navigate, redirectTo]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -31,7 +38,7 @@ export default function SignInPage() {
     setSubmitting(true);
     try {
       await signInWithEmail(email.trim(), password);
-      navigate('/', { replace: true });
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(getAuthErrorMessage(err));
     } finally {
@@ -50,7 +57,7 @@ export default function SignInPage() {
     setSubmitting(true);
     try {
       await signInWithGoogle();
-      navigate('/', { replace: true });
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(getAuthErrorMessage(err));
     } finally {

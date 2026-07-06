@@ -110,6 +110,47 @@ export function ArrowRightIcon({ size = 14, strokeWidth = 2.25 }: IconProps) {
   );
 }
 
+export function GiftIcon({ size = 20, strokeWidth = 2 }: IconProps) {
+  return (
+    <FeatherIcon size={size} strokeWidth={strokeWidth}>
+      <polyline points="20 12 20 22 4 22 4 12" />
+      <rect x="2" y="7" width="20" height="5" />
+      <line x1="12" y1="22" x2="12" y2="7" />
+      <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+      <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+    </FeatherIcon>
+  );
+}
+
+export function LayersIcon({ size = 20, strokeWidth = 2 }: IconProps) {
+  return (
+    <FeatherIcon size={size} strokeWidth={strokeWidth}>
+      <polygon points="12 2 2 7 12 12 22 7 12 2" />
+      <polyline points="2 17 12 22 22 17" />
+      <polyline points="2 12 12 17 22 12" />
+    </FeatherIcon>
+  );
+}
+
+export function CreditCardIcon({ size = 20, strokeWidth = 2 }: IconProps) {
+  return (
+    <FeatherIcon size={size} strokeWidth={strokeWidth}>
+      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+      <line x1="1" y1="10" x2="23" y2="10" />
+    </FeatherIcon>
+  );
+}
+
+export function GlobeIcon({ size = 20, strokeWidth = 2 }: IconProps) {
+  return (
+    <FeatherIcon size={size} strokeWidth={strokeWidth}>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="2" y1="12" x2="22" y2="12" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </FeatherIcon>
+  );
+}
+
 export function BellIcon({
   size = 16,
   strokeWidth = 2,

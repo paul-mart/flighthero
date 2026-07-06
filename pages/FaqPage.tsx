@@ -52,7 +52,7 @@ export default function FaqPage() {
   return (
     <div className="app-page faq-shell">
       <TopNavbar />
-      <main className="faq-main faq-main-wide">
+      <main className="faq-main page-shell-main faq-main-wide">
         <header className="faq-header">
           <h1 className="faq-title">FAQ</h1>
           <p className="faq-lede">
