@@ -34,9 +34,10 @@ import {
   type FlightSearchRequest,
 } from './lib/searchUrl';
 import {
-  getRecentSearches,
-  shouldShowContinueSearching,
+  loadRecentSearchState,
+  MIN_SEARCHES_TO_SHOW_CONTINUE,
   recordRecentSearch,
+  updateRecentSearchPricing,
   type RecentSearch,
 } from './lib/recentSearches';
 import {
@@ -674,6 +675,26 @@ function getSortPrice(flight: Flight, searchType: 'cash' | 'points'): number {
   return flight.cash_price;
 }
 
+function computeLowestSearchPricing(flights: Flight[]): {
+  lowestPoints?: number;
+  lowestCash?: number;
+} {
+  let lowestPoints: number | undefined;
+  let lowestCash: number | undefined;
+
+  for (const flight of flights) {
+    const points = flight.award_details?.points_required;
+    if (points != null && points > 0) {
+      lowestPoints = lowestPoints == null ? points : Math.min(lowestPoints, points);
+    }
+    if (flight.cash_price > 0) {
+      lowestCash = lowestCash == null ? flight.cash_price : Math.min(lowestCash, flight.cash_price);
+    }
+  }
+
+  return { lowestPoints, lowestCash };
+}
+
 function getDurationMinutes(flight: Flight): number {
   if (flight.duration_minutes != null) return flight.duration_minutes;
   const match = flight.duration.match(/(?:(\d+)h)?\s*(?:(\d+)m)?/i);
@@ -1212,22 +1233,48 @@ export default function App() {
   const originPrefillRef = useRef<string | null>(null);
   const initialUrlSearchRanRef = useRef(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
-  const showContinueSearching = !hasSearched && shouldShowContinueSearching(user?.uid);
+  const [searchCount, setSearchCount] = useState(0);
+  const showContinueSearching = Boolean(
+    !hasSearched
+    && user?.uid
+    && searchCount >= MIN_SEARCHES_TO_SHOW_CONTINUE
+    && recentSearches.length > 0,
+  );
   const activeAlertDeal = useMemo(
     () => findDealWithAlerts(trackedDeals),
     [trackedDeals],
   );
   const resumeTrackedDealRef = useRef<string | null>(null);
 
+  const syncRecentSearchState = useCallback((uid: string) => {
+    const { recent, searchCount: count } = loadRecentSearchState(uid);
+    setRecentSearches(recent);
+    setSearchCount(count);
+  }, []);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
       setRecentSearches([]);
+      setSearchCount(0);
       originPrefillRef.current = null;
       return;
     }
-    setRecentSearches(getRecentSearches(user.uid));
-  }, [authLoading, user]);
+    syncRecentSearchState(user.uid);
+  }, [authLoading, user, hasSearched, syncRecentSearchState]);
+
+  useEffect(() => {
+    if (!user?.uid) return undefined;
+
+    const sync = () => syncRecentSearchState(user.uid);
+
+    window.addEventListener('focus', sync);
+    window.addEventListener('storage', sync);
+    return () => {
+      window.removeEventListener('focus', sync);
+      window.removeEventListener('storage', sync);
+    };
+  }, [user?.uid, syncRecentSearchState]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -1336,8 +1383,11 @@ export default function App() {
       originPrefillRef.current = user.uid;
     }
     setRoute({ origin: nextOrigin, destination: '' });
+    if (user) {
+      syncRecentSearchState(user.uid);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [user, homeAirportLabel]);
+  }, [user, homeAirportLabel, syncRecentSearchState]);
 
   const handleSearchTypeChange = (next: 'cash' | 'points') => {
     if (next === searchType) return;
@@ -1385,6 +1435,7 @@ export default function App() {
         childrenCount: request.childrenCount,
       });
       setRecentSearches(recorded.recent);
+      setSearchCount(recorded.searchCount);
     }
 
     try {
@@ -1415,6 +1466,24 @@ export default function App() {
       }
       const results: Flight[] = Array.isArray(data) ? data : [];
       setFlights(results);
+      if (user) {
+        const pricing = computeLowestSearchPricing(results);
+        if (pricing.lowestPoints != null || pricing.lowestCash != null) {
+          const updated = updateRecentSearchPricing(user.uid, {
+            origin: trimmedOrigin,
+            destination: trimmedDestination,
+            departureDate: request.departureDate,
+            returnDate: request.returnDate,
+            tripType: request.tripType,
+            searchType: request.searchType,
+            cabinClass: request.cabinClass,
+            adults: request.adults,
+            childrenCount: request.childrenCount,
+          }, pricing);
+          setRecentSearches(updated.recent);
+          setSearchCount(updated.searchCount);
+        }
+      }
       if (results.length === 0) {
         showDialog(
           'No flights found',
@@ -1492,7 +1561,8 @@ export default function App() {
       return;
     }
 
-    openFlightSearchInNewTab(request);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    void runFlightSearch(request);
   };
 
   const handleResumeTrackedDeal = async (deal: TrackedDeal, openInNewTab = false) => {
@@ -1513,6 +1583,7 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (authLoading) return;
     if (initialUrlSearchRanRef.current) return;
     const parsed = parseFlightSearchFromParams(searchParams);
     if (!parsed) return;
@@ -1520,7 +1591,7 @@ export default function App() {
     applyFormFromSearch(parsed);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     void runFlightSearch(parsed);
-  }, [searchParams, applyFormFromSearch]);
+  }, [searchParams, applyFormFromSearch, authLoading]);
 
   useEffect(() => {
     const state = location.state as { resumeTrackedDeal?: TrackedDeal } | null;
@@ -1531,14 +1602,14 @@ export default function App() {
     void handleResumeTrackedDeal(deal);
   }, [location.state]);
 
-  const handleResumeSearch = (search: RecentSearch) => {
+  const handleResumeSearch = (search: RecentSearch, resumeType: 'cash' | 'points') => {
     openFlightSearchInNewTab({
       origin: search.origin,
       destination: search.destination,
       departureDate: search.departureDate,
       returnDate: search.returnDate,
       tripType: search.tripType,
-      searchType: search.searchType,
+      searchType: resumeType,
       cabinClass: search.cabinClass,
       adults: search.adults,
       childrenCount: search.childrenCount,
@@ -1546,7 +1617,7 @@ export default function App() {
   };
 
   const handleTrendingDealSelect = (deal: TrendingDeal) => {
-    openFlightSearchInNewTab({
+    const request = {
       origin: deal.origin,
       destination: deal.destination,
       departureDate: deal.departureDate,
@@ -1556,7 +1627,15 @@ export default function App() {
       cabinClass: deal.cabinClass,
       adults: 1,
       childrenCount: 0,
-    });
+    };
+
+    if (user) {
+      const recorded = recordRecentSearch(user.uid, request);
+      setRecentSearches(recorded.recent);
+      setSearchCount(recorded.searchCount);
+    }
+
+    openFlightSearchInNewTab(request);
   };
 
   return (
@@ -1812,6 +1891,10 @@ export default function App() {
           </section>
         )}
 
+        {showContinueSearching && (
+          <ContinueSearching searches={recentSearches} onSelect={handleResumeSearch} />
+        )}
+
         <TrendingDeals deals={HOME_TRENDING_DEALS} onSelectDeal={handleTrendingDealSelect} />
         </>
       ) : (
@@ -2041,10 +2124,6 @@ export default function App() {
             </div>
           </div>
       </section>
-      )}
-
-      {showContinueSearching && (
-        <ContinueSearching searches={recentSearches} onSelect={handleResumeSearch} />
       )}
 
       <div className="app-content app-content--compact" style={styles.container}>

@@ -1,4 +1,5 @@
 import { getDestinationImage } from './destinationImages';
+import { formatRecentDate } from '../lib/recentSearches';
 
 export interface TrendingDeal {
   id: string;
@@ -7,6 +8,7 @@ export interface TrendingDeal {
   city: string;
   country: string;
   routeLabel: string;
+  detailLabel: string;
   departureDate: string;
   returnDate: string;
   tripType: 'one-way' | 'round-trip';
@@ -16,6 +18,10 @@ export interface TrendingDeal {
   cashLabel: string;
   program: string;
   image: string;
+}
+
+export interface CreateTrendingDealOptions {
+  highlightRoundTrip?: boolean;
 }
 
 export function createTrendingDeal(
@@ -30,16 +36,33 @@ export function createTrendingDeal(
   pointsLabel: string,
   cashLabel: string,
   program: string,
+  options?: CreateTrendingDealOptions,
 ): TrendingDeal {
+  const highlightRoundTrip = options?.highlightRoundTrip ?? false;
   const origin = `${originName} (${originCode})`;
   const destination = `${destCity} (${destCode})`;
+  const dateLabel = formatRecentDate({
+    origin,
+    destination,
+    departureDate,
+    returnDate,
+    tripType: 'round-trip',
+    searchType: 'points',
+    cabinClass: 'economy',
+    adults: 1,
+    childrenCount: 0,
+    searchedAt: 0,
+  });
   return {
     id,
     origin,
     destination,
     city: destCity,
     country,
-    routeLabel: `${originCode} → ${destCode}`,
+    routeLabel: highlightRoundTrip
+      ? `${originCode} ⇄ ${destCode}`
+      : `${originCode} → ${destCode}`,
+    detailLabel: highlightRoundTrip ? dateLabel : country,
     departureDate,
     returnDate,
     tripType: 'round-trip',
@@ -69,16 +92,16 @@ export const TRENDING_DEAL_SLIDES: TrendingDeal[][] = [
   [
     createTrendingDeal('jfk-sju', 'JFK', 'New York', 'SJU', 'San Juan', 'Puerto Rico', '2026-07-24', '2026-07-31', 'From 8k pts', 'From $178', 'JetBlue TrueBlue'),
     createTrendingDeal('mia-cun', 'MIA', 'Miami', 'CUN', 'Cancún', 'Mexico', '2026-08-15', '2026-08-22', 'From 15k pts', 'From $219', 'United MileagePlus'),
-    createTrendingDeal('bos-lis', 'BOS', 'Boston', 'LIS', 'Lisbon', 'Portugal', '2026-09-05', '2026-09-12', 'From 30k pts', 'From $468', 'TAP Miles&Go'),
+    createTrendingDeal('bos-lis', 'BOS', 'Boston', 'LIS', 'Lisbon', 'Portugal', '2026-09-05', '2026-09-12', 'From 30k pts', 'From $468', 'TAP Miles&Go', { highlightRoundTrip: true }),
     createTrendingDeal('ord-mex', 'ORD', 'Chicago', 'MEX', 'Mexico City', 'Mexico', '2026-10-01', '2026-10-08', 'From 12k pts', 'From $245', 'Aeroplan'),
   ],
 ];
 
 /** Home page picks — one standout route per region, not the Europe-heavy first carousel slide. */
 export const HOME_TRENDING_DEALS: TrendingDeal[] = [
-  TRENDING_DEAL_SLIDES[2][2], // BOS → LIS (Europe)
   TRENDING_DEAL_SLIDES[1][0], // LAX → HND (Asia-Pacific)
   TRENDING_DEAL_SLIDES[2][1], // MIA → CUN (Americas)
+  TRENDING_DEAL_SLIDES[2][2], // BOS ⇄ LIS (Europe, round-trip highlight)
   createTrendingDeal(
     'home-jfk-dxb',
     'JFK',

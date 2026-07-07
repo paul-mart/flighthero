@@ -1,4 +1,5 @@
 import { DealsCarousel } from '../components/DealsCarousel';
+import { DealsHeroGraphic } from '../components/DealsHeroGraphic';
 import { SiteFooter } from '../components/SiteFooter';
 import { TopNavbar } from '../components/TopNavbar';
 import { REGIONAL_DEAL_SECTIONS } from '../data/regionalDeals';
@@ -21,20 +22,26 @@ function handleDealSelect(deal: TrendingDeal) {
 
 export default function DealsPage() {
   return (
-    <div className="app-page faq-shell">
+    <div className="app-page faq-shell deals-page">
       <TopNavbar />
+      <header className="deals-hero-banner">
+        <div className="deals-hero-banner-inner">
+          <div className="deals-hero-banner-copy">
+            <h1 className="deals-hero-banner-title">Deals</h1>
+            <p className="deals-hero-banner-lede">
+              Curated award routes by region — click any deal to search live availability and fares.
+            </p>
+          </div>
+          <div className="deals-hero-banner-graphic">
+            <DealsHeroGraphic />
+          </div>
+        </div>
+      </header>
       <main className="faq-main deals-page-main">
-        <header className="faq-header deals-page-header">
-          <h1 className="faq-title">Deals</h1>
-          <p className="deals-page-lede">
-            Curated award routes by region — click any deal to search live availability and fares.
-          </p>
-        </header>
-
         {REGIONAL_DEAL_SECTIONS.map((section) => (
           <section
             key={section.id}
-            className="deals-region-section trending-deals trending-deals--visible"
+            className="deals-region-section trending-deals"
             aria-labelledby={`deals-region-${section.id}`}
           >
             <div className="trending-deals-inner">

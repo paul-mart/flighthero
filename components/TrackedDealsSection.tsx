@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useRevealOnScroll } from '../lib/useRevealOnScroll';
 import { TrackedDealCard } from './TrackedDealCard';
 import { useTrackedDeals } from '../context/TrackedDealsContext';
 import { findDealWithAlerts, type TrackedDeal } from '../lib/trackedDeals';
@@ -18,29 +19,10 @@ export function TrackedDealsSection({
   showManageLink = true,
 }: TrackedDealsSectionProps) {
   const { setDealAlerts } = useTrackedDeals();
-  const ref = useRef<HTMLElement>(null);
-  const [visible, setVisible] = useState(false);
+  const { ref, visible } = useRevealOnScroll({ threshold: 0.08 });
   const [alertPending, setAlertPending] = useState(false);
 
   const activeAlertDealId = findDealWithAlerts(deals)?.id ?? null;
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.15 },
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   const handleAlertToggle = async (deal: TrackedDeal) => {
     setAlertPending(true);

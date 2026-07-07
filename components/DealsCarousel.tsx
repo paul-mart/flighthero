@@ -85,11 +85,10 @@ function DealCardsGrid({
                   />
                   <div className="trending-deal-overlay" aria-hidden />
                   <div className="trending-deal-content">
-                    <div>
+                    <div className="trending-deal-meta">
                       <h3 className="trending-deal-city">{deal.city}</h3>
-                      <p className="trending-deal-country">
-                        {deal.routeLabel} · {deal.country}
-                      </p>
+                      <p className="trending-deal-meta-route">{deal.routeLabel}</p>
+                      <p className="trending-deal-meta-detail">{deal.detailLabel}</p>
                     </div>
                     <div className="trending-deal-tags">
                       <span className="trending-deal-tag trending-deal-tag-points">

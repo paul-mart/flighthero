@@ -33,7 +33,7 @@ export function TrackedDealCard({
   className = '',
 }: TrackedDealCardProps) {
   const city = getDestinationCityLabel(deal.destination);
-  const route = formatRecentRoute(deal.origin, deal.destination);
+  const route = formatRecentRoute(deal.origin, deal.destination, deal.tripType);
   const dateLabel = formatRecentDate({
     ...deal,
     searchType: 'points',
@@ -66,18 +66,17 @@ export function TrackedDealCard({
         />
         <div className="trending-deal-overlay" aria-hidden />
         <div className="trending-deal-content">
-          <div>
-            <h3 className="trending-deal-city">{route}</h3>
-            <p className="trending-deal-country">{city}</p>
+          <div className="trending-deal-meta">
+            <h3 className="trending-deal-city">{city}</h3>
+            <p className="trending-deal-meta-route">{route}</p>
+            <p className="trending-deal-meta-detail">{dateLabel}</p>
           </div>
           <div className="trending-deal-tags">
-            <span className="trending-deal-tag continue-search-date-tag">
-              {dateLabel}
-              <span className="tracked-deal-cabin-sep" aria-hidden> · </span>
+            <span className="trending-deal-tag trending-deal-tag-cash">
               {cabinLabel}
             </span>
             {snapshotLabel && (
-              <span className="trending-deal-tag tracked-deal-points-tag">{snapshotLabel}</span>
+              <span className="trending-deal-tag trending-deal-tag-points">{snapshotLabel}</span>
             )}
           </div>
         </div>

@@ -1,37 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
-import { getDestinationCityLabel, getDestinationImage } from '../data/destinationImages';
+import { useRevealOnScroll } from '../lib/useRevealOnScroll';
 import {
+  formatRecentCashLabel,
   formatRecentDate,
+  formatRecentPointsLabel,
   formatRecentRoute,
   type RecentSearch,
 } from '../lib/recentSearches';
 
 interface ContinueSearchingProps {
   searches: RecentSearch[];
-  onSelect: (search: RecentSearch) => void;
+  onSelect: (search: RecentSearch, searchType: 'cash' | 'points') => void;
 }
 
 export function ContinueSearching({ searches, onSelect }: ContinueSearchingProps) {
-  const ref = useRef<HTMLElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.15 },
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  const { ref, visible } = useRevealOnScroll({ threshold: 0.08 });
 
   if (searches.length === 0) return null;
 
@@ -49,18 +31,18 @@ export function ContinueSearching({ searches, onSelect }: ContinueSearchingProps
           </h2>
           <p className="continue-searching-subtitle">Pick up where you left off</p>
         </div>
-        <div className="trending-deals-grid">
+        <div className="trending-deals-feed-grid">
           {searches.map((search, index) => {
             const city = getDestinationCityLabel(search.destination);
-            const route = formatRecentRoute(search.origin, search.destination);
+            const route = formatRecentRoute(search.origin, search.destination, search.tripType);
             const dateLabel = formatRecentDate(search);
             return (
-              <button
+              <article
                 key={`${search.searchedAt}-${route}-${dateLabel}`}
-                type="button"
-                className="trending-deal-card continue-search-card"
-                style={{ ['--deal-index' as string]: index }}
-                onClick={() => onSelect(search)}
+                className={`trending-deal-card trending-deal-card--feed continue-search-card${
+                  visible ? ' trending-deal-card--visible' : ''
+                }`}
+                style={{ ['--deal-index' as string]: index % 4 }}
               >
                 <img
                   className="trending-deal-image"
@@ -70,18 +52,29 @@ export function ContinueSearching({ searches, onSelect }: ContinueSearchingProps
                 />
                 <div className="trending-deal-overlay" aria-hidden />
                 <div className="trending-deal-content">
-                  <div>
-                    <h3 className="trending-deal-city">{route}</h3>
-                    <p className="trending-deal-country">{city}</p>
+                  <div className="trending-deal-meta">
+                    <h3 className="trending-deal-city">{city}</h3>
+                    <p className="trending-deal-meta-route">{route}</p>
+                    <p className="trending-deal-meta-detail">{dateLabel}</p>
                   </div>
                   <div className="trending-deal-tags">
-                    <span className="trending-deal-tag continue-search-date-tag">{dateLabel}</span>
-                    <span className="trending-deal-tag continue-search-type-tag">
-                      {search.searchType === 'points' ? 'Points' : 'Cash'}
-                    </span>
+                    <button
+                      type="button"
+                      className="trending-deal-tag trending-deal-tag-points"
+                      onClick={() => onSelect(search, 'points')}
+                    >
+                      {formatRecentPointsLabel(search.lowestPoints)}
+                    </button>
+                    <button
+                      type="button"
+                      className="trending-deal-tag trending-deal-tag-cash"
+                      onClick={() => onSelect(search, 'cash')}
+                    >
+                      {formatRecentCashLabel(search.lowestCash)}
+                    </button>
                   </div>
                 </div>
-              </button>
+              </article>
             );
           })}
         </div>
