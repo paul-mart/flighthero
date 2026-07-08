@@ -26,12 +26,14 @@ function EcosystemLogo({
   );
 }
 
-export function EcosystemBanner() {
+export function EcosystemBanner({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   return (
     <section className="home-ecosystem-banner" aria-labelledby="home-ecosystem-title">
       <div className="home-ecosystem-banner-inner">
         <p id="home-ecosystem-title" className="home-ecosystem-title">
-          Supporting seamless search across global programs
+          {isAuthenticated
+            ? 'Direct transfer partners & ratios'
+            : 'Supporting seamless search across global programs'}
         </p>
         <div className="home-ecosystem-grid">
           <ul className="home-ecosystem-row home-ecosystem-row--banks" aria-label="Bank and points programs">

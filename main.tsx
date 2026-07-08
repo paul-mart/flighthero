@@ -13,7 +13,10 @@ import ProfilePage from './pages/ProfilePage';
 import FaqPage from './pages/FaqPage';
 import LegalPage from './pages/LegalPage';
 import ContactUsPage from './pages/ContactUsPage';
+import AboutUsPage from './pages/AboutUsPage';
 import PointsNewsPage from './pages/PointsNewsPage';
+import PointsGuidePage from './pages/PointsGuidePage';
+import PointsGuideDestinationPage from './pages/PointsGuideDestinationPage';
 import AskHeroPage from './pages/AskHeroPage';
 import DealsPage from './pages/DealsPage';
 
@@ -39,7 +42,10 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/faq" element={<FaqPage />} />
           <Route path="/legal" element={<LegalPage />} />
           <Route path="/contact" element={<ContactUsPage />} />
+          <Route path="/about" element={<AboutUsPage />} />
           <Route path="/points-news" element={<PointsNewsPage />} />
+          <Route path="/points-guide" element={<PointsGuidePage />} />
+          <Route path="/points-guide/:guideId" element={<PointsGuideDestinationPage />} />
           <Route path="/ask-hero" element={<AskHeroPage />} />
           <Route path="/deals" element={<DealsPage />} />
         </Routes>

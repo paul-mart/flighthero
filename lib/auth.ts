@@ -1,5 +1,6 @@
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   GoogleAuthProvider,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
@@ -9,6 +10,7 @@ import {
   type User,
 } from 'firebase/auth';
 import {
+  deleteDoc,
   doc,
   getDoc,
   serverTimestamp,
@@ -175,6 +177,30 @@ export async function sendPasswordReset(email: string): Promise<void> {
   await sendPasswordResetEmail(firebaseAuth, email.trim());
 }
 
+export async function updateUserDisplayName(user: User, displayName: string): Promise<void> {
+  const { db: firestore } = requireAuth();
+  const trimmed = displayName.trim();
+  if (!trimmed) {
+    throw new Error('Name is required.');
+  }
+
+  await updateProfile(user, { displayName: trimmed });
+  await setDoc(doc(firestore, 'users', user.uid), {
+    displayName: trimmed,
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+}
+
+export async function deleteUserAccount(user: User): Promise<void> {
+  const { db: firestore } = requireAuth();
+  await deleteDoc(doc(firestore, 'users', user.uid));
+  await deleteUser(user);
+}
+
+export function usesPasswordProvider(user: User): boolean {
+  return user.providerData.some((provider) => provider.providerId === 'password');
+}
+
 export function getAuthErrorMessage(error: unknown): string {
   const code = typeof error === 'object' && error && 'code' in error
     ? String((error as { code: string }).code)
@@ -199,6 +225,8 @@ export function getAuthErrorMessage(error: unknown): string {
       return 'Pop-up was blocked. Allow pop-ups for this site and try again.';
     case 'auth/account-exists-with-different-credential':
       return 'An account already exists with this email using a different sign-in method.';
+    case 'auth/requires-recent-login':
+      return 'For security, sign out and sign back in, then try again.';
     default:
       return error instanceof Error ? error.message : 'Something went wrong. Please try again.';
   }

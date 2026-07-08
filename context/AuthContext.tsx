@@ -12,6 +12,8 @@ import {
   getUserProfile,
   signOut as authSignOut,
   patchUserPreferences,
+  updateUserDisplayName,
+  deleteUserAccount,
   getFirestoreErrorMessage,
   type UserPreferences,
   type UserProfile,
@@ -29,6 +31,8 @@ interface AuthContextValue {
   configured: boolean;
   signOut: () => Promise<void>;
   updatePreferences: (patch: Partial<UserPreferences>) => Promise<string | null>;
+  updateDisplayName: (displayName: string) => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -206,6 +210,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         return getFirestoreErrorMessage(error);
       }
+    },
+    updateDisplayName: async (displayName: string) => {
+      if (!user) {
+        throw new Error('You must be signed in to update your profile.');
+      }
+
+      await updateUserDisplayName(user, displayName);
+      setProfile((current) => (current
+        ? { ...current, displayName: displayName.trim() }
+        : {
+          email: user.email ?? '',
+          displayName: displayName.trim(),
+        }));
+    },
+    deleteAccount: async () => {
+      if (!user) {
+        throw new Error('You must be signed in to delete your account.');
+      }
+
+      await deleteUserAccount(user);
+      resetSyncState();
+      setUser(null);
+      setProfile(null);
     },
   }), [user, profile, loading]);
 

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useMemo } from 'react';
 import { TransferBonusRatio } from '../components/TransferBonusBadge';
 import { PointsNewsNav } from '../components/PointsNewsNav';
@@ -118,6 +119,15 @@ export default function PointsNewsPage() {
                     <p className="transfer-guide-tip">{guide.tip}</p>
                   </article>
                 ))}
+              </div>
+              <div className="points-news-guide-promo">
+                <p className="points-news-guide-promo-copy">
+                  Want curated points guides for specific destinations — with sweet spots, booking tips,
+                  and sample routes?
+                </p>
+                <Link to="/points-guide" className="points-news-guide-promo-link">
+                  Explore the Points Guide
+                </Link>
               </div>
             </section>
 

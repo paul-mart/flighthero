@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { TopNavbar } from '../components/TopNavbar';
 import { AskHeroSignInGate } from '../components/AskHeroSignInGate';
 import { HeroChatSidebar } from '../components/HeroChatSidebar';
@@ -27,6 +28,7 @@ function buildQuickPrompts(homeAirport: string): string[] {
 }
 
 export default function AskHeroPage() {
+  const [searchParams] = useSearchParams();
   const { user, profile, loading: authLoading } = useAuth();
   const [chats, setChats] = useState<HeroChat[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -50,6 +52,13 @@ export default function AskHeroPage() {
     if (!user) return undefined;
     return subscribeHeroChats(user.uid, setChats);
   }, [user]);
+
+  useEffect(() => {
+    const prompt = searchParams.get('prompt')?.trim();
+    if (prompt) {
+      setInput(prompt);
+    }
+  }, [searchParams]);
 
   const requestDeleteChat = useCallback((chatId: string) => {
     if (!user || isTyping) return;

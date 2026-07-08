@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { apiFetch, apiUrl } from './api';
 import DatePicker from './DatePicker';
 import { AirportAutocomplete, PlacesSearchLoader } from './components/AirportAutocomplete';
@@ -11,8 +11,9 @@ import { TransferPartnerLogo } from './components/TransferPartnerLogo';
 import { TransferBonusBadge, TransferBonusMath, TransferBonusPartnerChip } from './components/TransferBonusBadge';
 import { ActiveAlertHub } from './components/ActiveAlertHub';
 import { ContinueSearching } from './components/ContinueSearching';
+import { NeedHelpSection } from './components/NeedHelpSection';
 import { EcosystemBanner } from './components/EcosystemBanner';
-import { HowItWorksSection } from './components/HowItWorksSection';
+import { HowItWorksSection, type WorkspaceStepId } from './components/HowItWorksSection';
 import { TrendingDeals } from './components/TrendingDeals';
 import { TrackDealButton } from './components/TrackDealButton';
 import { TopNavbar } from './components/TopNavbar';
@@ -1195,6 +1196,7 @@ async function fetchReturnLegBatches(
 
 export default function App() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, profile, loading: authLoading } = useAuth();
   const { deals: trackedDeals } = useTrackedDeals();
@@ -1638,6 +1640,22 @@ export default function App() {
     openFlightSearchInNewTab(request);
   };
 
+  const handleWorkspaceStep = (stepId: WorkspaceStepId) => {
+    if (stepId === 'search') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (stepId === 'optimize') {
+      navigate('/points-news#transfer-guide');
+      return;
+    }
+    if (stepId === 'ask-hero') {
+      navigate('/ask-hero');
+      return;
+    }
+    navigate('/profile?section=tracked');
+  };
+
   return (
     <HomeSearchResetProvider value={resetHomePage}>
     <div className="app-page">
@@ -1860,25 +1878,33 @@ export default function App() {
             </div>
           </div>
         )}
-              </div>
-            </div>
-
             {loading && (
               <div className="flight-search-loader" style={styles.flightSearchLoader} role="status" aria-live="polite">
                 <PlacesSearchLoader size={112} />
                 <span style={styles.flightSearchLoaderText}>Searching flights...</span>
               </div>
             )}
+              </div>
             </div>
           </div>
+        </div>
         </section>
 
-        {!user ? (
-          <div className="home-landing-features">
-            <HowItWorksSection />
-            <EcosystemBanner />
-          </div>
-        ) : (
+        <div className="home-landing-features">
+          <HowItWorksSection
+            mode={user ? 'workspace' : 'marketing'}
+            onStepAction={user ? handleWorkspaceStep : undefined}
+          />
+          <EcosystemBanner isAuthenticated={Boolean(user)} />
+        </div>
+
+        <NeedHelpSection />
+
+        {showContinueSearching && (
+          <ContinueSearching searches={recentSearches} onSelect={handleResumeSearch} />
+        )}
+
+        {user && (
           <section className="home-alert-strip" aria-label="Your active alert">
             <div className="home-alert-strip-inner">
               <ActiveAlertHub
@@ -1889,10 +1915,6 @@ export default function App() {
               />
             </div>
           </section>
-        )}
-
-        {showContinueSearching && (
-          <ContinueSearching searches={recentSearches} onSelect={handleResumeSearch} />
         )}
 
         <TrendingDeals deals={HOME_TRENDING_DEALS} onSelectDeal={handleTrendingDealSelect} />
@@ -2112,17 +2134,16 @@ export default function App() {
             </div>
           </div>
         )}
-              </div>
-            </div>
-
             {loading && (
               <div className="flight-search-loader" style={styles.flightSearchLoader} role="status" aria-live="polite">
                 <PlacesSearchLoader size={112} />
                 <span style={styles.flightSearchLoaderText}>Searching flights...</span>
               </div>
             )}
+              </div>
             </div>
           </div>
+        </div>
       </section>
       )}
 
@@ -2861,14 +2882,15 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '16px',
-    padding: '24px 24px 8px',
-    marginTop: '8px',
+    padding: '28px 24px',
+    marginTop: 0,
     textAlign: 'center',
+    background: '#fff',
   },
   flightSearchLoaderText: {
     fontSize: '16px',
     fontWeight: 500,
-    color: 'rgba(255, 255, 255, 0.88)',
+    color: '#4b5563',
   },
   flightCard: {
     display: 'flex',

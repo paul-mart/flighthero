@@ -180,3 +180,23 @@ export function BellIcon({
     </FeatherIcon>
   );
 }
+
+export function TrashIcon({ size = 18, strokeWidth = 2 }: IconProps) {
+  return (
+    <FeatherIcon size={size} strokeWidth={strokeWidth}>
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </FeatherIcon>
+  );
+}
+
+export function LockIcon({ size = 14, strokeWidth = 2 }: IconProps) {
+  return (
+    <FeatherIcon size={size} strokeWidth={strokeWidth}>
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </FeatherIcon>
+  );
+}

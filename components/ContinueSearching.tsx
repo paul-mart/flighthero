@@ -1,5 +1,9 @@
 import { useRevealOnScroll } from '../lib/useRevealOnScroll';
 import {
+  getDestinationCityLabel,
+  getDestinationImage,
+} from '../data/destinationImages';
+import {
   formatRecentCashLabel,
   formatRecentDate,
   formatRecentPointsLabel,
