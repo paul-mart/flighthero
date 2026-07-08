@@ -173,7 +173,7 @@ function CardOfferArticle({ offer }: { offer: typeof CARD_OFFERS[number] }) {
           <a href={offer.sourceUrl} target="_blank" rel="noreferrer">
             {offer.sourceName}
           </a>
-          . Offer terms may change — verify on Chase&apos;s site before applying.
+          . Offer terms may change — verify on the issuer&apos;s site before applying.
         </p>
       </div>
     </article>
