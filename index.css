@@ -4306,61 +4306,7 @@ html {
   min-width: 0;
 }
 
-.transfer-guide-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.transfer-guide-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  padding: 18px;
-}
-
-.transfer-guide-region {
-  margin: 0 0 6px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #9ca3af;
-}
-
-.transfer-guide-destination {
-  margin: 0 0 10px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #111827;
-}
-
-.transfer-guide-programs {
-  margin: 0 0 10px;
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  color: #374151;
-}
-
-.transfer-guide-label {
-  display: block;
-  margin-bottom: 2px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: #6b7280;
-}
-
-.transfer-guide-tip {
-  margin: 0;
-  font-size: 0.8125rem;
-  line-height: 1.55;
-  color: #6b7280;
-}
-
 .points-news-guide-promo {
-  margin-top: 24px;
   padding: 22px 24px;
   border: 1px solid #e0e7ff;
   border-radius: 14px;
@@ -4420,10 +4366,6 @@ html {
   .points-news-nav-link {
     white-space: nowrap;
     padding: 8px 12px;
-  }
-
-  .transfer-guide-grid {
-    grid-template-columns: 1fr;
   }
 }
 
@@ -4568,9 +4510,9 @@ html {
 
 .home-need-help-banner {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 32px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 20px;
   width: 100%;
   margin-top: 8px;
   padding: 32px;
@@ -4585,7 +4527,7 @@ html {
 }
 
 .home-need-help-banner-copy {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -4606,19 +4548,12 @@ html {
   color: #4b5563;
 }
 
-.home-need-help-banner-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 14px;
-  margin-top: 20px;
-}
-
 .home-need-help-cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  margin-top: 20px;
   padding: 12px 20px;
   border-radius: 10px;
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
@@ -4641,27 +4576,64 @@ html {
 
 .home-need-help-prompts {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 20rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+.home-need-help-prompts li {
+  display: flex;
+  max-width: 100%;
+}
+
+.home-need-help-prompts li:nth-child(odd) {
+  align-self: flex-start;
+}
+
+.home-need-help-prompts li:nth-child(even) {
+  align-self: flex-end;
+}
+
 .home-need-help-prompt {
   display: inline-block;
-  padding: 6px 12px;
+  padding: 8px 14px;
   border: 1px solid #e5e7eb;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.85);
+  background: #fff;
   font-size: 0.875rem;
   line-height: 1.35;
-  color: #4b5563;
+  color: #374151;
   text-decoration: none;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.home-need-help-prompts li:nth-child(odd) .home-need-help-prompt {
+  background: rgba(243, 232, 255, 0.4);
+  border-color: rgba(233, 213, 255, 0.5);
+  color: #581c87;
+}
+
+.home-need-help-prompts li:nth-child(even) .home-need-help-prompt {
+  background: #fff;
+  border-color: #e5e7eb;
+  color: #374151;
 }
 
 .home-need-help-prompt:hover {
+  transform: translateY(-1px);
+}
+
+.home-need-help-prompts li:nth-child(odd) .home-need-help-prompt:hover {
+  border-color: #d8b4fe;
+  color: #6b21a8;
+  background: rgba(243, 232, 255, 0.65);
+}
+
+.home-need-help-prompts li:nth-child(even) .home-need-help-prompt:hover {
   border-color: #e9d5ff;
   color: #4338ca;
   background: #faf5ff;
@@ -4682,6 +4654,29 @@ html {
   height: auto;
   max-height: 168px;
   object-fit: contain;
+}
+
+@media (min-width: 768px) {
+  .home-need-help-banner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .home-need-help-banner-copy {
+    flex: 0 1 41.666%;
+    max-width: 41.666%;
+  }
+
+  .home-need-help-prompts {
+    flex: 0 1 auto;
+    margin: 0 auto;
+  }
+
+  .home-need-help-banner-graphic {
+    flex: 0 0 auto;
+  }
 }
 
 .home-need-help-utilities {
@@ -4728,20 +4723,16 @@ html {
   }
 
   .home-need-help-banner {
-    flex-direction: column;
-    align-items: flex-start;
     padding: 24px 20px;
     gap: 20px;
   }
 
-  .home-need-help-banner-actions {
-    flex-direction: column;
-    align-items: stretch;
+  .home-need-help-cta {
     width: 100%;
   }
 
-  .home-need-help-cta {
-    width: 100%;
+  .home-need-help-prompts {
+    max-width: 100%;
   }
 
   .home-need-help-banner-graphic {

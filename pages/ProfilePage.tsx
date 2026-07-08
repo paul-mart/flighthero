@@ -382,20 +382,9 @@ export default function ProfilePage() {
 
               <div className="profile-settings-fields">
                 <div className="profile-settings-field">
-                  <div className="profile-settings-field-label-row">
-                    <label className="profile-settings-label" htmlFor="profile-display-name">
-                      Name
-                    </label>
-                    {!editingProfile && (
-                      <button
-                        type="button"
-                        className="profile-text-btn profile-text-btn--inline"
-                        onClick={startEditingProfile}
-                      >
-                        Edit
-                      </button>
-                    )}
-                  </div>
+                  <label className="profile-settings-label" htmlFor="profile-display-name">
+                    Name
+                  </label>
                   <input
                     id="profile-display-name"
                     type="text"

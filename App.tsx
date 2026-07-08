@@ -1646,7 +1646,7 @@ export default function App() {
       return;
     }
     if (stepId === 'optimize') {
-      navigate('/points-news#transfer-guide');
+      navigate('/points-news#points-guide');
       return;
     }
     if (stepId === 'ask-hero') {

@@ -17,7 +17,7 @@ const SECTION_ICONS: Record<string, NavIcon> = {
   'transfer-bonuses': GiftIcon,
   'other-programs': LayersIcon,
   'card-offers': CreditCardIcon,
-  'transfer-guide': GlobeIcon,
+  'points-guide': GlobeIcon,
 };
 
 const SCROLL_OFFSET = 112;

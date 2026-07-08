@@ -6,7 +6,6 @@ import { TransferPartnerLogo } from '../components/TransferPartnerLogo';
 import { TopNavbar } from '../components/TopNavbar';
 import { SiteFooter } from '../components/SiteFooter';
 import { CARD_OFFERS, formatOfferDate } from '../data/cardOffers';
-import { TRANSFER_GUIDE_DESTINATIONS } from '../data/transferGuides';
 import {
   ACTIVE_TRANSFER_BONUSES,
   TRANSFER_BONUS_SOURCE,
@@ -32,7 +31,7 @@ export default function PointsNewsPage() {
         ? [{ id: 'other-programs', label: 'Other Programs' }]
         : []),
       { id: 'card-offers', label: 'Hot Card Offers' },
-      { id: 'transfer-guide', label: 'Transfer Guide by Destination' },
+      { id: 'points-guide', label: 'Points Guide' },
     ],
     [otherBonuses.length],
   );
@@ -100,26 +99,7 @@ export default function PointsNewsPage() {
               </div>
             </section>
 
-            <section id="transfer-guide" className="points-news-section">
-              <div className="points-news-section-header">
-                <h2 className="points-news-section-title">Transfer Guide by Destination</h2>
-                <p className="points-news-section-copy">
-                  Where to move bank points for common trip goals — then search live award space on FlightHero.
-                </p>
-              </div>
-              <div className="transfer-guide-grid">
-                {TRANSFER_GUIDE_DESTINATIONS.map((guide) => (
-                  <article key={guide.id} className="transfer-guide-card">
-                    <p className="transfer-guide-region">{guide.region}</p>
-                    <h3 className="transfer-guide-destination">{guide.destination}</h3>
-                    <p className="transfer-guide-programs">
-                      <span className="transfer-guide-label">Top programs</span>
-                      {guide.topPrograms}
-                    </p>
-                    <p className="transfer-guide-tip">{guide.tip}</p>
-                  </article>
-                ))}
-              </div>
+            <section id="points-guide" className="points-news-section">
               <div className="points-news-guide-promo">
                 <p className="points-news-guide-promo-copy">
                   Want curated points guides for specific destinations — with sweet spots, booking tips,
