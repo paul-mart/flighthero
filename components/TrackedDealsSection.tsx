@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
 import { useRevealOnScroll } from '../lib/useRevealOnScroll';
 import { TrackedDealCard } from './TrackedDealCard';
 import { useTrackedDeals } from '../context/TrackedDealsContext';
@@ -21,8 +20,17 @@ export function TrackedDealsSection({
   const { setDealAlerts } = useTrackedDeals();
   const { ref, visible } = useRevealOnScroll({ threshold: 0.08 });
   const [alertPending, setAlertPending] = useState(false);
+  const [managing, setManaging] = useState(false);
 
   const activeAlertDealId = findDealWithAlerts(deals)?.id ?? null;
+  const sortedDeals = useMemo(
+    () => [...deals].sort((left, right) => {
+      if (left.alertsEnabled && !right.alertsEnabled) return -1;
+      if (!left.alertsEnabled && right.alertsEnabled) return 1;
+      return right.updatedAt - left.updatedAt;
+    }),
+    [deals],
+  );
 
   const handleAlertToggle = async (deal: TrackedDeal) => {
     setAlertPending(true);
@@ -35,10 +43,17 @@ export function TrackedDealsSection({
 
   if (deals.length === 0) return null;
 
+  const handleRemove = (deal: TrackedDeal) => {
+    onRemove?.(deal);
+    if (deals.length <= 1) {
+      setManaging(false);
+    }
+  };
+
   return (
     <section
       ref={ref}
-      className={`tracked-deals-section${visible ? ' tracked-deals-section--visible' : ''}`}
+      className={`tracked-deals-section${visible ? ' tracked-deals-section--visible' : ''}${managing ? ' tracked-deals-section--managing' : ''}`}
       id="tracked-deals"
       aria-labelledby="tracked-deals-title"
     >
@@ -46,20 +61,25 @@ export function TrackedDealsSection({
         <div className="tracked-deals-header">
           <div>
             <h2 id="tracked-deals-title" className="tracked-deals-title">
-              Tracked Award Deals
+              Saved Award Deals
             </h2>
             <p className="tracked-deals-subtitle">
-              Tap the bell on one route for daily price-drop emails. Free accounts include 1 alert — Premium (coming soon) unlocks more.
+              Save up to 4 routes on your home page. Use the bell on one route to track it for daily price-drop alerts.
             </p>
           </div>
-          {showManageLink && (
-            <Link to="/profile?section=tracked" className="tracked-deals-manage-link">
-              Manage
-            </Link>
+          {showManageLink && onRemove && (
+            <button
+              type="button"
+              className={`tracked-deals-manage-btn${managing ? ' tracked-deals-manage-btn--active' : ''}`}
+              aria-pressed={managing}
+              onClick={() => { setManaging((current) => !current); }}
+            >
+              {managing ? 'Done' : 'Manage'}
+            </button>
           )}
         </div>
         <div className="trending-deals-grid">
-          {deals.map((deal, index) => (
+          {sortedDeals.map((deal, index) => (
             <TrackedDealCard
               key={deal.id}
               deal={deal}
@@ -67,7 +87,8 @@ export function TrackedDealsSection({
               activeAlertDealId={activeAlertDealId}
               onSelect={onSelect}
               onAlertToggle={(selected) => { void handleAlertToggle(selected); }}
-              onRemove={onRemove}
+              managing={managing}
+              onRemove={onRemove ? handleRemove : undefined}
               alertPending={alertPending}
               className={visible ? 'tracked-deal-card--visible' : ''}
             />

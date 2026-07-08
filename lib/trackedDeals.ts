@@ -47,12 +47,12 @@ export interface TrackedDealInput {
   snapshot?: TrackedDealSnapshot;
 }
 
-export const MAX_TRACKED_DEALS = 20;
+export const MAX_TRACKED_DEALS = 4;
 export const MAX_PRICE_ALERTS = 1;
 
-export const PRICE_ALERT_TOOLTIP_ACTIVE = 'Price alerts on for this route — click to turn off';
-export const PRICE_ALERT_TOOLTIP_AVAILABLE = 'Notify me when prices drop';
-export const PRICE_ALERT_TOOLTIP_SWITCH = 'Free accounts include 1 price-drop alert. Click to switch alerts to this route. Track multiple routes with Premium (coming soon).';
+export const PRICE_ALERT_TOOLTIP_ACTIVE = 'Tracking price-drop alerts for this route — click to stop';
+export const PRICE_ALERT_TOOLTIP_AVAILABLE = 'Track this route for price-drop alerts';
+export const PRICE_ALERT_TOOLTIP_SWITCH = 'Free accounts include 1 alert. Click to track alerts on this route instead.';
 
 const LOCAL_KEY_PREFIX = 'flighthero:tracked-deals';
 
@@ -63,6 +63,15 @@ function localStorageKey(userId: string): string {
 export function findDealWithAlerts(deals: TrackedDeal[]): TrackedDeal | undefined {
   return deals.find((deal) => deal.alertsEnabled);
 }
+
+export function isAtTrackedDealLimit(deals: TrackedDeal[], input: TrackedDealInput): boolean {
+  if (findTrackedDeal(deals, input)) {
+    return false;
+  }
+  return deals.length >= MAX_TRACKED_DEALS;
+}
+
+export const TRACKED_DEAL_LIMIT_MESSAGE = `You can save up to ${MAX_TRACKED_DEALS} routes. Remove one from your home page or profile to add this route.`;
 
 export function formatTrackedCabinClass(cabinClass: string): string {
   const labels: Record<string, string> = {
@@ -322,6 +331,13 @@ export async function saveTrackedDeal(
   const existing = readLocalTrackedDeals(userId);
   const withoutDuplicate = existing.filter((deal) => trackedDealFingerprint(deal) !== fingerprint);
   const previous = existing.find((deal) => trackedDealFingerprint(deal) === fingerprint);
+
+  if (!previous && withoutDuplicate.length >= MAX_TRACKED_DEALS) {
+    return {
+      deal: previous ?? withoutDuplicate[0],
+      error: TRACKED_DEAL_LIMIT_MESSAGE,
+    };
+  }
 
   const deal: TrackedDeal = {
     id,

@@ -9,7 +9,7 @@ import { FlightItineraryTimeline, type FlightItinerary } from './components/Flig
 import { FlightTimeRange } from './components/FlightTimeRange';
 import { TransferPartnerLogo } from './components/TransferPartnerLogo';
 import { TransferBonusBadge, TransferBonusMath, TransferBonusPartnerChip } from './components/TransferBonusBadge';
-import { ActiveAlertHub } from './components/ActiveAlertHub';
+import { TrackedDealsSection } from './components/TrackedDealsSection';
 import { ContinueSearching } from './components/ContinueSearching';
 import { NeedHelpSection } from './components/NeedHelpSection';
 import { EcosystemBanner } from './components/EcosystemBanner';
@@ -43,7 +43,6 @@ import {
 } from './lib/recentSearches';
 import {
   trackedDealToSearchInput,
-  findDealWithAlerts,
   type TrackedDeal,
   type TrackedDealInput,
 } from './lib/trackedDeals';
@@ -1199,7 +1198,7 @@ export default function App() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, profile, loading: authLoading } = useAuth();
-  const { deals: trackedDeals } = useTrackedDeals();
+  const { deals: trackedDeals, removeDeal: removeTrackedDeal } = useTrackedDeals();
   const militaryZuluTime = profile?.preferences?.militaryZuluTime ?? false;
   const homeAirportLabel = profile?.preferences?.homeAirportLabel ?? '';
   const [adults, setAdults] = useState(1);
@@ -1241,10 +1240,6 @@ export default function App() {
     && user?.uid
     && searchCount >= MIN_SEARCHES_TO_SHOW_CONTINUE
     && recentSearches.length > 0,
-  );
-  const activeAlertDeal = useMemo(
-    () => findDealWithAlerts(trackedDeals),
-    [trackedDeals],
   );
   const resumeTrackedDealRef = useRef<string | null>(null);
 
@@ -1904,17 +1899,12 @@ export default function App() {
           <ContinueSearching searches={recentSearches} onSelect={handleResumeSearch} />
         )}
 
-        {user && (
-          <section className="home-alert-strip" aria-label="Your active alert">
-            <div className="home-alert-strip-inner">
-              <ActiveAlertHub
-                variant="strip"
-                isSignedIn
-                activeDeal={activeAlertDeal}
-                onOpenDeal={(deal) => { void handleResumeTrackedDeal(deal, true); }}
-              />
-            </div>
-          </section>
+        {user && trackedDeals.length > 0 && (
+          <TrackedDealsSection
+            deals={trackedDeals}
+            onSelect={(deal) => { void handleResumeTrackedDeal(deal); }}
+            onRemove={(deal) => { void removeTrackedDeal(deal.id); }}
+          />
         )}
 
         <TrendingDeals deals={HOME_TRENDING_DEALS} onSelectDeal={handleTrendingDealSelect} />

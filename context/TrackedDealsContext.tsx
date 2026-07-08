@@ -9,6 +9,7 @@ import React, {
 import { useAuth } from './AuthContext';
 import {
   isTrackedDealSaved,
+  MAX_TRACKED_DEALS,
   migrateLocalTrackedDealsToCloud,
   removeTrackedDeal,
   saveTrackedDeal,
@@ -67,13 +68,15 @@ export function TrackedDealsProvider({ children }: { children: React.ReactNode }
 
   const saveDeal = useCallback(async (input: TrackedDealInput) => {
     if (!user) {
-      throw new Error('Sign in to track award deals.');
+      throw new Error('Sign in to save award routes.');
     }
     const result = await saveTrackedDeal(user.uid, input);
-    setDeals((current) => {
-      const withoutDuplicate = current.filter((deal) => deal.id !== result.deal.id);
-      return [result.deal, ...withoutDuplicate].slice(0, 20);
-    });
+    if (!result.error) {
+      setDeals((current) => {
+        const withoutDuplicate = current.filter((deal) => deal.id !== result.deal.id);
+        return [result.deal, ...withoutDuplicate].slice(0, MAX_TRACKED_DEALS);
+      });
+    }
     return result.error ?? null;
   }, [user]);
 

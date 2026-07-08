@@ -4,6 +4,7 @@ import {
   formatTrackedCabinClass,
   type TrackedDeal,
 } from '../lib/trackedDeals';
+import { TrashIcon } from '../icons';
 import { TrackedDealAlertBell } from './TrackedDealAlertBell';
 
 interface TrackedDealCardProps {
@@ -13,6 +14,7 @@ interface TrackedDealCardProps {
   onSelect: (deal: TrackedDeal) => void;
   onAlertToggle: (deal: TrackedDeal) => void;
   onRemove?: (deal: TrackedDeal) => void;
+  managing?: boolean;
   alertPending?: boolean;
   className?: string;
 }
@@ -29,6 +31,7 @@ export function TrackedDealCard({
   onSelect,
   onAlertToggle,
   onRemove,
+  managing = false,
   alertPending = false,
   className = '',
 }: TrackedDealCardProps) {
@@ -41,15 +44,16 @@ export function TrackedDealCard({
   });
   const cabinLabel = formatTrackedCabinClass(deal.cabinClass);
   const snapshotLabel = formatSnapshotPoints(deal);
+  const isLiveAlert = deal.alertsEnabled;
 
   return (
     <div
-      className={`tracked-deal-card-wrap${className ? ` ${className}` : ''}`}
+      className={`tracked-deal-card-wrap${isLiveAlert ? ' tracked-deal-card-wrap--live' : ''}${managing ? ' tracked-deal-card-wrap--managing' : ''}${className ? ` ${className}` : ''}`}
       style={{ ['--deal-index' as string]: index }}
     >
       <button
         type="button"
-        className="trending-deal-card trending-deal-card-btn tracked-deal-card"
+        className={`trending-deal-card trending-deal-card-btn tracked-deal-card${isLiveAlert ? ' tracked-deal-card--live' : ''}`}
         onClick={() => onSelect(deal)}
       >
         <img
@@ -66,29 +70,36 @@ export function TrackedDealCard({
         />
         <div className="trending-deal-overlay" aria-hidden />
         <div className="trending-deal-content">
+          {isLiveAlert && (
+            <span className="tracked-deal-live-badge">
+              <span className="tracked-deal-live-dot" aria-hidden />
+              Tracking alerts
+            </span>
+          )}
           <div className="trending-deal-meta">
             <h3 className="trending-deal-city">{city}</h3>
             <p className="trending-deal-meta-route">{route}</p>
             <p className="trending-deal-meta-detail">{dateLabel}</p>
           </div>
-          <div className="trending-deal-tags">
-            <span className="trending-deal-tag trending-deal-tag-cash">
-              {cabinLabel}
-            </span>
+          <div className="tracked-deal-tags">
+            <span className="tracked-deal-cabin-tag">{cabinLabel}</span>
             {snapshotLabel && (
-              <span className="trending-deal-tag trending-deal-tag-points">{snapshotLabel}</span>
+              <span className="trending-deal-tag tracked-deal-points-tag">{snapshotLabel}</span>
             )}
           </div>
         </div>
       </button>
-      {onRemove && (
+      {managing && onRemove && (
         <button
           type="button"
-          className="tracked-deal-remove-btn"
-          aria-label={`Stop tracking ${route}`}
-          onClick={() => onRemove(deal)}
+          className="tracked-deal-delete-btn"
+          aria-label={`Delete saved route ${route}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onRemove(deal);
+          }}
         >
-          ×
+          <TrashIcon size={16} />
         </button>
       )}
     </div>

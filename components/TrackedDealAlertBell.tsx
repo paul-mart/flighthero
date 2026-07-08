@@ -38,7 +38,7 @@ export function TrackedDealAlertBell({
       <button
         type="button"
         className={`tracked-deal-alert-bell${isActive ? ' tracked-deal-alert-bell--active' : ''}${isBlocked ? ' tracked-deal-alert-bell--blocked' : ''}`}
-        aria-label={isActive ? 'Turn off price-drop alerts' : 'Notify me when prices drop'}
+        aria-label={isActive ? 'Stop tracking alerts for this route' : 'Track this route for price-drop alerts'}
         aria-pressed={isActive}
         disabled={disabled}
         onClick={(event) => {

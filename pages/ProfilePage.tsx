@@ -621,10 +621,10 @@ export default function ProfilePage() {
                 Saved routes from points searches. Use the bell on one route for daily price-drop emails — free accounts include 1 alert.
               </p>
               {trackedLoading ? (
-                <p className="profile-panel-text">Loading tracked deals…</p>
+                <p className="profile-panel-text">Loading saved routes…</p>
               ) : trackedDeals.length === 0 ? (
                 <p className="profile-panel-text">
-                  No tracked routes yet. Run a points search and choose &ldquo;Track this route&rdquo; on a result or in flight details.
+                  No saved routes yet. Run a points search and choose &ldquo;Save route&rdquo; — you can save up to 4 routes and track one for price-drop alerts.
                 </p>
               ) : (
                 <div className="alert-hub-list">
