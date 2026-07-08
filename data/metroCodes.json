@@ -1,0 +1,135 @@
+[
+  {
+    "code": "TYO",
+    "name": "Tokyo",
+    "country": "JP",
+    "airports": ["HND", "NRT"],
+    "keywords": ["tokyo"]
+  },
+  {
+    "code": "LON",
+    "name": "London",
+    "country": "GB",
+    "airports": ["LHR", "LGW", "STN", "LTN"],
+    "keywords": ["london"]
+  },
+  {
+    "code": "NYC",
+    "name": "New York City",
+    "country": "US",
+    "airports": ["JFK", "LGA", "EWR"],
+    "keywords": ["new york", "nyc", "new york city"]
+  },
+  {
+    "code": "WAS",
+    "name": "Washington, D.C.",
+    "country": "US",
+    "airports": ["IAD", "DCA", "BWI"],
+    "keywords": ["washington", "dc", "washington dc"]
+  },
+  {
+    "code": "CHI",
+    "name": "Chicago",
+    "country": "US",
+    "airports": ["ORD", "MDW"],
+    "keywords": ["chicago"]
+  },
+  {
+    "code": "PAR",
+    "name": "Paris",
+    "country": "FR",
+    "airports": ["CDG", "ORY"],
+    "keywords": ["paris"]
+  },
+  {
+    "code": "SEL",
+    "name": "Seoul",
+    "country": "KR",
+    "airports": ["ICN", "GMP"],
+    "keywords": ["seoul"]
+  },
+  {
+    "code": "BJS",
+    "name": "Beijing",
+    "country": "CN",
+    "airports": ["PEK", "PKX"],
+    "keywords": ["beijing", "peking"]
+  },
+  {
+    "code": "SHA",
+    "name": "Shanghai",
+    "country": "CN",
+    "airports": ["PVG", "SHA"],
+    "keywords": ["shanghai"]
+  },
+  {
+    "code": "OSA",
+    "name": "Osaka",
+    "country": "JP",
+    "airports": ["KIX", "ITM"],
+    "keywords": ["osaka"]
+  },
+  {
+    "code": "MIL",
+    "name": "Milan",
+    "country": "IT",
+    "airports": ["MXP", "LIN"],
+    "keywords": ["milan", "milano"]
+  },
+  {
+    "code": "ROM",
+    "name": "Rome",
+    "country": "IT",
+    "airports": ["FCO", "CIA"],
+    "keywords": ["rome", "roma"]
+  },
+  {
+    "code": "BUE",
+    "name": "Buenos Aires",
+    "country": "AR",
+    "airports": ["EZE", "AEP"],
+    "keywords": ["buenos aires"]
+  },
+  {
+    "code": "SAO",
+    "name": "São Paulo",
+    "country": "BR",
+    "airports": ["GRU", "CGH", "VCP"],
+    "keywords": ["sao paulo", "são paulo"]
+  },
+  {
+    "code": "RIO",
+    "name": "Rio de Janeiro",
+    "country": "BR",
+    "airports": ["GIG", "SDU"],
+    "keywords": ["rio", "rio de janeiro"]
+  },
+  {
+    "code": "YTO",
+    "name": "Toronto",
+    "country": "CA",
+    "airports": ["YYZ", "YTZ"],
+    "keywords": ["toronto"]
+  },
+  {
+    "code": "YMQ",
+    "name": "Montreal",
+    "country": "CA",
+    "airports": ["YUL"],
+    "keywords": ["montreal"]
+  },
+  {
+    "code": "STO",
+    "name": "Stockholm",
+    "country": "SE",
+    "airports": ["ARN", "BMA"],
+    "keywords": ["stockholm"]
+  },
+  {
+    "code": "MOW",
+    "name": "Moscow",
+    "country": "RU",
+    "airports": ["SVO", "DME", "VKO"],
+    "keywords": ["moscow"]
+  }
+]

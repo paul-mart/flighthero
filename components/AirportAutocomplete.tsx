@@ -334,7 +334,7 @@ export function AirportAutocomplete({
                       type="button"
                       role="option"
                       aria-selected={highlightIndex === index}
-                      className={`suggestion-option${highlighted ? ' suggestion-option--hover' : ''}`}
+                      className={`suggestion-option${highlighted ? ' suggestion-option--hover' : ''}${suggestion.type === 'city' ? ' suggestion-option--city' : ''}`}
                       onMouseEnter={() => {
                         setHoveredIndex(index);
                         setHighlightIndex(index);

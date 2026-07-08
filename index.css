@@ -3263,6 +3263,14 @@ html {
   background: #f3f4ff;
 }
 
+.suggestion-option--city .suggestion-name {
+  color: #4338ca;
+}
+
+.suggestion-option--city .suggestion-subtitle {
+  color: #6b7280;
+}
+
 .suggestion-text {
   display: flex;
   flex-direction: column;
