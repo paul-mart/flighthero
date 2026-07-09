@@ -1713,7 +1713,7 @@ export default function App() {
             </div>
             <button
               type="button"
-              className="search-clear-link"
+              className="search-clear-link search-clear-link--filter"
               onClick={clearSearchForm}
               disabled={!hasSearchInput || loading}
               aria-label="Clear search form"
@@ -1724,6 +1724,17 @@ export default function App() {
 
           <div className="main-bar main-bar--refined main-bar--dashboard" style={dashboardMainBar}>
             <div className="route-block" style={dashboardRouteBlock}>
+              <div className="route-block-toolbar">
+                <button
+                  type="button"
+                  className="search-clear-link search-clear-link--route"
+                  onClick={clearSearchForm}
+                  disabled={!hasSearchInput || loading}
+                  aria-label="Clear search form"
+                >
+                  Clear
+                </button>
+              </div>
               <div style={styles.routeField} className="route-field">
                 <span className="form-field-icon" style={styles.fieldIcon}><PlaneDepartIcon /></span>
                 <AirportAutocomplete
@@ -1770,10 +1781,15 @@ export default function App() {
                     setReturnDate('');
                   }
                 }}
-                placeholder="Departure"
+                placeholder="Depart"
                 ariaLabel="Departure date"
               />
-              <span style={{ ...styles.dateArrow, ...(tripType === 'one-way' ? styles.dateHidden : {}) }}>→</span>
+              <span
+                className="date-block-arrow"
+                style={{ ...styles.dateArrow, ...(tripType === 'one-way' ? styles.dateHidden : {}) }}
+              >
+                →
+              </span>
               <DatePicker
                 value={returnDate}
                 onChange={setReturnDate}
@@ -1964,7 +1980,7 @@ export default function App() {
             </div>
             <button
               type="button"
-              className="search-clear-link"
+              className="search-clear-link search-clear-link--filter"
               onClick={clearSearchForm}
               disabled={!hasSearchInput || loading}
               aria-label="Clear search form"
@@ -1975,6 +1991,17 @@ export default function App() {
 
           <div className="main-bar main-bar--refined" style={styles.mainBar}>
             <div className="route-block" style={styles.routeBlock}>
+              <div className="route-block-toolbar">
+                <button
+                  type="button"
+                  className="search-clear-link search-clear-link--route"
+                  onClick={clearSearchForm}
+                  disabled={!hasSearchInput || loading}
+                  aria-label="Clear search form"
+                >
+                  Clear
+                </button>
+              </div>
               <div style={styles.routeField} className="route-field">
                 <span className="form-field-icon" style={styles.fieldIcon}><PlaneDepartIcon /></span>
                 <AirportAutocomplete
@@ -2021,10 +2048,15 @@ export default function App() {
                     setReturnDate('');
                   }
                 }}
-                placeholder="Departure"
+                placeholder="Depart"
                 ariaLabel="Departure date"
               />
-              <span style={{ ...styles.dateArrow, ...(tripType === 'one-way' ? styles.dateHidden : {}) }}>→</span>
+              <span
+                className="date-block-arrow"
+                style={{ ...styles.dateArrow, ...(tripType === 'one-way' ? styles.dateHidden : {}) }}
+              >
+                →
+              </span>
               <DatePicker
                 value={returnDate}
                 onChange={setReturnDate}
@@ -2175,7 +2207,7 @@ export default function App() {
             return (
             <div key={flight.id} className="flight-card" style={styles.flightCard}>
               <div className="flight-card-body" style={styles.flightCardBody}>
-                <div className="flight-info" style={styles.flightInfo}>
+                <div className="flight-card-route flight-info" style={styles.flightInfo}>
                   <div className="flight-route-row" style={styles.flightRouteRow}>
                     <CarrierBadge carrier={flight.carrier} logos={flight.carrier_logos} />
                     <strong className="flight-route-label" style={styles.routeLabel}>
@@ -2284,68 +2316,93 @@ export default function App() {
                   )}
                 </div>
 
-              <div className="flight-card-actions" style={styles.flightCardActions}>
-                <div className="pricing-section" style={styles.pricingSection}>
-                  {searchType === 'cash' ? (
-                    <>
-                      {tripType === 'round-trip' && (
-                        <div className="price-hint" style={styles.priceHint}>Round trip</div>
-                      )}
-                      <div className="price-text" style={styles.priceText}>{formatPrice(flight.cash_price)}</div>
-                    </>
-                  ) : (
-                    flight.award_details && (
-                      <div style={{ textAlign: 'right' }}>
+                <div className="flight-card-aside">
+                  <div className="flight-card-pricing pricing-section" style={styles.pricingSection}>
+                    {searchType === 'cash' ? (
+                      <>
                         {tripType === 'round-trip' && (
                           <div className="price-hint" style={styles.priceHint}>Round trip</div>
                         )}
-                        <div style={styles.pointsText}>
-                          {flight.award_details.points_required.toLocaleString()} pts
-                        </div>
-                        <div style={styles.subtext}>+ {formatPrice(flight.award_details.taxes_and_fees)} fees</div>
-                        {flight.cash_price_matched && flight.cash_price > 0 && (
-                          <div style={styles.subtext}>~{formatPrice(flight.cash_price)} cash</div>
-                        )}
-                        {getFlightCpp(flight) != null && (
-                          <div style={styles.cppText}>{getFlightCpp(flight)!.toFixed(2)} cents/pt</div>
-                        )}
+                        <div className="price-text" style={styles.priceText}>{formatPrice(flight.cash_price)}</div>
+                      </>
+                    ) : (
+                      flight.award_details && (
+                        <>
+                          {tripType === 'round-trip' && (
+                            <div className="price-hint" style={styles.priceHint}>Round trip</div>
+                          )}
+                          <div className="flight-card-price-stack">
+                            <div className="flight-card-points" style={styles.pointsText}>
+                              {flight.award_details.points_required.toLocaleString()} pts
+                            </div>
+                            <div className="flight-card-fees" style={styles.subtext}>
+                              + {formatPrice(flight.award_details.taxes_and_fees)} fees
+                            </div>
+                          </div>
+                          {flight.cash_price_matched && flight.cash_price > 0 && (
+                            <div className="flight-card-cash-compare" style={styles.subtext}>
+                              ~{formatPrice(flight.cash_price)} cash
+                            </div>
+                          )}
+                          {getFlightCpp(flight) != null && (
+                            <div className="flight-card-cpp" style={styles.cppText}>
+                              {getFlightCpp(flight)!.toFixed(2)} cents/pt
+                            </div>
+                          )}
+                        </>
+                      )
+                    )}
+                  </div>
+
+                  <div className="flight-card-booking">
+                    {searchType === 'points' && flight.award_details && (
+                      <>
                         {flight.award_details.mileage_program && (
-                          <div style={styles.programTag}>{flight.award_details.mileage_program}</div>
+                          <div className="flight-card-program" style={styles.programTag}>
+                            {flight.award_details.mileage_program}
+                          </div>
                         )}
-                        <div className="partner-container" style={styles.partnerContainer}>
-                          {flight.award_details.transfer_partners.map((p, i) => {
-                            const partnerBonus = getTransferBonusForPartner(cardTransferBonuses, p);
-                            if (partnerBonus) {
+                        <div className="flight-card-partners partner-container" style={styles.partnerContainer}>
+                          <div className="flight-card-partners-bonus">
+                            {flight.award_details.transfer_partners.map((partner, index) => {
+                              const partnerBonus = getTransferBonusForPartner(cardTransferBonuses, partner);
+                              if (!partnerBonus) return null;
                               return (
                                 <TransferBonusPartnerChip
-                                  key={i}
-                                  partner={p}
+                                  key={`bonus-${index}`}
+                                  partner={partner}
                                   percent={partnerBonus.bonus.bonusPercent}
                                   logoSize={25}
+                                  compact
                                 />
                               );
-                            }
-                            return (
-                            <span key={i} className="partner-tag" style={styles.partnerTag} title={p}>
-                              <TransferPartnerLogo partner={p} size={25} />
-                            </span>
-                            );
-                          })}
+                            })}
+                          </div>
+                          <div className="flight-card-partners-regular">
+                            {flight.award_details.transfer_partners.map((partner, index) => {
+                              const partnerBonus = getTransferBonusForPartner(cardTransferBonuses, partner);
+                              if (partnerBonus) return null;
+                              return (
+                                <span key={`partner-${index}`} className="partner-tag" style={styles.partnerTag} title={partner}>
+                                  <TransferPartnerLogo partner={partner} size={25} />
+                                </span>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    )
-                  )}
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      className="view-flight-btn"
+                      style={styles.viewFlightBtn}
+                      onClick={() => setSelectedFlight(flight)}
+                    >
+                      View flight
+                      <ArrowRightIcon size={14} />
+                    </button>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  className="view-flight-btn"
-                  style={styles.viewFlightBtn}
-                  onClick={() => setSelectedFlight(flight)}
-                >
-                  View flight
-                  <ArrowRightIcon size={14} />
-                </button>
-              </div>
               </div>
             </div>
             );

@@ -51,6 +51,34 @@ function formatDisplayDate(value: string): string {
   });
 }
 
+function formatCompactDisplayDate(value: string): string {
+  const date = parseIsoDate(value);
+  if (!date) return '';
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function useCompactDateLabels(): boolean {
+  const [compact, setCompact] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 767px)').matches;
+  });
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const handleChange = (event: MediaQueryListEvent) => {
+      setCompact(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  return compact;
+}
+
 function addMonths(date: Date, delta: number): Date {
   return new Date(date.getFullYear(), date.getMonth() + delta, 1);
 }
@@ -216,6 +244,8 @@ export default function DatePicker({
     return cells;
   }, [viewMonth]);
 
+  const compactLabels = useCompactDateLabels();
+
   const isDisabledDay = (iso: string) => {
     const day = parseIsoDate(iso);
     return !day || day < effectiveMinDay;
@@ -228,7 +258,9 @@ export default function DatePicker({
     triggerRef.current?.blur();
   };
 
-  const displayLabel = value ? formatDisplayDate(value) : placeholder;
+  const displayLabel = value
+    ? (compactLabels ? formatCompactDisplayDate(value) : formatDisplayDate(value))
+    : placeholder;
   const monthLabel = `${MONTH_NAMES[viewMonth.getMonth()]} ${viewMonth.getFullYear()}`;
 
   return (
@@ -261,7 +293,7 @@ export default function DatePicker({
         aria-expanded={open}
         aria-haspopup="dialog"
       >
-        <span style={styles.triggerText}>{displayLabel}</span>
+        <span className="date-picker-trigger-text" style={styles.triggerText}>{displayLabel}</span>
         <span
           style={{
             ...styles.triggerChevron,

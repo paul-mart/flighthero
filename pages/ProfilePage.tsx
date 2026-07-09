@@ -22,11 +22,42 @@ import {
 
 type ProfileSection = 'settings' | 'preferences' | 'tracked';
 
-const PROFILE_NAV: { id: ProfileSection; label: string }[] = [
-  { id: 'settings', label: 'Settings' },
-  { id: 'preferences', label: 'Preferences' },
-  { id: 'tracked', label: 'Alert Hub' },
+const PROFILE_NAV: { id: ProfileSection; label: string; description: string }[] = [
+  {
+    id: 'settings',
+    label: 'Account Settings',
+    description: 'Update your profile details and security options',
+  },
+  {
+    id: 'preferences',
+    label: 'Preferences',
+    description: 'Set your home airport and custom point values',
+  },
+  {
+    id: 'tracked',
+    label: 'Alert Hub',
+    description: 'Manage your active price drops and flight monitors',
+  },
 ];
+
+function useMobileProfileNav(): boolean {
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 767px)').matches;
+  });
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsMobile(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  return isMobile;
+}
 
 function buildCppDraft(saved: Record<string, number> = {}): Record<string, number> {
   const draft: Record<string, number> = {};
@@ -73,6 +104,8 @@ export default function ProfilePage() {
     const section = searchParams.get('section');
     return section === 'tracked' ? 'tracked' : 'settings';
   });
+  const isMobileProfileNav = useMobileProfileNav();
+  const [showMobileMenu, setShowMobileMenu] = useState(() => searchParams.get('section') !== 'tracked');
   const [signingOut, setSigningOut] = useState(false);
   const [savingPreference, setSavingPreference] = useState(false);
   const [preferenceNotice, setPreferenceNotice] = useState('');
@@ -117,6 +150,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (searchParams.get('section') === 'tracked') {
       setActiveSection('tracked');
+      setShowMobileMenu(false);
     }
   }, [searchParams]);
 
@@ -214,6 +248,20 @@ export default function ProfilePage() {
 
   const handleOpenPremiumSettings = () => {
     setActiveSection('settings');
+    if (isMobileProfileNav) {
+      setShowMobileMenu(false);
+    }
+  };
+
+  const handleSelectSection = (section: ProfileSection) => {
+    setActiveSection(section);
+    if (isMobileProfileNav) {
+      setShowMobileMenu(false);
+    }
+  };
+
+  const handleBackToMobileMenu = () => {
+    setShowMobileMenu(true);
   };
 
   const handleRemoveTrackedDeal = async (deal: TrackedDeal) => {
@@ -304,7 +352,13 @@ export default function ProfilePage() {
   return (
     <div className="app-page profile-shell">
       <TopNavbar />
-      <div className="profile-body">
+      <div
+        className={`profile-body${
+          isMobileProfileNav && showMobileMenu ? ' profile-body--mobile-menu' : ''
+        }${
+          isMobileProfileNav && !showMobileMenu ? ' profile-body--mobile-detail' : ''
+        }`}
+      >
         <aside className="profile-sidebar" aria-label="Profile navigation">
         <header className="profile-sidebar-header">
           <ProfileAvatar
@@ -318,16 +372,33 @@ export default function ProfilePage() {
           </div>
         </header>
 
-        <nav className="profile-nav" aria-label="Profile sections">
+        <nav
+          className={`profile-nav${isMobileProfileNav ? ' profile-mobile-menu' : ''}`}
+          aria-label="Profile sections"
+        >
           {PROFILE_NAV.map((item) => (
             <button
               key={item.id}
               type="button"
-              className={`profile-nav-item${activeSection === item.id ? ' profile-nav-item-active' : ''}`}
-              aria-current={activeSection === item.id ? 'page' : undefined}
-              onClick={() => setActiveSection(item.id)}
+              className={
+                isMobileProfileNav
+                  ? 'profile-mobile-menu-item'
+                  : `profile-nav-item${activeSection === item.id ? ' profile-nav-item-active' : ''}`
+              }
+              aria-current={!isMobileProfileNav && activeSection === item.id ? 'page' : undefined}
+              onClick={() => handleSelectSection(item.id)}
             >
-              {item.label}
+              {isMobileProfileNav ? (
+                <>
+                  <span className="profile-mobile-menu-item-copy">
+                    <span className="profile-mobile-menu-item-title">{item.label}</span>
+                    <span className="profile-mobile-menu-item-description">{item.description}</span>
+                  </span>
+                  <span className="profile-mobile-menu-chevron" aria-hidden="true">→</span>
+                </>
+              ) : (
+                item.label
+              )}
             </button>
           ))}
         </nav>
@@ -345,6 +416,15 @@ export default function ProfilePage() {
       </aside>
 
       <main className="profile-main" aria-labelledby="profile-title">
+        {isMobileProfileNav && !showMobileMenu ? (
+          <button
+            type="button"
+            className="profile-mobile-back"
+            onClick={handleBackToMobileMenu}
+          >
+            ← Back to Account Menu
+          </button>
+        ) : null}
         <div className="profile-panel">
           {activeSection === 'settings' && (
             <div className="profile-settings">

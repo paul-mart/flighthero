@@ -20,16 +20,20 @@ interface TransferBonusPartnerChipProps {
   partner: string;
   percent: number;
   logoSize?: number;
+  compact?: boolean;
 }
 
 export function TransferBonusPartnerChip({
   partner,
   percent,
   logoSize = 25,
+  compact = false,
 }: TransferBonusPartnerChipProps) {
   return (
-    <span className="transfer-bonus-partner-chip">
-      <span className="transfer-bonus-partner-chip-label">Transfer bonus</span>
+    <span className={`transfer-bonus-partner-chip${compact ? ' transfer-bonus-partner-chip--compact' : ''}`}>
+      {!compact ? (
+        <span className="transfer-bonus-partner-chip-label">Transfer bonus</span>
+      ) : null}
       <span className="transfer-bonus-partner-chip-box">
         <TransferPartnerLogo partner={partner} size={logoSize} />
         <TransferBonusBadge percent={percent} />
