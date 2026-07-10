@@ -94,9 +94,6 @@ function DealCardsGrid({
                       <span className="trending-deal-tag trending-deal-tag-points">
                         {deal.pointsLabel}
                       </span>
-                      <span className="trending-deal-tag trending-deal-tag-cash">
-                        {deal.cashLabel}
-                      </span>
                     </div>
                   </div>
                 </button>

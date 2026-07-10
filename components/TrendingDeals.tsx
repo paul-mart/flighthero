@@ -30,7 +30,7 @@ export function TrendingDeals({ onSelectDeal, maxDeals, deals: dealsProp }: Tren
             Trending Award Deals
           </h2>
           <p className="trending-deals-subtitle">
-            Curated award routes — click a deal to search live availability and fares.
+            Curated award routes — click a deal to search live availability.
           </p>
         </div>
 
@@ -63,13 +63,6 @@ export function TrendingDeals({ onSelectDeal, maxDeals, deals: dealsProp }: Tren
                     onClick={() => onSelectDeal(deal)}
                   >
                     {deal.pointsLabel}
-                  </button>
-                  <button
-                    type="button"
-                    className="trending-deal-tag trending-deal-tag-cash"
-                    onClick={() => onSelectDeal(deal)}
-                  >
-                    {deal.cashLabel}
                   </button>
                 </div>
               </div>

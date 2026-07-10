@@ -4,7 +4,6 @@ import {
   getDestinationImage,
 } from '../data/destinationImages';
 import {
-  formatRecentCashLabel,
   formatRecentDate,
   formatRecentPointsLabel,
   formatRecentRoute,
@@ -13,7 +12,7 @@ import {
 
 interface ContinueSearchingProps {
   searches: RecentSearch[];
-  onSelect: (search: RecentSearch, searchType: 'cash' | 'points') => void;
+  onSelect: (search: RecentSearch) => void;
 }
 
 export function ContinueSearching({ searches, onSelect }: ContinueSearchingProps) {
@@ -65,16 +64,9 @@ export function ContinueSearching({ searches, onSelect }: ContinueSearchingProps
                     <button
                       type="button"
                       className="trending-deal-tag trending-deal-tag-points"
-                      onClick={() => onSelect(search, 'points')}
+                      onClick={() => onSelect(search)}
                     >
                       {formatRecentPointsLabel(search.lowestPoints)}
-                    </button>
-                    <button
-                      type="button"
-                      className="trending-deal-tag trending-deal-tag-cash"
-                      onClick={() => onSelect(search, 'cash')}
-                    >
-                      {formatRecentCashLabel(search.lowestCash)}
                     </button>
                   </div>
                 </div>

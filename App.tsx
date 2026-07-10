@@ -458,44 +458,8 @@ function HeroCopyBlock({ immediate = false }: { immediate?: boolean }) {
         <FlightHeroLogo variant="hero" />
       </h1>
       <p className="hero-subheadline">
-        Compare award space and cash fares in one search — find the best way to fly.
+        Search real-time award seats, track transfer partners, and uncover hidden point valuations.
       </p>
-    </div>
-  );
-}
-
-function SearchModeTabs({
-  value,
-  onChange,
-}: {
-  value: 'cash' | 'points';
-  onChange: (next: 'cash' | 'points') => void;
-}) {
-  return (
-    <div className="search-mode-bar search-mode-bar--refined" role="tablist" aria-label="Search type">
-      <button
-        type="button"
-        role="tab"
-        id="search-tab-points"
-        aria-selected={value === 'points'}
-        aria-controls="search-panel-body"
-        className={`search-mode-option${value === 'points' ? ' search-mode-option-active' : ''}`}
-        onClick={() => onChange('points')}
-      >
-        Points Search
-      </button>
-      <div className="search-mode-separator" aria-hidden="true" />
-      <button
-        type="button"
-        role="tab"
-        id="search-tab-cash"
-        aria-selected={value === 'cash'}
-        aria-controls="search-panel-body"
-        className={`search-mode-option${value === 'cash' ? ' search-mode-option-active' : ''}`}
-        onClick={() => onChange('cash')}
-      >
-        Cash Search
-      </button>
     </div>
   );
 }
@@ -965,9 +929,7 @@ function FlightDetailModal({
 
         <div style={styles.flightDetailSection}>
           <h3 style={styles.flightDetailSectionTitle}>Price</h3>
-          {searchType === 'cash' ? (
-            <p style={styles.flightDetailPrice}>{formatPrice(flight.cash_price)}</p>
-          ) : flight.award_details ? (
+          {flight.award_details ? (
             <>
               <div className="flight-price-core">
                 <div className="flight-price-primary">
@@ -1082,59 +1044,40 @@ function FlightDetailModal({
         </div>
 
         <div style={styles.flightDetailActions}>
-          {searchType === 'points' && (
-            <TrackDealButton dealInput={trackDealInput} />
+          <TrackDealButton dealInput={trackDealInput} />
+          {flight.booking_links?.program && (
+            <a
+              href={flight.booking_links.program}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={styles.flightDetailPrimaryLink}
+            >
+              Book with {programName}
+            </a>
           )}
-          {searchType === 'cash' ? (
-            <>
-              <a
-                href={cashBookingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={styles.flightDetailPrimaryLink}
-              >
-                {flight.booking_token ? 'Book this flight' : 'View on Google Flights'}
-              </a>
-              {flight.booking_token && (
-                <a
-                  href={googleFlightsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={styles.flightDetailSecondaryLink}
-                >
-                  View on Google Flights
-                </a>
-              )}
-            </>
-          ) : (
-            <>
-              {flight.booking_links?.program && (
-                <a
-                  href={flight.booking_links.program}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={styles.flightDetailPrimaryLink}
-                >
-                  Book with {programName}
-                </a>
-              )}
-              {flight.booking_links?.seats_aero && (
-                <a
-                  href={flight.booking_links.seats_aero}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={styles.flightDetailSecondaryLink}
-                >
-                  View on Seats.aero
-                </a>
-              )}
-            </>
+          {flight.booking_links?.seats_aero && (
+            <a
+              href={flight.booking_links.seats_aero}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={styles.flightDetailSecondaryLink}
+            >
+              View on Seats.aero
+            </a>
+          )}
+          {flight.cash_price_matched && flight.cash_price > 0 && (
+            <a
+              href={cashBookingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={styles.flightDetailCashLink}
+            >
+              Book with cash instead (~{formatPrice(flight.cash_price)})
+            </a>
           )}
         </div>
         <p style={styles.flightDetailDisclaimer}>
-          {searchType === 'cash'
-            ? 'Booking opens the airline or partner site via Google Flights. Prices may change.'
-            : 'Award space is from Seats.aero cached data. Always verify availability before booking.'}
+          Award space is from Seats.aero cached data. Always verify availability before booking.
         </p>
       </div>
     </div>
@@ -1217,7 +1160,7 @@ export default function App() {
   };
   const [date, setDate] = useState('');
   const [returnDate, setReturnDate] = useState('');
-  const [searchType, setSearchType] = useState<'cash' | 'points'>('points');
+  const searchType = 'points' as const;
   const [flights, setFlights] = useState<Flight[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -1295,26 +1238,24 @@ export default function App() {
   };
 
   const taxesSliderMax = useMemo(
-    () => (searchType === 'points' ? computeTaxesSliderMax(flights) : 150),
-    [flights, searchType],
+    () => computeTaxesSliderMax(flights),
+    [flights],
   );
 
   useEffect(() => {
-    if (searchType === 'points' && flights.length > 0) {
+    if (flights.length > 0) {
       setMaxTaxes(computeTaxesSliderMax(flights));
     }
-  }, [flights, searchType]);
+  }, [flights]);
 
   const displayedFlights = useMemo(() => {
     if (!advancedEnabled) {
       return sortFlights(flights, 'price-asc', searchType);
     }
     let filtered = flights.filter((flight) => matchesStopsFilter(flight.stops, stopsFilter));
-    if (searchType === 'points') {
-      filtered = filtered.filter((flight) => getFlightTaxes(flight) <= maxTaxes);
-    }
+    filtered = filtered.filter((flight) => getFlightTaxes(flight) <= maxTaxes);
     return sortFlights(filtered, sortOption, searchType);
-  }, [flights, stopsFilter, sortOption, searchType, advancedEnabled, maxTaxes]);
+  }, [flights, stopsFilter, sortOption, advancedEnabled, maxTaxes]);
 
   const swapRoute = () => {
     if (document.activeElement instanceof HTMLElement) {
@@ -1362,7 +1303,6 @@ export default function App() {
     setAdults(1);
     setChildrenCount(0);
     setCabinClass('economy');
-    setSearchType('points');
     setFlights([]);
     setHasSearched(false);
     setLoading(false);
@@ -1386,23 +1326,11 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [user, homeAirportLabel, syncRecentSearchState]);
 
-  const handleSearchTypeChange = (next: 'cash' | 'points') => {
-    if (next === searchType) return;
-    setSearchType(next);
-    setFlights([]);
-    setHasSearched(false);
-    setLoadingReturnDetails(false);
-    if (next === 'cash' && (sortOption === 'cpp-asc' || sortOption === 'cpp-desc')) {
-      setSortOption('price-asc');
-    }
-  };
-
   const applyFormFromSearch = useCallback((request: FlightSearchRequest) => {
     setRoute({ origin: request.origin, destination: request.destination });
     setDate(request.departureDate);
     setReturnDate(request.returnDate);
     setTripType(request.tripType);
-    setSearchType(request.searchType);
     setCabinClass(request.cabinClass);
     setAdults(request.adults);
     setChildrenCount(request.childrenCount);
@@ -1486,44 +1414,6 @@ export default function App() {
           'No flights found',
           'No flights were found for your search. Try different dates or airports.'
         );
-      } else if (request.tripType === 'round-trip' && request.searchType === 'cash') {
-        const tokens = [...new Set(
-          results.map((flight) => flight.departure_token).filter((token): token is string => Boolean(token))
-        )];
-        if (tokens.length > 0) {
-          setLoadingReturnDetails(true);
-          void (async () => {
-            try {
-              await fetchReturnLegBatches(
-                tokens,
-                {
-                  origin: trimmedOrigin,
-                  destination: trimmedDestination,
-                  departureDate: request.departureDate,
-                  returnDate: request.returnDate,
-                },
-                (returnData) => {
-                  setFlights((prev) =>
-                    prev.map((flight) => {
-                      const token = flight.departure_token;
-                      if (!token || !returnData[token]) {
-                        return flight;
-                      }
-                      return applyReturnLeg(flight, returnData[token]);
-                    })
-                  );
-                },
-                () => searchSeq !== searchSeqRef.current,
-              );
-            } catch (returnError) {
-              console.error('Error loading return legs:', returnError);
-            } finally {
-              if (searchSeq === searchSeqRef.current) {
-                setLoadingReturnDetails(false);
-              }
-            }
-          })();
-        }
       }
     } catch (error) {
       console.error('Error fetching flights:', error);
@@ -1599,14 +1489,14 @@ export default function App() {
     void handleResumeTrackedDeal(deal);
   }, [location.state]);
 
-  const handleResumeSearch = (search: RecentSearch, resumeType: 'cash' | 'points') => {
+  const handleResumeSearch = (search: RecentSearch) => {
     openFlightSearchInNewTab({
       origin: search.origin,
       destination: search.destination,
       departureDate: search.departureDate,
       returnDate: search.returnDate,
       tripType: search.tripType,
-      searchType: resumeType,
+      searchType: 'points',
       cabinClass: search.cabinClass,
       adults: search.adults,
       childrenCount: search.childrenCount,
@@ -1664,13 +1554,12 @@ export default function App() {
             <HeroCopyBlock immediate />
             <div className="hero-search hero-search--landing home-dashboard-search">
               <div className="search-panel-wrap search-panel-wrap--refined search-panel-wrap--full">
-              <SearchModeTabs value={searchType} onChange={handleSearchTypeChange} />
               <div
                 id="search-panel-body"
                 className="search-panel"
                 style={styles.searchPanel}
-                role="tabpanel"
-                aria-labelledby={searchType === 'cash' ? 'search-tab-cash' : 'search-tab-points'}
+                role="region"
+                aria-label="Award search"
               >
               <form onSubmit={handleSearch} style={styles.form}>
           <div className="filter-bar" style={styles.filterBar}>
@@ -1858,34 +1747,28 @@ export default function App() {
                     { value: 'departure-desc', label: 'Departure: latest first' },
                     { value: 'duration-asc', label: 'Duration: shortest first' },
                     { value: 'duration-desc', label: 'Duration: longest first' },
-                    ...(searchType === 'points'
-                      ? [
-                          { value: 'cpp-desc' as const, label: 'CPP: high to low' },
-                          { value: 'cpp-asc' as const, label: 'CPP: low to high' },
-                        ]
-                      : []),
+                    { value: 'cpp-desc' as const, label: 'CPP: high to low' },
+                    { value: 'cpp-asc' as const, label: 'CPP: low to high' },
                   ]}
                   ariaLabel="Sort by"
                   disabled={!advancedEnabled}
                 />
               </div>
 
-              {searchType === 'points' && (
-                <div className="advanced-control-item max-taxes-control" style={styles.advancedControlItem}>
-                  <span style={{
-                    ...styles.advancedControlLabel,
-                    ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
-                  }}>
-                    Max taxes:
-                  </span>
-                  <MaxTaxesSlider
-                    value={Math.min(maxTaxes, taxesSliderMax)}
-                    max={taxesSliderMax}
-                    disabled={!advancedEnabled}
-                    onChange={setMaxTaxes}
-                  />
-                </div>
-              )}
+              <div className="advanced-control-item max-taxes-control" style={styles.advancedControlItem}>
+                <span style={{
+                  ...styles.advancedControlLabel,
+                  ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
+                }}>
+                  Max taxes:
+                </span>
+                <MaxTaxesSlider
+                  value={Math.min(maxTaxes, taxesSliderMax)}
+                  max={taxesSliderMax}
+                  disabled={!advancedEnabled}
+                  onChange={setMaxTaxes}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -1931,13 +1814,12 @@ export default function App() {
           <div className="hero-inner hero-inner--compact">
             <div className="hero-search hero-search--compact">
               <div className="search-panel-wrap search-panel-wrap--refined" style={styles.searchPanelWrap}>
-              <SearchModeTabs value={searchType} onChange={handleSearchTypeChange} />
               <div
                 id="search-panel-body"
                 className="search-panel"
                 style={styles.searchPanel}
-                role="tabpanel"
-                aria-labelledby={searchType === 'cash' ? 'search-tab-cash' : 'search-tab-points'}
+                role="region"
+                aria-label="Award search"
               >
               <form onSubmit={handleSearch} style={styles.form}>
           <div className="filter-bar" style={styles.filterBar}>
@@ -2125,34 +2007,28 @@ export default function App() {
                     { value: 'departure-desc', label: 'Departure: latest first' },
                     { value: 'duration-asc', label: 'Duration: shortest first' },
                     { value: 'duration-desc', label: 'Duration: longest first' },
-                    ...(searchType === 'points'
-                      ? [
-                          { value: 'cpp-desc' as const, label: 'CPP: high to low' },
-                          { value: 'cpp-asc' as const, label: 'CPP: low to high' },
-                        ]
-                      : []),
+                    { value: 'cpp-desc' as const, label: 'CPP: high to low' },
+                    { value: 'cpp-asc' as const, label: 'CPP: low to high' },
                   ]}
                   ariaLabel="Sort by"
                   disabled={!advancedEnabled}
                 />
               </div>
 
-              {searchType === 'points' && (
-                <div className="advanced-control-item max-taxes-control" style={styles.advancedControlItem}>
-                  <span style={{
-                    ...styles.advancedControlLabel,
-                    ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
-                  }}>
-                    Max taxes:
-                  </span>
-                  <MaxTaxesSlider
-                    value={Math.min(maxTaxes, taxesSliderMax)}
-                    max={taxesSliderMax}
-                    disabled={!advancedEnabled}
-                    onChange={setMaxTaxes}
-                  />
-                </div>
-              )}
+              <div className="advanced-control-item max-taxes-control" style={styles.advancedControlItem}>
+                <span style={{
+                  ...styles.advancedControlLabel,
+                  ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
+                }}>
+                  Max taxes:
+                </span>
+                <MaxTaxesSlider
+                  value={Math.min(maxTaxes, taxesSliderMax)}
+                  max={taxesSliderMax}
+                  disabled={!advancedEnabled}
+                  onChange={setMaxTaxes}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -2177,21 +2053,19 @@ export default function App() {
             <p style={styles.resultsCount}>
               Showing {displayedFlights.length} of {flights.length} flight{flights.length === 1 ? '' : 's'}
             </p>
-            {searchType === 'points' && (
-              <TrackDealButton
-                dealInput={{
-                  origin,
-                  destination,
-                  departureDate: date,
-                  returnDate,
-                  tripType,
-                  cabinClass,
-                  adults,
-                  childrenCount,
-                }}
-                className="results-track-deal"
-              />
-            )}
+            <TrackDealButton
+              dealInput={{
+                origin,
+                destination,
+                departureDate: date,
+                returnDate,
+                tripType,
+                cabinClass,
+                adults,
+                childrenCount,
+              }}
+              className="results-track-deal"
+            />
           </div>
         )}
         {!loading && displayedFlights.length > 0 ? (
@@ -2318,44 +2192,35 @@ export default function App() {
 
                 <div className="flight-card-aside">
                   <div className="flight-card-pricing pricing-section" style={styles.pricingSection}>
-                    {searchType === 'cash' ? (
+                    {flight.award_details && (
                       <>
                         {tripType === 'round-trip' && (
                           <div className="price-hint" style={styles.priceHint}>Round trip</div>
                         )}
-                        <div className="price-text" style={styles.priceText}>{formatPrice(flight.cash_price)}</div>
-                      </>
-                    ) : (
-                      flight.award_details && (
-                        <>
-                          {tripType === 'round-trip' && (
-                            <div className="price-hint" style={styles.priceHint}>Round trip</div>
-                          )}
-                          <div className="flight-card-price-stack">
-                            <div className="flight-card-points" style={styles.pointsText}>
-                              {flight.award_details.points_required.toLocaleString()} pts
-                            </div>
-                            <div className="flight-card-fees" style={styles.subtext}>
-                              + {formatPrice(flight.award_details.taxes_and_fees)} fees
-                            </div>
+                        <div className="flight-card-price-stack">
+                          <div className="flight-card-points" style={styles.pointsText}>
+                            {flight.award_details.points_required.toLocaleString()} pts
                           </div>
-                          {flight.cash_price_matched && flight.cash_price > 0 && (
-                            <div className="flight-card-cash-compare" style={styles.subtext}>
-                              ~{formatPrice(flight.cash_price)} cash
-                            </div>
-                          )}
-                          {getFlightCpp(flight) != null && (
-                            <div className="flight-card-cpp" style={styles.cppText}>
-                              {getFlightCpp(flight)!.toFixed(2)} cents/pt
-                            </div>
-                          )}
-                        </>
-                      )
+                          <div className="flight-card-fees" style={styles.subtext}>
+                            + {formatPrice(flight.award_details.taxes_and_fees)} fees
+                          </div>
+                        </div>
+                        {flight.cash_price_matched && flight.cash_price > 0 && (
+                          <div className="flight-card-cash-compare" style={styles.subtext}>
+                            ~{formatPrice(flight.cash_price)} cash
+                          </div>
+                        )}
+                        {getFlightCpp(flight) != null && (
+                          <div className="flight-card-cpp" style={styles.cppText}>
+                            {getFlightCpp(flight)!.toFixed(2)} cents/pt
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
 
                   <div className="flight-card-booking">
-                    {searchType === 'points' && flight.award_details && (
+                    {flight.award_details && (
                       <>
                         {flight.award_details.mileage_program && (
                           <div className="flight-card-program" style={styles.programTag}>
@@ -2561,8 +2426,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: '7px 11px',
-    padding: '9px 18px 4px',
-    borderBottom: '1px solid #f0f0f0',
   },
   filterDropdown: {
     position: 'relative',
@@ -2714,7 +2577,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     alignItems: 'stretch',
     gap: '9px',
-    padding: '5px 18px 22px',
     flexWrap: 'wrap',
     overflow: 'visible',
   },
@@ -3095,6 +2957,19 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: '15px',
     fontWeight: 600,
   },
+  flightDetailCashLink: {
+    display: 'block',
+    textAlign: 'center',
+    background: '#f0fdf4',
+    color: '#166534',
+    textDecoration: 'none',
+    padding: '10px 16px',
+    borderRadius: '10px',
+    fontSize: '13px',
+    fontWeight: 500,
+    border: '1px solid #bbf7d0',
+    marginTop: '4px',
+  } as React.CSSProperties,
   flightDetailDisclaimer: {
     margin: '14px 0 0',
     fontSize: '12px',
@@ -3154,7 +3029,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginTop: '4px',
     textAlign: 'right',
   },
-  partnerContainer: { display: 'flex', gap: '11px', flexWrap: 'wrap', marginTop: '6px', justifyContent: 'flex-end' },
+  partnerContainer: { display: 'flex', gap: '11px', flexWrap: 'wrap', marginTop: '0', justifyContent: 'flex-end' },
   partnerTag: { display: 'inline-flex', alignItems: 'center', padding: 0, background: 'transparent' },
   emptyState: { textAlign: 'center', padding: '40px', color: '#888' },
   modalOverlay: {

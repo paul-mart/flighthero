@@ -4,7 +4,7 @@ export interface FlightSearchRequest {
   departureDate: string;
   returnDate: string;
   tripType: 'one-way' | 'round-trip';
-  searchType: 'cash' | 'points';
+  searchType: 'points';
   cabinClass: string;
   adults: number;
   childrenCount: number;
@@ -43,7 +43,7 @@ export function parseFlightSearchFromParams(params: URLSearchParams): FlightSear
   const returnDate = params.get('return_date')?.trim() ?? '';
   if (tripType === 'round-trip' && !returnDate) return null;
 
-  const searchType = params.get('search_type') === 'cash' ? 'cash' : 'points';
+  const searchType = 'points' as const;
   const cabinClass = params.get('cabin_class') || 'economy';
   const adultsRaw = Number(params.get('adults'));
   const childrenRaw = Number(params.get('children'));
