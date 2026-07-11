@@ -1,4 +1,4 @@
-"""Regenerate favicons from public/favicon-source.png (FH mark on transparent)."""
+"""Regenerate favicons from public/favicon-source.png (FlightHero wordmark)."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -8,7 +8,21 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 PUBLIC = ROOT / "public"
 SOURCE = PUBLIC / "favicon-source.png"
-BACKGROUND = (15, 23, 42, 255)  # #0f172a — matches site theme-color
+BACKGROUND = (255, 255, 255, 255)
+WHITE_THRESHOLD = 248
+
+
+def strip_white_background(image: Image.Image) -> Image.Image:
+    """Remove the logo's white matte so only the purple mark remains."""
+    rgba = image.convert("RGBA")
+    pixels = rgba.load()
+    width, height = rgba.size
+    for y in range(height):
+        for x in range(width):
+            r, g, b, a = pixels[x, y]
+            if a > 16 and r >= WHITE_THRESHOLD and g >= WHITE_THRESHOLD and b >= WHITE_THRESHOLD:
+                pixels[x, y] = (255, 255, 255, 0)
+    return rgba
 
 
 def content_bbox(image: Image.Image) -> tuple[int, int, int, int]:
@@ -19,8 +33,8 @@ def content_bbox(image: Image.Image) -> tuple[int, int, int, int]:
     ys: list[int] = []
     for y in range(height):
         for x in range(width):
-            r, g, b, a = pixels[x, y]
-            if a > 16 and (r < 250 or g < 250 or b < 250):
+            _r, _g, _b, a = pixels[x, y]
+            if a > 16:
                 xs.append(x)
                 ys.append(y)
     if not xs:
