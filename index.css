@@ -1517,7 +1517,7 @@ html {
   overflow: visible;
 }
 
-.search-panel .advanced-section:last-child {
+.search-panel .search-filters-bar:last-child {
   border-radius: 0 0 12px 12px;
 }
 
@@ -1587,7 +1587,8 @@ html {
 }
 
 .filter-menu,
-.passenger-menu {
+.passenger-menu,
+.bank-programs-menu {
   z-index: 300;
   position: fixed;
 }
@@ -1595,8 +1596,9 @@ html {
 .max-taxes-slider {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-width: 200px;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
 }
 
 .max-taxes-slider-disabled {
@@ -1686,12 +1688,165 @@ html {
 }
 
 .max-taxes-slider-value {
-  min-width: 52px;
-  font-size: 15px;
+  min-width: 44px;
+  font-size: 14px;
   font-weight: 600;
   color: #4338ca;
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.bank-programs-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+}
+
+.bank-programs-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.bank-programs-option:hover {
+  background: #f3f4f6;
+}
+
+.bank-programs-option--inactive {
+  opacity: 0.48;
+}
+
+.bank-programs-option--inactive .bank-programs-label {
+  color: #6b7280;
+}
+
+.bank-programs-checkbox {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: #6366f1;
+  cursor: pointer;
+}
+
+.bank-programs-logo {
+  flex-shrink: 0;
+}
+
+.bank-programs-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  line-height: 1.3;
+}
+
+.search-filters-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  gap: 16px;
+  padding: 16px var(--search-panel-inline-padding, 1.5rem) 14px;
+  margin-top: 16px;
+  border-top: 1px solid rgba(243, 244, 246, 0.85);
+  box-sizing: border-box;
+}
+
+.search-filters-chips {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  min-width: 0;
+}
+
+.search-filters-taxes {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+  justify-self: end;
+}
+
+.search-filters-taxes-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #3c4043;
+  white-space: nowrap;
+}
+
+.filter-chip-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: #3c4043;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.filter-chip-trigger:hover {
+  color: #6b7280;
+}
+
+.filter-chip-trigger--active {
+  background: #faf5ff;
+  color: #6d28d9;
+  border-color: rgba(233, 213, 255, 0.6);
+  font-weight: 500;
+}
+
+.filter-chip-trigger--active:hover {
+  color: #5b21b6;
+}
+
+.filter-chip-trigger--open {
+  color: #6d28d9;
+}
+
+.filter-chip-trigger .filter-chevron {
+  display: inline-flex;
+  margin-left: 0;
+}
+
+.search-filters-chips .filter-dropdown {
+  flex-shrink: 0;
+}
+
+.search-filters-taxes .max-taxes-slider {
+  width: auto;
+  min-width: 0;
+  max-width: 148px;
+  flex: 0 1 148px;
+}
+
+.search-filters-taxes .max-taxes-slider-input {
+  min-width: 72px;
+}
+
+.search-filters-taxes .max-taxes-slider-value {
+  flex-shrink: 0;
+  min-width: 0;
+  padding-inline-end: 0.125rem;
 }
 
 .search-btn {
@@ -1901,14 +2056,18 @@ html {
     padding: 0 10px 2px;
   }
 
+  .search-panel-wrap--refined {
+    --search-panel-inline-padding: 1rem;
+  }
+
   .search-panel-wrap--refined .filter-bar {
-    padding: 1.25rem 1rem 0.75rem !important;
+    padding: 1.25rem var(--search-panel-inline-padding, 1rem) 0.75rem !important;
     margin-bottom: 0.875rem !important;
     gap: 4px 16px !important;
   }
 
   .search-panel-wrap--refined .main-bar--refined {
-    padding: 0 1rem 1.25rem !important;
+    padding: 0 var(--search-panel-inline-padding, 1rem) 1.25rem !important;
   }
 
   .filter-bar-options {
@@ -2021,25 +2180,58 @@ html {
     padding: 14px 16px 16px !important;
   }
 
-  .advanced-controls-row {
-    flex-direction: column !important;
-    align-items: stretch !important;
+  .search-filters-bar {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 14px var(--search-panel-inline-padding, 1rem) 16px !important;
+  }
+
+  .search-filters-chips {
+    gap: 10px;
+  }
+
+  .search-filters-taxes {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .search-filters-taxes .max-taxes-slider {
+    flex: 1;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .search-filters-taxes .max-taxes-slider-input {
+    min-width: 0;
+  }
+
+  .search-filters-taxes .max-taxes-slider-value {
+    padding-inline-end: 0;
+  }
+
+  .advanced-controls-row,
+  .filters-controls-row {
+    grid-template-columns: 1fr !important;
     gap: 12px !important;
   }
 
-  .advanced-controls-row .advanced-control-item {
+  .advanced-controls-row .advanced-control-item,
+  .filters-controls-row .advanced-control-item {
     flex-direction: column !important;
     align-items: flex-start !important;
     gap: 6px !important;
   }
 
-  .advanced-controls-row .filter-trigger {
+  .advanced-controls-row .filter-trigger,
+  .filters-controls-row .filter-trigger {
     min-width: 0 !important;
     width: 100%;
     justify-content: space-between;
   }
 
-  .advanced-controls-row .filter-dropdown {
+  .advanced-controls-row .filter-dropdown,
+  .filters-controls-row .filter-dropdown {
     width: 100%;
   }
 
@@ -5600,6 +5792,7 @@ html {
 }
 
 .search-panel-wrap--refined {
+  --search-panel-inline-padding: 1.5rem;
   box-shadow:
     0 4px 6px rgba(15, 23, 42, 0.04),
     0 12px 32px rgba(15, 23, 42, 0.08);
@@ -5612,12 +5805,12 @@ html {
   background: #f8fafc;
   border-bottom: 1px solid #f3f4f6;
   border-radius: 12px 12px 0 0;
-  padding: 1.5rem 1.5rem 0.875rem;
+  padding: 1.5rem var(--search-panel-inline-padding, 1.5rem) 0.875rem;
   margin-bottom: 1rem;
 }
 
 .main-bar--refined {
-  padding: 0 1.5rem 1.5rem;
+  padding: 0 var(--search-panel-inline-padding, 1.5rem) 1.5rem;
   gap: 10px;
   background: #fff;
 }
@@ -5646,7 +5839,7 @@ html {
   flex-wrap: nowrap;
   align-items: stretch;
   width: 100%;
-  padding: 0 1.5rem 1.5rem;
+  padding: 0 var(--search-panel-inline-padding, 1.5rem) 1.5rem;
   gap: 12px;
 }
 

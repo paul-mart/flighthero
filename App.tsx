@@ -24,7 +24,9 @@ import { HomeSearchResetProvider } from './context/HomeSearchContext';
 import {
   calculateCpp,
   GRADE_LABELS,
+  partnerLabelToKey,
   rateTransferPartners,
+  TRANSFER_PARTNER_OPTIONS,
   type RedemptionGrade,
 } from './lib/cpp';
 import { getDepartureSortMinutes } from './lib/flightTimes';
@@ -53,6 +55,42 @@ import {
 } from './data/transferBonuses';
 import { ChevronDownIcon, PlaneArriveIcon, PlaneDepartIcon, CalendarIcon, SwapIcon, SearchIcon, ArrowRightIcon } from './icons';
 
+const ALL_BANK_KEYS = TRANSFER_PARTNER_OPTIONS.map((partner) => partner.key);
+
+const BANK_SHORT_NAMES: Record<string, string> = {
+  amex: 'Amex',
+  chase: 'Chase',
+  citi: 'Citi',
+  capital_one: 'Cap One',
+  bilt: 'Bilt',
+};
+
+type StopsFilter = 'nonstop' | '1-or-fewer' | '2-or-fewer';
+
+function getStopsTriggerLabel(filter: StopsFilter): string {
+  if (filter === 'nonstop') return 'Nonstop';
+  if (filter === '1-or-fewer') return '≤1 stop';
+  return 'Any stops';
+}
+
+function isStopsFilterActive(filter: StopsFilter): boolean {
+  return filter !== '2-or-fewer';
+}
+
+function getBankTriggerMeta(selectedKeys: readonly string[]): { label: string; active: boolean } {
+  if (selectedKeys.length >= ALL_BANK_KEYS.length) {
+    return { label: 'All Banks', active: false };
+  }
+  if (selectedKeys.length === 1) {
+    const key = selectedKeys[0];
+    return {
+      label: BANK_SHORT_NAMES[key] ?? '1 Bank',
+      active: true,
+    };
+  }
+  return { label: `${selectedKeys.length} Banks`, active: true };
+}
+
 interface AwardDetails {
   points_required: number;
   taxes_and_fees: number;
@@ -72,6 +110,8 @@ interface FilterDropdownProps<T extends string | number> {
   ariaLabel: string;
   minTriggerWidth?: number;
   disabled?: boolean;
+  triggerLabel?: string;
+  chipActive?: boolean;
 }
 
 function FilterDropdown<T extends string | number>({
@@ -81,6 +121,8 @@ function FilterDropdown<T extends string | number>({
   ariaLabel,
   minTriggerWidth,
   disabled = false,
+  triggerLabel,
+  chipActive = false,
 }: FilterDropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const [hoveredOption, setHoveredOption] = useState<T | null>(null);
@@ -90,7 +132,7 @@ function FilterDropdown<T extends string | number>({
   const menuRef = useRef<HTMLUListElement>(null);
   const [menuPosition, setMenuPosition] = useState<React.CSSProperties>({});
 
-  const selectedLabel = options.find((option) => option.value === value)?.label ?? '';
+  const selectedLabel = triggerLabel ?? options.find((option) => option.value === value)?.label ?? '';
 
   const updateMenuPosition = useCallback(() => {
     if (!triggerRef.current) return;
@@ -162,11 +204,11 @@ function FilterDropdown<T extends string | number>({
       <button
         ref={triggerRef}
         type="button"
-        className="filter-trigger"
+        className={`filter-trigger filter-chip-trigger${chipActive ? ' filter-chip-trigger--active' : ''}${open ? ' filter-chip-trigger--open' : ''}`}
         style={{
-          ...styles.filterTrigger,
           ...(disabled ? styles.filterTriggerDisabled : {}),
-          ...(open && !disabled ? styles.filterTriggerOpen : triggerHovered && !disabled ? styles.filterTriggerHover : {}),
+          ...(!chipActive && open && !disabled ? styles.filterTriggerOpen : {}),
+          ...(!chipActive && triggerHovered && !disabled ? styles.filterTriggerHover : {}),
           ...(minTriggerWidth ? { minWidth: minTriggerWidth } : {}),
         }}
         onMouseEnter={() => !disabled && setTriggerHovered(true)}
@@ -185,8 +227,8 @@ function FilterDropdown<T extends string | number>({
         aria-haspopup="listbox"
         aria-disabled={disabled}
       >
-        <span style={styles.filterTriggerLabel}>{selectedLabel}</span>
-        <span style={{ ...styles.filterChevron, ...(open ? styles.filterChevronOpen : triggerHovered ? styles.filterChevronHover : {}) }}>
+        <span className="filter-chip-label">{selectedLabel}</span>
+        <span className="filter-chevron" style={{ ...styles.filterChevron, ...(open ? styles.filterChevronOpen : triggerHovered ? styles.filterChevronHover : {}) }}>
           <ChevronDownIcon />
         </span>
       </button>
@@ -221,6 +263,136 @@ function FilterDropdown<T extends string | number>({
             ))}
           </ul>,
           document.body
+        )}
+    </div>
+  );
+}
+
+function BankProgramsDropdown({
+  selectedKeys,
+  onToggleKey,
+}: {
+  selectedKeys: string[];
+  onToggleKey: (key: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [triggerHovered, setTriggerHovered] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPosition, setMenuPosition] = useState<React.CSSProperties>({});
+  const selectedKeySet = new Set(selectedKeys);
+
+  const { label: triggerLabel, active: chipActive } = getBankTriggerMeta(selectedKeys);
+
+  const updateMenuPosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const margin = 16;
+    const menuWidth = Math.max(300, rect.width);
+    let left = rect.left;
+    if (left + menuWidth > window.innerWidth - margin) {
+      left = window.innerWidth - margin - menuWidth;
+    }
+    left = Math.max(margin, left);
+    setMenuPosition({
+      position: 'fixed',
+      top: rect.bottom + 6,
+      left,
+      width: menuWidth,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    updateMenuPosition();
+    window.addEventListener('scroll', updateMenuPosition, true);
+    window.addEventListener('resize', updateMenuPosition);
+    return () => {
+      window.removeEventListener('scroll', updateMenuPosition, true);
+      window.removeEventListener('resize', updateMenuPosition);
+    };
+  }, [open, updateMenuPosition]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+      triggerRef.current?.blur();
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+        triggerRef.current?.blur();
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="filter-dropdown" style={styles.filterDropdown}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className={`filter-trigger filter-chip-trigger${chipActive ? ' filter-chip-trigger--active' : ''}${open ? ' filter-chip-trigger--open' : ''}`}
+        style={{
+          ...(open && !chipActive ? styles.filterTriggerOpen : triggerHovered && !chipActive ? styles.filterTriggerHover : {}),
+        }}
+        onMouseEnter={() => setTriggerHovered(true)}
+        onMouseLeave={() => setTriggerHovered(false)}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => setOpen((prev) => !prev)}
+        aria-label="Bank programs"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        <span className="filter-chip-label">{triggerLabel}</span>
+        <span className="filter-chevron" style={{ ...styles.filterChevron, ...(open ? styles.filterChevronOpen : triggerHovered ? styles.filterChevronHover : {}) }}>
+          <ChevronDownIcon />
+        </span>
+      </button>
+      {open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="filter-menu bank-programs-menu"
+            style={{ ...styles.filterMenu, ...menuPosition }}
+            role="listbox"
+            aria-label="Bank programs"
+            aria-multiselectable="true"
+          >
+            {TRANSFER_PARTNER_OPTIONS.map((partner) => {
+              const isSelected = selectedKeySet.has(partner.key);
+              return (
+                <label
+                  key={partner.key}
+                  className={`bank-programs-option${isSelected ? '' : ' bank-programs-option--inactive'}`}
+                  role="option"
+                  aria-selected={isSelected}
+                >
+                  <input
+                    type="checkbox"
+                    className="bank-programs-checkbox"
+                    checked={isSelected}
+                    onChange={() => onToggleKey(partner.key)}
+                  />
+                  <TransferPartnerLogo partner={partner.label} size={20} className="bank-programs-logo" />
+                  <span className="bank-programs-label">{partner.label}</span>
+                </label>
+              );
+            })}
+          </div>,
+          document.body,
         )}
     </div>
   );
@@ -568,16 +740,85 @@ function applyReturnLeg(flight: Flight, leg: ReturnLegFields): Flight {
   };
 }
 
-type StopsFilter = 'nonstop' | '1-or-fewer' | '2-or-fewer';
+const STOPS_FILTER_OPTIONS: { value: StopsFilter; label: string }[] = [
+  { value: 'nonstop', label: 'Nonstop' },
+  { value: '1-or-fewer', label: '1 stop or fewer' },
+  { value: '2-or-fewer', label: '2 stops or fewer' },
+];
+
 type SortOption =
   | 'price-asc'
   | 'price-desc'
   | 'duration-asc'
-  | 'duration-desc'
   | 'departure-asc'
   | 'departure-desc'
-  | 'cpp-asc'
   | 'cpp-desc';
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'price-asc', label: 'Points: low to high' },
+  { value: 'price-desc', label: 'Points: high to low' },
+  { value: 'departure-asc', label: 'Departure: earliest first' },
+  { value: 'departure-desc', label: 'Departure: latest first' },
+  { value: 'duration-asc', label: 'Duration: shortest first' },
+  { value: 'cpp-desc', label: 'CPP: high to low' },
+];
+
+function ResultsFiltersPanel({
+  stopsFilter,
+  onStopsFilterChange,
+  maxTaxes,
+  taxesSliderMax,
+  onMaxTaxesChange,
+  selectedBankKeys,
+  onToggleBankKey,
+}: {
+  stopsFilter: StopsFilter;
+  onStopsFilterChange: (value: StopsFilter) => void;
+  maxTaxes: number;
+  taxesSliderMax: number;
+  onMaxTaxesChange: (value: number) => void;
+  selectedBankKeys: string[];
+  onToggleBankKey: (key: string) => void;
+}) {
+  return (
+    <div className="search-filters-bar">
+      <div className="search-filters-chips">
+        <FilterDropdown
+          value={stopsFilter}
+          onChange={onStopsFilterChange}
+          options={STOPS_FILTER_OPTIONS}
+          ariaLabel="Stops"
+          triggerLabel={getStopsTriggerLabel(stopsFilter)}
+          chipActive={isStopsFilterActive(stopsFilter)}
+        />
+        <BankProgramsDropdown
+          selectedKeys={selectedBankKeys}
+          onToggleKey={onToggleBankKey}
+        />
+      </div>
+      <div className="search-filters-taxes">
+        <span className="search-filters-taxes-label">Max taxes</span>
+        <MaxTaxesSlider
+          value={Math.min(maxTaxes, taxesSliderMax)}
+          max={taxesSliderMax}
+          disabled={false}
+          onChange={onMaxTaxesChange}
+        />
+      </div>
+    </div>
+  );
+}
+
+function matchesBankFilter(flight: Flight, selectedBankKeys: readonly string[]): boolean {
+  if (selectedBankKeys.length >= ALL_BANK_KEYS.length) {
+    return true;
+  }
+  const partners = flight.award_details?.transfer_partners ?? [];
+  return partners.some((label) => {
+    const key = partnerLabelToKey(label);
+    return key != null && selectedBankKeys.includes(key);
+  });
+}
 
 function matchesStopsFilter(stops: number, filter: StopsFilter): boolean {
   if (filter === 'nonstop') return stops === 0;
@@ -682,9 +923,6 @@ function sortFlights(flights: Flight[], sortOption: SortOption, searchType: 'cas
     if (sortOption === 'duration-asc') {
       return getDurationMinutes(a) - getDurationMinutes(b);
     }
-    if (sortOption === 'duration-desc') {
-      return getDurationMinutes(b) - getDurationMinutes(a);
-    }
     if (sortOption === 'departure-asc' || sortOption === 'departure-desc') {
       const aMinutes = getDepartureMinutes(a);
       const bMinutes = getDepartureMinutes(b);
@@ -693,13 +931,13 @@ function sortFlights(flights: Flight[], sortOption: SortOption, searchType: 'cas
       if (bMinutes == null) return -1;
       return sortOption === 'departure-asc' ? aMinutes - bMinutes : bMinutes - aMinutes;
     }
-    if (sortOption === 'cpp-asc' || sortOption === 'cpp-desc') {
+    if (sortOption === 'cpp-desc') {
       const aCpp = getFlightCpp(a);
       const bCpp = getFlightCpp(b);
       if (aCpp == null && bCpp == null) return 0;
       if (aCpp == null) return 1;
       if (bCpp == null) return -1;
-      return sortOption === 'cpp-asc' ? aCpp - bCpp : bCpp - aCpp;
+      return bCpp - aCpp;
     }
     return 0;
   });
@@ -1167,7 +1405,7 @@ export default function App() {
   const [stopsFilter, setStopsFilter] = useState<StopsFilter>('2-or-fewer');
   const [sortOption, setSortOption] = useState<SortOption>('price-asc');
   const [maxTaxes, setMaxTaxes] = useState(150);
-  const [advancedEnabled, setAdvancedEnabled] = useState(false);
+  const [selectedBankKeys, setSelectedBankKeys] = useState<string[]>(() => [...ALL_BANK_KEYS]);
   const [validationWarning, setValidationWarning] = useState<string | null>(null);
   const [modalTitle, setModalTitle] = useState('Missing information');
   const [loadingReturnDetails, setLoadingReturnDetails] = useState(false);
@@ -1248,14 +1486,24 @@ export default function App() {
     }
   }, [flights]);
 
+  const toggleBankKey = useCallback((key: string) => {
+    setSelectedBankKeys((current) => {
+      if (current.includes(key)) {
+        if (current.length <= 1) {
+          return current;
+        }
+        return current.filter((item) => item !== key);
+      }
+      return [...current, key];
+    });
+  }, []);
+
   const displayedFlights = useMemo(() => {
-    if (!advancedEnabled) {
-      return sortFlights(flights, 'price-asc', searchType);
-    }
     let filtered = flights.filter((flight) => matchesStopsFilter(flight.stops, stopsFilter));
     filtered = filtered.filter((flight) => getFlightTaxes(flight) <= maxTaxes);
+    filtered = filtered.filter((flight) => matchesBankFilter(flight, selectedBankKeys));
     return sortFlights(filtered, sortOption, searchType);
-  }, [flights, stopsFilter, sortOption, advancedEnabled, maxTaxes]);
+  }, [flights, stopsFilter, sortOption, maxTaxes, selectedBankKeys, searchType]);
 
   const swapRoute = () => {
     if (document.activeElement instanceof HTMLElement) {
@@ -1309,7 +1557,7 @@ export default function App() {
     setLoadingReturnDetails(false);
     setSelectedFlight(null);
     setValidationWarning(null);
-    setAdvancedEnabled(false);
+    setSelectedBankKeys([...ALL_BANK_KEYS]);
     setStopsFilter('2-or-fewer');
     setSortOption('price-asc');
     setMaxTaxes(150);
@@ -1698,79 +1946,15 @@ export default function App() {
         </form>
 
         {hasSearched && (
-          <div className="advanced-section" style={styles.advancedSection}>
-            <label style={styles.advancedToggle}>
-              <input
-                type="checkbox"
-                checked={advancedEnabled}
-                onChange={(e) => setAdvancedEnabled(e.target.checked)}
-                style={styles.advancedCheckbox}
-              />
-              <span>Advanced settings</span>
-            </label>
-
-            <div className="advanced-controls-row" style={styles.advancedControlsRow}>
-              <div className="advanced-control-item" style={styles.advancedControlItem}>
-                <span style={{
-                  ...styles.advancedControlLabel,
-                  ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
-                }}>
-                  Stops:
-                </span>
-                <FilterDropdown
-                  value={stopsFilter}
-                  onChange={setStopsFilter}
-                  options={[
-                    { value: 'nonstop', label: 'Nonstop' },
-                    { value: '1-or-fewer', label: '1 stop or fewer' },
-                    { value: '2-or-fewer', label: '2 stops or fewer' },
-                  ]}
-                  ariaLabel="Stops"
-                  disabled={!advancedEnabled}
-                />
-              </div>
-
-              <div className="advanced-control-item" style={styles.advancedControlItem}>
-                <span style={{
-                  ...styles.advancedControlLabel,
-                  ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
-                }}>
-                  Sort by:
-                </span>
-                <FilterDropdown
-                  value={sortOption}
-                  onChange={setSortOption}
-                  options={[
-                    { value: 'price-asc', label: 'Price: low to high' },
-                    { value: 'price-desc', label: 'Price: high to low' },
-                    { value: 'departure-asc', label: 'Departure: earliest first' },
-                    { value: 'departure-desc', label: 'Departure: latest first' },
-                    { value: 'duration-asc', label: 'Duration: shortest first' },
-                    { value: 'duration-desc', label: 'Duration: longest first' },
-                    { value: 'cpp-desc' as const, label: 'CPP: high to low' },
-                    { value: 'cpp-asc' as const, label: 'CPP: low to high' },
-                  ]}
-                  ariaLabel="Sort by"
-                  disabled={!advancedEnabled}
-                />
-              </div>
-
-              <div className="advanced-control-item max-taxes-control" style={styles.advancedControlItem}>
-                <span style={{
-                  ...styles.advancedControlLabel,
-                  ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
-                }}>
-                  Max taxes:
-                </span>
-                <MaxTaxesSlider
-                  value={Math.min(maxTaxes, taxesSliderMax)}
-                  max={taxesSliderMax}
-                  disabled={!advancedEnabled}
-                  onChange={setMaxTaxes}
-                />
-              </div>
-            </div>
-          </div>
+          <ResultsFiltersPanel
+            stopsFilter={stopsFilter}
+            onStopsFilterChange={setStopsFilter}
+            maxTaxes={maxTaxes}
+            taxesSliderMax={taxesSliderMax}
+            onMaxTaxesChange={setMaxTaxes}
+            selectedBankKeys={selectedBankKeys}
+            onToggleBankKey={toggleBankKey}
+          />
         )}
             {loading && (
               <div className="flight-search-loader" style={styles.flightSearchLoader} role="status" aria-live="polite">
@@ -1958,79 +2142,15 @@ export default function App() {
         </form>
 
         {hasSearched && (
-          <div className="advanced-section" style={styles.advancedSection}>
-            <label style={styles.advancedToggle}>
-              <input
-                type="checkbox"
-                checked={advancedEnabled}
-                onChange={(e) => setAdvancedEnabled(e.target.checked)}
-                style={styles.advancedCheckbox}
-              />
-              <span>Advanced settings</span>
-            </label>
-
-            <div className="advanced-controls-row" style={styles.advancedControlsRow}>
-              <div className="advanced-control-item" style={styles.advancedControlItem}>
-                <span style={{
-                  ...styles.advancedControlLabel,
-                  ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
-                }}>
-                  Stops:
-                </span>
-                <FilterDropdown
-                  value={stopsFilter}
-                  onChange={setStopsFilter}
-                  options={[
-                    { value: 'nonstop', label: 'Nonstop' },
-                    { value: '1-or-fewer', label: '1 stop or fewer' },
-                    { value: '2-or-fewer', label: '2 stops or fewer' },
-                  ]}
-                  ariaLabel="Stops"
-                  disabled={!advancedEnabled}
-                />
-              </div>
-
-              <div className="advanced-control-item" style={styles.advancedControlItem}>
-                <span style={{
-                  ...styles.advancedControlLabel,
-                  ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
-                }}>
-                  Sort by:
-                </span>
-                <FilterDropdown
-                  value={sortOption}
-                  onChange={setSortOption}
-                  options={[
-                    { value: 'price-asc', label: 'Price: low to high' },
-                    { value: 'price-desc', label: 'Price: high to low' },
-                    { value: 'departure-asc', label: 'Departure: earliest first' },
-                    { value: 'departure-desc', label: 'Departure: latest first' },
-                    { value: 'duration-asc', label: 'Duration: shortest first' },
-                    { value: 'duration-desc', label: 'Duration: longest first' },
-                    { value: 'cpp-desc' as const, label: 'CPP: high to low' },
-                    { value: 'cpp-asc' as const, label: 'CPP: low to high' },
-                  ]}
-                  ariaLabel="Sort by"
-                  disabled={!advancedEnabled}
-                />
-              </div>
-
-              <div className="advanced-control-item max-taxes-control" style={styles.advancedControlItem}>
-                <span style={{
-                  ...styles.advancedControlLabel,
-                  ...(advancedEnabled ? {} : styles.advancedControlLabelDisabled),
-                }}>
-                  Max taxes:
-                </span>
-                <MaxTaxesSlider
-                  value={Math.min(maxTaxes, taxesSliderMax)}
-                  max={taxesSliderMax}
-                  disabled={!advancedEnabled}
-                  onChange={setMaxTaxes}
-                />
-              </div>
-            </div>
-          </div>
+          <ResultsFiltersPanel
+            stopsFilter={stopsFilter}
+            onStopsFilterChange={setStopsFilter}
+            maxTaxes={maxTaxes}
+            taxesSliderMax={taxesSliderMax}
+            onMaxTaxesChange={setMaxTaxes}
+            selectedBankKeys={selectedBankKeys}
+            onToggleBankKey={toggleBankKey}
+          />
         )}
             {loading && (
               <div className="flight-search-loader" style={styles.flightSearchLoader} role="status" aria-live="polite">
@@ -2053,19 +2173,31 @@ export default function App() {
             <p style={styles.resultsCount}>
               Showing {displayedFlights.length} of {flights.length} flight{flights.length === 1 ? '' : 's'}
             </p>
-            <TrackDealButton
-              dealInput={{
-                origin,
-                destination,
-                departureDate: date,
-                returnDate,
-                tripType,
-                cabinClass,
-                adults,
-                childrenCount,
-              }}
-              className="results-track-deal"
-            />
+            <div className="results-header-actions" style={styles.resultsHeaderActions}>
+              <div className="results-sort-control" style={styles.resultsSortControl}>
+                <span style={styles.resultsSortLabel}>Sort:</span>
+                <FilterDropdown
+                  value={sortOption}
+                  onChange={setSortOption}
+                  options={SORT_OPTIONS}
+                  ariaLabel="Sort results"
+                  minTriggerWidth={196}
+                />
+              </div>
+              <TrackDealButton
+                dealInput={{
+                  origin,
+                  destination,
+                  departureDate: date,
+                  returnDate,
+                  tripType,
+                  cabinClass,
+                  adults,
+                  childrenCount,
+                }}
+                className="results-track-deal"
+              />
+            </div>
           </div>
         )}
         {!loading && displayedFlights.length > 0 ? (
@@ -2275,7 +2407,7 @@ export default function App() {
         ) : !loading && hasSearched && flights.length === 0 ? (
           <div style={styles.emptyState}>No flights were found for your search. Try different dates or airports.</div>
         ) : !loading && hasSearched && flights.length > 0 ? (
-          <div style={styles.emptyState}>No flights match your advanced filters. Try allowing more stops.</div>
+          <div style={styles.emptyState}>No flights match your filters. Try allowing more stops, selecting more bank programs, or raising the max taxes limit.</div>
         ) : (
           !hasSearched && <div style={styles.emptyState}>Enter your route details above to explore options.</div>
         )}
@@ -2396,18 +2528,18 @@ const styles: { [key: string]: React.CSSProperties } = {
     accentColor: '#6366f1',
   },
   advancedControlsRow: {
-    display: 'flex',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: '56px',
-    flexWrap: 'wrap',
+    gap: '12px 20px',
+    width: '100%',
   },
   advancedControlItem: {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
     gap: '8px',
-    flexShrink: 0,
+    minWidth: 0,
   },
   advancedControlLabel: {
     fontSize: '14px',
@@ -2778,6 +2910,24 @@ const styles: { [key: string]: React.CSSProperties } = {
     gap: '12px',
     flexWrap: 'wrap',
     marginBottom: '10px',
+  },
+  resultsHeaderActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    flexWrap: 'wrap',
+    marginLeft: 'auto',
+  },
+  resultsSortControl: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  resultsSortLabel: {
+    fontSize: '12px',
+    fontWeight: 500,
+    color: '#6b7280',
+    whiteSpace: 'nowrap',
   },
   resultsCount: {
     margin: 0,
