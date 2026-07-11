@@ -2396,29 +2396,41 @@ html {
     min-width: 0 !important;
     flex: 1 1 auto !important;
     width: 100%;
-    padding: 6px 10px !important;
-    gap: 6px !important;
+    padding: 12px !important;
+    gap: 8px !important;
+    background: #f9fafb !important;
+    border: 1px solid #f3f4f6 !important;
+    border-radius: 8px !important;
+    box-sizing: border-box;
   }
 
   .date-block .form-field-icon {
     flex-shrink: 0;
     width: 16px;
-    margin-right: 0;
+    margin-right: 2px;
+  }
+
+  .date-block .date-picker {
+    min-width: 0;
   }
 
   .date-block-arrow {
     flex-shrink: 0;
     font-size: 14px;
+    padding: 0 2px;
   }
 
   .date-picker-trigger {
     gap: 4px !important;
-    padding: 10px 0 !important;
+    padding: 0 !important;
+    min-height: 24px !important;
+    height: auto !important;
     font-size: 14px !important;
   }
 
   .date-picker-trigger .date-picker-trigger-text {
     letter-spacing: -0.01em;
+    padding-left: 2px;
   }
 
   .home-dashboard-search .main-bar--dashboard {
