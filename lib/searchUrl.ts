@@ -39,7 +39,7 @@ export function parseFlightSearchFromParams(params: URLSearchParams): FlightSear
   const departureDate = params.get('departure_date')?.trim();
   if (!origin || !destination || !departureDate) return null;
 
-  const tripType = params.get('trip_type') === 'one-way' ? 'one-way' : 'round-trip';
+  const tripType = params.get('trip_type') === 'round-trip' ? 'round-trip' : 'one-way';
   const returnDate = params.get('return_date')?.trim() ?? '';
   if (tripType === 'round-trip' && !returnDate) return null;
 

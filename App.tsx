@@ -489,7 +489,6 @@ function PassengerDropdown({ adults, childCount, onChange }: PassengerDropdownPr
         className="filter-trigger passenger-trigger"
         style={{
           ...styles.filterTrigger,
-          ...styles.passengerTrigger,
           ...(open ? styles.filterTriggerOpen : triggerHovered ? styles.filterTriggerHover : {}),
         }}
         onMouseEnter={() => setTriggerHovered(true)}
@@ -1385,7 +1384,7 @@ export default function App() {
   const [adults, setAdults] = useState(1);
   const [childrenCount, setChildrenCount] = useState(0);
   const passengers = adults + childrenCount;
-  const [tripType, setTripType] = useState<'one-way' | 'round-trip'>('round-trip');
+  const [tripType, setTripType] = useState<'one-way' | 'round-trip'>('one-way');
   const [cabinClass, setCabinClass] = useState('economy');
   const [route, setRoute] = useState({ origin: '', destination: '' });
   const origin = route.origin;
@@ -1527,7 +1526,7 @@ export default function App() {
     setRoute({ origin: '', destination: '' });
     setDate('');
     setReturnDate('');
-    setTripType('round-trip');
+    setTripType('one-way');
     setAdults(1);
     setChildrenCount(0);
     setCabinClass('economy');
@@ -1547,7 +1546,7 @@ export default function App() {
     }
     setDate('');
     setReturnDate('');
-    setTripType('round-trip');
+    setTripType('one-way');
     setAdults(1);
     setChildrenCount(0);
     setCabinClass('economy');
@@ -1823,7 +1822,6 @@ export default function App() {
                 { value: 'one-way', label: 'One way' },
               ]}
               ariaLabel="Trip type"
-              minTriggerWidth={120}
             />
 
             <PassengerDropdown
@@ -1845,7 +1843,6 @@ export default function App() {
                 { value: 'first', label: 'First class' },
               ]}
               ariaLabel="Cabin class"
-              minTriggerWidth={168}
             />
             </div>
             <button
@@ -1872,6 +1869,7 @@ export default function App() {
                   Clear
                 </button>
               </div>
+              <div className="route-fields-stack">
               <div style={styles.routeField} className="route-field">
                 <span className="form-field-icon" style={styles.fieldIcon}><PlaneDepartIcon /></span>
                 <AirportAutocomplete
@@ -1905,6 +1903,7 @@ export default function App() {
                   ariaLabel="Destination"
                   swapGeneration={routeSwapGeneration}
                 />
+              </div>
               </div>
             </div>
 
@@ -2019,7 +2018,6 @@ export default function App() {
                 { value: 'one-way', label: 'One way' },
               ]}
               ariaLabel="Trip type"
-              minTriggerWidth={120}
             />
 
             <PassengerDropdown
@@ -2041,7 +2039,6 @@ export default function App() {
                 { value: 'first', label: 'First class' },
               ]}
               ariaLabel="Cabin class"
-              minTriggerWidth={168}
             />
             </div>
             <button
@@ -2068,6 +2065,7 @@ export default function App() {
                   Clear
                 </button>
               </div>
+              <div className="route-fields-stack">
               <div style={styles.routeField} className="route-field">
                 <span className="form-field-icon" style={styles.fieldIcon}><PlaneDepartIcon /></span>
                 <AirportAutocomplete
@@ -2101,6 +2099,7 @@ export default function App() {
                   ariaLabel="Destination"
                   swapGeneration={routeSwapGeneration}
                 />
+              </div>
               </div>
             </div>
 
@@ -2584,9 +2583,6 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   filterTriggerHover: {
     color: '#6b7280',
-  },
-  passengerTrigger: {
-    minWidth: 119,
   },
   filterTriggerOpen: {
     color: '#6366f1',
