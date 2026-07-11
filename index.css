@@ -2396,41 +2396,57 @@ html {
     min-width: 0 !important;
     flex: 1 1 auto !important;
     width: 100%;
-    padding: 12px !important;
-    gap: 8px !important;
+    display: grid !important;
+    grid-template-columns: 20px 1fr;
+    gap: 10px 12px !important;
+    padding: 14px !important;
     background: #f9fafb !important;
     border: 1px solid #f3f4f6 !important;
     border-radius: 8px !important;
     box-sizing: border-box;
+    align-items: center;
   }
 
   .date-block .form-field-icon {
     flex-shrink: 0;
-    width: 16px;
-    margin-right: 2px;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
   }
 
   .date-block .date-picker {
     min-width: 0;
   }
 
+  .date-block > .date-picker:first-of-type {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
   .date-block-arrow {
-    flex-shrink: 0;
-    font-size: 14px;
-    padding: 0 2px;
+    display: none;
+  }
+
+  .date-block > .date-picker:last-of-type:not(.date-picker--hidden) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding-left: 32px;
   }
 
   .date-picker-trigger {
-    gap: 4px !important;
-    padding: 0 !important;
-    min-height: 24px !important;
-    height: auto !important;
-    font-size: 14px !important;
+    gap: 8px !important;
+    padding: 10px 4px !important;
+    min-height: 44px !important;
+    height: 44px !important;
+    font-size: 16px !important;
   }
 
   .date-picker-trigger .date-picker-trigger-text {
     letter-spacing: -0.01em;
-    padding-left: 2px;
+    padding-left: 0;
   }
 
   .home-dashboard-search .main-bar--dashboard {
@@ -2698,10 +2714,6 @@ html {
 
   .filter-bar-options {
     margin-bottom: 1rem;
-  }
-
-  .date-block {
-    flex-wrap: wrap;
   }
 
   .date-picker-nav:hover:not(:disabled) {
