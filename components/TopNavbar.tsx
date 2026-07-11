@@ -1,13 +1,23 @@
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useHomeSearchReset } from '../context/HomeSearchContext';
 import { FlightHeroLogo } from './FlightHeroLogo';
 import { ProfileAvatar } from './ProfileAvatar';
 
+const NAV_LINKS = [
+  { to: '/deals', label: 'Deals' },
+  { to: '/ask-hero', label: 'Ask Hero' },
+  { to: '/points-guide', label: 'Points Guide' },
+  { to: '/faq', label: 'FAQ' },
+  { to: '/points-news', label: 'Points News' },
+] as const;
+
 export function TopNavbar() {
   const { user, profile, loading } = useAuth();
   const location = useLocation();
   const resetHomePage = useHomeSearchReset();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const displayName = profile?.displayName || user?.displayName || '';
   const email = profile?.email || user?.email || '';
@@ -17,6 +27,19 @@ export function TopNavbar() {
     event.preventDefault();
     resetHomePage?.();
   };
+
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileMenuOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
 
   return (
     <header className="top-nav">
@@ -29,25 +52,70 @@ export function TopNavbar() {
         >
           <FlightHeroLogo variant="nav" />
         </Link>
-        <nav className="top-nav-links" aria-label="Main navigation">
-          <Link to="/deals" className="top-nav-link">Deals</Link>
-          <Link to="/ask-hero" className="top-nav-link">Ask Hero</Link>
-          <Link to="/faq" className="top-nav-link">FAQ</Link>
-          <Link to="/points-news" className="top-nav-link">Points News</Link>
-          {!loading && user ? (
-            <Link
-              to="/profile"
-              className="top-nav-profile"
-              aria-label={`Profile for ${displayName || email}`}
-              title={displayName || email || 'Profile'}
-            >
-              <ProfileAvatar displayName={displayName} email={email} size="nav" />
-            </Link>
-          ) : (
-            <Link to="/auth/sign-in" className="top-nav-sign-in">Sign In</Link>
-          )}
-        </nav>
+        <div className="top-nav-actions">
+          <nav className="top-nav-links" aria-label="Main navigation">
+            <div className="top-nav-text-links">
+              {NAV_LINKS.map(({ to, label }) => (
+                <Link key={to} to={to} className="top-nav-link">
+                  {label}
+                </Link>
+              ))}
+            </div>
+            {!loading && user ? (
+              <Link
+                to="/profile"
+                className="top-nav-profile"
+                aria-label={`Profile for ${displayName || email}`}
+                title={displayName || email || 'Profile'}
+              >
+                <ProfileAvatar displayName={displayName} email={email} size="nav" />
+              </Link>
+            ) : (
+              <Link to="/auth/sign-in" className="top-nav-sign-in">Sign In</Link>
+            )}
+          </nav>
+          <button
+            type="button"
+            className="top-nav-menu-toggle"
+            aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="top-nav-drawer"
+            onClick={() => setMobileMenuOpen((open) => !open)}
+          >
+            <span aria-hidden="true" />
+            <span aria-hidden="true" />
+            <span aria-hidden="true" />
+          </button>
+        </div>
       </div>
+      {mobileMenuOpen && (
+        <button
+          type="button"
+          className="top-nav-backdrop"
+          aria-label="Close navigation menu"
+          onClick={closeMobileMenu}
+        />
+      )}
+      <nav
+        id="top-nav-drawer"
+        className={`top-nav-drawer${mobileMenuOpen ? ' top-nav-drawer--open' : ''}`}
+        aria-label="Mobile navigation"
+        aria-hidden={!mobileMenuOpen}
+      >
+        <ul className="top-nav-drawer-list">
+          {NAV_LINKS.map(({ to, label }) => (
+            <li key={to}>
+              <Link
+                to={to}
+                className="top-nav-drawer-link"
+                onClick={closeMobileMenu}
+              >
+                {label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </header>
   );
 }

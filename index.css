@@ -178,10 +178,63 @@ body:has(.auth-section) {
   }
 }
 
+.top-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .top-nav-links {
   display: flex;
   align-items: center;
-  gap: 36px;
+  gap: 16px;
+}
+
+.top-nav-text-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+@media (min-width: 1024px) {
+  .top-nav-text-links {
+    gap: 32px;
+  }
+}
+
+.top-nav-menu-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.top-nav-menu-toggle span {
+  display: block;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 1px;
+}
+
+.top-nav-menu-toggle:focus-visible {
+  outline: 2px solid #a5b4fc;
+  outline-offset: 2px;
+}
+
+.top-nav-backdrop {
+  display: none;
+}
+
+.top-nav-drawer {
+  display: none;
 }
 
 .top-nav-link {
@@ -1339,6 +1392,72 @@ button.trending-deal-tag {
   }
 }
 
+@media (max-width: 1023px) {
+  .top-nav-text-links {
+    display: none;
+  }
+
+  .top-nav-menu-toggle {
+    display: flex;
+  }
+
+  .top-nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 80px 0 0 0;
+    z-index: 190;
+    border: none;
+    background: rgba(0, 0, 0, 0.45);
+    cursor: pointer;
+  }
+
+  .top-nav-drawer {
+    display: block;
+    position: fixed;
+    top: 80px;
+    right: 0;
+    bottom: 0;
+    z-index: 195;
+    width: min(280px, 82vw);
+    padding: 20px 0;
+    background: rgba(15, 23, 42, 0.98);
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    overflow-y: auto;
+  }
+
+  .top-nav-drawer--open {
+    transform: translateX(0);
+  }
+
+  .top-nav-drawer-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .top-nav-drawer-link {
+    display: block;
+    padding: 14px 24px;
+    font-size: 1.0625rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.82);
+    text-decoration: none;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+
+  .top-nav-drawer-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
 @media (max-width: 768px) {
   .top-nav {
     height: 72px;
@@ -1352,12 +1471,12 @@ button.trending-deal-tag {
     height: 1.625rem;
   }
 
-  .top-nav-links {
-    gap: 16px;
+  .top-nav-backdrop {
+    inset: 72px 0 0 0;
   }
 
-  .top-nav-link {
-    display: none;
+  .top-nav-drawer {
+    top: 72px;
   }
 
   .top-nav-sign-in {
