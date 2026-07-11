@@ -39,6 +39,17 @@ export default function PointsGuideDestinationPage() {
             <GuideAirlineRibbon destination={guide.title} airlines={guide.bestAirlines} />
           </div>
 
+          <section className="points-guide-about" aria-labelledby={`about-${guide.id}`}>
+            <h2 className="points-guide-about-title" id={`about-${guide.id}`}>
+              About {guide.title}
+            </h2>
+            {guide.aboutDestination.map((paragraph) => (
+              <p key={paragraph} className="points-guide-about-copy">
+                {paragraph}
+              </p>
+            ))}
+          </section>
+
           <article className="points-guide-article-content">
             <section className="points-guide-section">
               <h2 className="points-guide-section-title">Top Programs</h2>

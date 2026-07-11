@@ -20,6 +20,7 @@ export interface PointsGuideDestination {
   image: string;
   imageAlt: string;
   lede: string;
+  aboutDestination: string[];
   bestAirlines: GuideAirline[];
   topPrograms: string;
   sweetSpots: string[];
@@ -36,7 +37,11 @@ export const POINTS_GUIDE_DESTINATIONS: PointsGuideDestination[] = [
     image: publicUrl('deals/hnd.jpg'),
     imageAlt: 'Tokyo skyline at dusk',
     lede:
-      'Tokyo is a favorite award destination from the US. Business class can be a solid use of bank points if you know which programs to search and when to transfer.',
+      'Japan is a favorite award destination from the US. Business class can be a solid use of bank points if you know which programs to search and when to transfer.',
+    aboutDestination: [
+      'Japan is one of the hottest travel desinations in the world right now, and for good reason. On top of their cusine, architecture, and history, the country also proudly boasts two of the worlds best airlines: JAL and ANA. Both of the airlines offer some of the best service and hard product in the world, making them extremly sought after. This combined with Japans attractiveness to travelers has created more demand for award space than ever before. I would even go as far to say that Japan is the most difficult award destination to travel to right now, especially in premium cabins.',
+      'Cherry blossom season (late March through April) and autumn foliage (October and November) are the busiest windows, where award space will be bought up within minutes of release. Shoulder weeks on either side still deliver great weather with slightly better award availability. If your dates are fixed, start searching early (be prepared to being your search as far out as 365 days out) and stay flexible on which Tokyo airport you fly into, as well as which aircraft you fly on.',
+    ],
     bestAirlines: [
       { label: 'All Nippon Airways', logo: 'partners/airlines/ana.png', accentClass: 'ana' },
       { label: 'Japan Airlines', logo: 'partners/airlines/japan-airlines.png', accentClass: 'jal' },
@@ -58,6 +63,11 @@ export const POINTS_GUIDE_DESTINATIONS: PointsGuideDestination[] = [
         strategy: 'Search both HND and NRT. Partner awards often release in weekly batches.',
       },
       {
+        program: 'Japan Airlines',
+        calendarOpens: '355 days',
+        strategy: 'Search both HND and NRT. Partner awards often release in weekly batches. ',
+      },
+      {
         program: 'United MileagePlus',
         calendarOpens: '11 months',
         strategy: 'Filter for saver awards first. Set alerts 330+ days out for peak cherry-blossom dates.',
@@ -66,6 +76,11 @@ export const POINTS_GUIDE_DESTINATIONS: PointsGuideDestination[] = [
         program: 'Virgin Atlantic',
         calendarOpens: '330 days',
         strategy: 'Check ANA and JAL partner space before transferring Amex or Chase points.',
+      },
+      {
+        program: 'Aeroplan',
+        calendarOpens: '355 days',
+        strategy: 'Search the same United flights. Fixed partner pricing can win on short hops.',
       },
     ],
     bookingTips: [
@@ -83,6 +98,10 @@ export const POINTS_GUIDE_DESTINATIONS: PointsGuideDestination[] = [
     imageAlt: 'London cityscape along the Thames',
     lede:
       'London is the busiest transatlantic award market from the US East Coast. Several alliances serve Heathrow and Gatwick, so it pays to compare programs before you transfer.',
+    aboutDestination: [
+      'London works as a standalone city break and as the entry point for a broader UK or Europe trip. Heathrow is the main gateway, but Gatwick and Stansted can mean lower taxes depending on the program you book through. From London, trains reach Edinburgh, Bath, and Paris in a few hours.',
+      'Summer is peak tourist season, and the weeks around US holidays fill quickly in all cabins. Spring and early fall usually offer a better balance of weather, crowds, and award space. If London itself is expensive on points, try positioning to Manchester or Dublin and connecting on a separate ticket.',
+    ],
     bestAirlines: [
       { label: 'British Airways', logo: 'partners/airlines/british-airways.png', accentClass: 'british-airways' },
       { label: 'Virgin Atlantic', shortLabel: 'VS' },
@@ -129,6 +148,10 @@ export const POINTS_GUIDE_DESTINATIONS: PointsGuideDestination[] = [
     imageAlt: 'Paris with the Eiffel Tower',
     lede:
       'Paris is a core Flying Blue destination and a common target for SkyTeam and Star Alliance awards. CDG and ORY both matter depending on your program and routing.',
+    aboutDestination: [
+      'Charles de Gaulle handles most long-haul arrivals, while Orly is common for European connections and some transatlantic flights. Paris is an easy base for day trips to Normandy, the Loire Valley, or high-speed rail to Lyon and Brussels.',
+      'July and August are crowded and award space is tight. Late April, May, and September are easier to book and still pleasant for walking the city. Flying Blue Promo Rewards are the main lever for lowering Paris redemptions, so timing your search around those monthly releases can save a lot of miles.',
+    ],
     bestAirlines: [
       { label: 'Air France', shortLabel: 'AF' },
       { label: 'Delta Air Lines', logo: 'partners/airlines/delta.png', accentClass: 'delta' },
@@ -175,6 +198,10 @@ export const POINTS_GUIDE_DESTINATIONS: PointsGuideDestination[] = [
     imageAlt: 'Mexico City historic center',
     lede:
       'Mexico is one of the easier award wins from the US: short flights, frequent space, and several programs price Mexico City and beach destinations at low mileage levels.',
+    aboutDestination: [
+      'Mexico City is a world-class food and culture destination on its own. Cancun, Los Cabos, and Puerto Vallarta draw beach travelers from Texas, the Midwest, and both coasts. Flights are short enough that cash fares stay competitive, so points only win when you find saver space or a sale fare has disappeared.',
+      'US school holidays drive the hardest availability to beach airports. Book winter and spring break early if your dates are fixed. Mexico City works well as a hub for continuing south on a separate cash or award ticket.',
+    ],
     bestAirlines: [
       { label: 'United Airlines', logo: 'partners/airlines/united.png', accentClass: 'united' },
       { label: 'Delta Air Lines', logo: 'partners/airlines/delta.png', accentClass: 'delta' },
@@ -221,6 +248,10 @@ export const POINTS_GUIDE_DESTINATIONS: PointsGuideDestination[] = [
     imageAlt: 'Rome historic architecture',
     lede:
       'Rome and Milan anchor most US-Italy award searches. Premium cabin space is tighter than London or Paris, but economy and premium economy can be good values in shoulder season.',
+    aboutDestination: [
+      'Rome (FCO) is the default US gateway, but Milan (MXP), Venice (VCE), and Naples (NAP) can open up space other travelers skip. Italy rewards slow travel: a week in Rome, a few days in Florence, and a coastal stop in Amalfi or Cinque Terre is a common first itinerary.',
+      'June through August is the toughest window for awards and on-the-ground crowds. April, May, and late September still have long days and workable redemption space. Business class to Italy is harder than economy, so compare premium economy if you want more comfort without chasing a unicorn seat.',
+    ],
     bestAirlines: [
       { label: 'ITA Airways', shortLabel: 'ITA' },
       { label: 'Delta Air Lines', logo: 'partners/airlines/delta.png', accentClass: 'delta' },
@@ -267,6 +298,10 @@ export const POINTS_GUIDE_DESTINATIONS: PointsGuideDestination[] = [
     imageAlt: 'New York City skyline',
     lede:
       'Domestic awards are where most travelers start. Short hops, transcons, and Hawaii routes all price differently by program, and cash fares often compete, so compare before you transfer.',
+    aboutDestination: [
+      'Domestic US awards cover everything from a weekend in Denver to a transcon in Mint or first class. United, American, Delta, Southwest, and JetBlue all price differently, and dynamic pricing means the same route can cost 7,500 points one week and 25,000 the next.',
+      'Hawaii, Alaska, and the Caribbean behave like international trips in terms of demand even though they are domestic. For mainland routes, nearby airports often have different saver space (EWR vs JFK, OAK vs SFO). Run the cash fare comparison before you transfer bank points for a short hop.',
+    ],
     bestAirlines: [
       { label: 'United Airlines', logo: 'partners/airlines/united.png', accentClass: 'united' },
       { label: 'American Airlines', logo: 'partners/airlines/american-airlines.png', accentClass: 'american' },

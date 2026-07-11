@@ -8481,6 +8481,30 @@ body:has(.ask-hero-page) {
   object-fit: cover;
 }
 
+.points-guide-about {
+  margin-top: 28px;
+  padding: 0 2px;
+}
+
+.points-guide-about-title {
+  margin: 0 0 14px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #111827;
+}
+
+.points-guide-about-copy {
+  margin: 0 0 14px;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: #4b5563;
+}
+
+.points-guide-about-copy:last-child {
+  margin-bottom: 0;
+}
+
 .guide-airline-ribbon {
   display: flex;
   flex-direction: column;
