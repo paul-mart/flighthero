@@ -53,7 +53,7 @@ import {
   getApplicableTransferBonuses,
   getTransferBonusForPartner,
 } from './data/transferBonuses';
-import { ChevronDownIcon, PlaneArriveIcon, PlaneDepartIcon, CalendarIcon, SwapIcon, SearchIcon, ArrowRightIcon } from './icons';
+import { ChevronDownIcon, PlaneArriveIcon, PlaneDepartIcon, CalendarIcon, SwapIcon, SearchIcon, ArrowRightIcon, UserIcon } from './icons';
 
 const ALL_BANK_KEYS = TRANSFER_PARTNER_OPTIONS.map((partner) => partner.key);
 
@@ -499,7 +499,11 @@ function PassengerDropdown({ adults, childCount, onChange }: PassengerDropdownPr
         aria-expanded={open}
         aria-haspopup="dialog"
       >
-        <span style={styles.filterTriggerLabel}>{label}</span>
+        <span className="passenger-trigger-compact" aria-hidden="true">
+          <UserIcon size={18} />
+          <span className="passenger-trigger-count">{total}</span>
+        </span>
+        <span className="passenger-trigger-label">{label}</span>
         <span style={{ ...styles.filterChevron, ...(open ? styles.filterChevronOpen : triggerHovered ? styles.filterChevronHover : {}) }}>
           <ChevronDownIcon />
         </span>

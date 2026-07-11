@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useHomeSearchReset } from '../context/HomeSearchContext';
@@ -41,9 +42,52 @@ export function TopNavbar() {
     };
   }, [mobileMenuOpen]);
 
+  const mobileOverlay = mobileMenuOpen ? createPortal(
+    <>
+      <button
+        type="button"
+        className="top-nav-backdrop"
+        aria-label="Close navigation menu"
+        onClick={closeMobileMenu}
+      />
+      <nav
+        id="top-nav-drawer"
+        className="top-nav-drawer top-nav-drawer--open"
+        aria-label="Mobile navigation"
+      >
+        <ul className="top-nav-drawer-list">
+          {NAV_LINKS.map(({ to, label }) => (
+            <li key={to}>
+              <Link
+                to={to}
+                className="top-nav-drawer-link"
+                onClick={closeMobileMenu}
+              >
+                {label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </>,
+    document.body,
+  ) : null;
+
   return (
     <header className="top-nav">
       <div className="top-nav-inner">
+        <button
+          type="button"
+          className="top-nav-menu-toggle"
+          aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="top-nav-drawer"
+          onClick={() => setMobileMenuOpen((open) => !open)}
+        >
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+        </button>
         <Link
           to="/"
           className="top-nav-brand"
@@ -74,48 +118,9 @@ export function TopNavbar() {
               <Link to="/auth/sign-in" className="top-nav-sign-in">Sign In</Link>
             )}
           </nav>
-          <button
-            type="button"
-            className="top-nav-menu-toggle"
-            aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-            aria-expanded={mobileMenuOpen}
-            aria-controls="top-nav-drawer"
-            onClick={() => setMobileMenuOpen((open) => !open)}
-          >
-            <span aria-hidden="true" />
-            <span aria-hidden="true" />
-            <span aria-hidden="true" />
-          </button>
         </div>
       </div>
-      {mobileMenuOpen && (
-        <button
-          type="button"
-          className="top-nav-backdrop"
-          aria-label="Close navigation menu"
-          onClick={closeMobileMenu}
-        />
-      )}
-      <nav
-        id="top-nav-drawer"
-        className={`top-nav-drawer${mobileMenuOpen ? ' top-nav-drawer--open' : ''}`}
-        aria-label="Mobile navigation"
-        aria-hidden={!mobileMenuOpen}
-      >
-        <ul className="top-nav-drawer-list">
-          {NAV_LINKS.map(({ to, label }) => (
-            <li key={to}>
-              <Link
-                to={to}
-                className="top-nav-drawer-link"
-                onClick={closeMobileMenu}
-              >
-                {label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      {mobileOverlay}
     </header>
   );
 }

@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeftIcon, ChevronRightIcon } from '../icons';
+import { useMediaQuery } from '../lib/useMediaQuery';
 import type { TrendingDeal } from '../data/trendingDeals';
 
 interface DealsCarouselProps {
@@ -115,10 +117,19 @@ export function DealsCarousel({
   navPlacement = 'sides',
   showSlideIndicator,
 }: DealsCarouselProps) {
+  const isMobileCarousel = useMediaQuery('(max-width: 640px)');
+  const effectiveSlides = useMemo(
+    () => (isMobileCarousel ? slides.flat().map((deal) => [deal]) : slides),
+    [slides, isMobileCarousel],
+  );
   const [slideIndex, setSlideIndex] = useState(0);
-  const slideCount = slides.length;
+  const slideCount = effectiveSlides.length;
   const headerNav = navPlacement === 'header';
   const indicatorVisible = showSlideIndicator ?? !headerNav;
+
+  useEffect(() => {
+    setSlideIndex(0);
+  }, [effectiveSlides]);
 
   const goToPrevious = () => {
     setSlideIndex((index) => (index - 1 + slideCount) % slideCount);
@@ -148,10 +159,16 @@ export function DealsCarousel({
         </div>
 
         <DealCardsGrid
-          slides={slides}
+          slides={effectiveSlides}
           slideIndex={slideIndex}
           onSelectDeal={onSelectDeal}
         />
+
+        {isMobileCarousel && slideCount > 1 ? (
+          <p className="trending-deals-slide-indicator" aria-hidden>
+            {slideIndex + 1} / {slideCount}
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -169,7 +186,7 @@ export function DealsCarousel({
         </button>
 
         <DealCardsGrid
-          slides={slides}
+          slides={effectiveSlides}
           slideIndex={slideIndex}
           onSelectDeal={onSelectDeal}
         />

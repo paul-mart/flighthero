@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useMediaQuery } from '../lib/useMediaQuery';
 import {
   CHAT_GROUP_LABELS,
   getChatDateGroup,
@@ -209,73 +211,81 @@ export function HeroChatSidebar({
   onCloseMobile,
 }: HeroChatSidebarProps) {
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
+  const isMobileSidebar = useMediaQuery('(max-width: 768px)');
   const grouped = groupChats(chats);
   const airportDisplay = homeAirport || homeAirportLabel || '—';
 
   const clearRename = () => setRenamingChatId(null);
 
+  const sidebarContent = (
+    <aside
+      className={`hero-chat-sidebar${mobileOpen ? ' hero-chat-sidebar--open' : ''}`}
+      aria-label="Conversation history"
+    >
+      <button
+        type="button"
+        className="hero-new-chat-btn"
+        onClick={() => {
+          clearRename();
+          onNewChat();
+        }}
+      >
+        New Chat
+      </button>
+
+      <nav className="hero-chat-nav">
+        {GROUP_ORDER.map((group) => {
+          const items = grouped.get(group);
+          if (!items?.length) return null;
+          return (
+            <div key={group} className="hero-chat-nav-group">
+              <h2 className="hero-chat-nav-heading">{CHAT_GROUP_LABELS[group]}</h2>
+              <ul className="hero-chat-nav-list">
+                {items.map((chat) => (
+                  <ChatNavRow
+                    key={chat.id}
+                    chat={chat}
+                    isActive={activeChatId === chat.id}
+                    isRenaming={renamingChatId === chat.id}
+                    onSelect={() => {
+                      clearRename();
+                      onSelectChat(chat.id);
+                      onCloseMobile();
+                    }}
+                    onStartRename={() => setRenamingChatId(chat.id)}
+                    onEndRename={clearRename}
+                    onRename={(title) => onRenameChat(chat.id, title)}
+                    onDelete={() => onDeleteChat(chat.id)}
+                  />
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </nav>
+
+      <div className="hero-chat-sidebar-footer">
+        <span className="hero-home-airport" title="Your home airport">
+          ✈ Flying from {airportDisplay}
+        </span>
+      </div>
+    </aside>
+  );
+
   return (
     <>
-      {mobileOpen && (
+      {isMobileSidebar && mobileOpen && createPortal(
         <button
           type="button"
           className="hero-sidebar-backdrop"
           aria-label="Close conversation list"
           onClick={onCloseMobile}
-        />
+        />,
+        document.body,
       )}
-      <aside
-        className={`hero-chat-sidebar${mobileOpen ? ' hero-chat-sidebar--open' : ''}`}
-        aria-label="Conversation history"
-      >
-        <button
-          type="button"
-          className="hero-new-chat-btn"
-          onClick={() => {
-            clearRename();
-            onNewChat();
-          }}
-        >
-          New Chat
-        </button>
-
-        <nav className="hero-chat-nav">
-          {GROUP_ORDER.map((group) => {
-            const items = grouped.get(group);
-            if (!items?.length) return null;
-            return (
-              <div key={group} className="hero-chat-nav-group">
-                <h2 className="hero-chat-nav-heading">{CHAT_GROUP_LABELS[group]}</h2>
-                <ul className="hero-chat-nav-list">
-                  {items.map((chat) => (
-                    <ChatNavRow
-                      key={chat.id}
-                      chat={chat}
-                      isActive={activeChatId === chat.id}
-                      isRenaming={renamingChatId === chat.id}
-                      onSelect={() => {
-                        clearRename();
-                        onSelectChat(chat.id);
-                        onCloseMobile();
-                      }}
-                      onStartRename={() => setRenamingChatId(chat.id)}
-                      onEndRename={clearRename}
-                      onRename={(title) => onRenameChat(chat.id, title)}
-                      onDelete={() => onDeleteChat(chat.id)}
-                    />
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
-        </nav>
-
-        <div className="hero-chat-sidebar-footer">
-          <span className="hero-home-airport" title="Your home airport">
-            ✈ Flying from {airportDisplay}
-          </span>
-        </div>
-      </aside>
+      {isMobileSidebar
+        ? createPortal(sidebarContent, document.body)
+        : sidebarContent}
     </>
   );
 }

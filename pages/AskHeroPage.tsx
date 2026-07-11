@@ -232,7 +232,7 @@ export default function AskHeroPage() {
             aria-expanded={sidebarOpen}
             onClick={() => setSidebarOpen(true)}
           >
-            <span /><span /><span />
+            Chats
           </button>
 
           <div className="ask-hero-chat-shell">
