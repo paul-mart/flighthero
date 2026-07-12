@@ -1924,12 +1924,6 @@ export default function App() {
                 placeholder="Depart"
                 ariaLabel="Departure date"
               />
-              <span
-                className="date-block-arrow"
-                style={{ ...styles.dateArrow, ...(tripType === 'one-way' ? styles.dateHidden : {}) }}
-              >
-                →
-              </span>
               <DatePicker
                 value={returnDate}
                 onChange={setReturnDate}
@@ -2120,12 +2114,6 @@ export default function App() {
                 placeholder="Depart"
                 ariaLabel="Departure date"
               />
-              <span
-                className="date-block-arrow"
-                style={{ ...styles.dateArrow, ...(tripType === 'one-way' ? styles.dateHidden : {}) }}
-              >
-                →
-              </span>
               <DatePicker
                 value={returnDate}
                 onChange={setReturnDate}
@@ -2874,15 +2862,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: '5px 13px',
     gap: '10px',
     position: 'relative',
-  },
-  dateArrow: {
-    color: '#999',
-    fontSize: '16px',
-    flexShrink: 0,
-  },
-  dateHidden: {
-    visibility: 'hidden',
-    pointerEvents: 'none',
   },
   searchBtn: {
     ...fieldFont,

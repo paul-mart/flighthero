@@ -2472,12 +2472,6 @@ html {
     overflow: hidden;
   }
 
-  .date-block-arrow {
-    flex-shrink: 0;
-    font-size: calc(14px * 0.99);
-    padding: 0 1px;
-  }
-
   .date-picker-trigger {
     gap: 4px !important;
     padding: 10px 0 !important;
