@@ -482,7 +482,7 @@ function PassengerDropdown({ adults, childCount, onChange }: PassengerDropdownPr
   };
 
   return (
-    <div ref={rootRef} className="filter-dropdown" style={styles.filterDropdown}>
+    <div ref={rootRef} className="filter-dropdown filter-dropdown--passengers" style={styles.filterDropdown}>
       <button
         ref={triggerRef}
         type="button"
@@ -500,12 +500,12 @@ function PassengerDropdown({ adults, childCount, onChange }: PassengerDropdownPr
         aria-haspopup="dialog"
       >
         <span className="passenger-trigger-compact" aria-hidden="true">
-          <UserIcon size={18} />
+          <UserIcon size={16} />
           <span className="passenger-trigger-count">{total}</span>
         </span>
         <span className="passenger-trigger-label">{label}</span>
-        <span style={{ ...styles.filterChevron, ...(open ? styles.filterChevronOpen : triggerHovered ? styles.filterChevronHover : {}) }}>
-          <ChevronDownIcon />
+        <span className="filter-chevron" style={{ ...styles.filterChevron, ...(open ? styles.filterChevronOpen : triggerHovered ? styles.filterChevronHover : {}) }}>
+          <ChevronDownIcon size={12} />
         </span>
       </button>
       {open &&
@@ -1519,30 +1519,6 @@ export default function App() {
     setRouteSwapGeneration((generation) => generation + 1);
   };
 
-  const hasSearchInput = Boolean(
-    origin.trim() || destination.trim() || date || returnDate,
-  );
-
-  const clearSearchForm = () => {
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-    setRoute({ origin: '', destination: '' });
-    setDate('');
-    setReturnDate('');
-    setTripType('one-way');
-    setAdults(1);
-    setChildrenCount(0);
-    setCabinClass('economy');
-    setRouteSwapGeneration((generation) => generation + 1);
-    setFlights([]);
-    setHasSearched(false);
-    setLoading(false);
-    setLoadingReturnDetails(false);
-    setSelectedFlight(null);
-    setValidationWarning(null);
-  };
-
   const resetHomePage = useCallback(() => {
     searchSeqRef.current += 1;
     if (document.activeElement instanceof HTMLElement) {
@@ -1849,30 +1825,10 @@ export default function App() {
               ariaLabel="Cabin class"
             />
             </div>
-            <button
-              type="button"
-              className="search-clear-link search-clear-link--filter"
-              onClick={clearSearchForm}
-              disabled={!hasSearchInput || loading}
-              aria-label="Clear search form"
-            >
-              Clear
-            </button>
           </div>
 
           <div className="main-bar main-bar--refined main-bar--dashboard" style={dashboardMainBar}>
             <div className="route-block" style={dashboardRouteBlock}>
-              <div className="route-block-toolbar">
-                <button
-                  type="button"
-                  className="search-clear-link search-clear-link--route"
-                  onClick={clearSearchForm}
-                  disabled={!hasSearchInput || loading}
-                  aria-label="Clear search form"
-                >
-                  Clear
-                </button>
-              </div>
               <div className="route-fields-stack">
               <div style={styles.routeField} className="route-field">
                 <span className="form-field-icon" style={styles.fieldIcon}><PlaneDepartIcon /></span>
@@ -2045,30 +2001,10 @@ export default function App() {
               ariaLabel="Cabin class"
             />
             </div>
-            <button
-              type="button"
-              className="search-clear-link search-clear-link--filter"
-              onClick={clearSearchForm}
-              disabled={!hasSearchInput || loading}
-              aria-label="Clear search form"
-            >
-              Clear
-            </button>
           </div>
 
           <div className="main-bar main-bar--refined" style={styles.mainBar}>
             <div className="route-block" style={styles.routeBlock}>
-              <div className="route-block-toolbar">
-                <button
-                  type="button"
-                  className="search-clear-link search-clear-link--route"
-                  onClick={clearSearchForm}
-                  disabled={!hasSearchInput || loading}
-                  aria-label="Clear search form"
-                >
-                  Clear
-                </button>
-              </div>
               <div className="route-fields-stack">
               <div style={styles.routeField} className="route-field">
                 <span className="form-field-icon" style={styles.fieldIcon}><PlaneDepartIcon /></span>

@@ -102,6 +102,15 @@ export function SearchIcon({ size = FORM_ICON_SIZE }: IconProps) {
   );
 }
 
+export function CloseIcon({ size = 16, strokeWidth = 2.25 }: IconProps) {
+  return (
+    <FeatherIcon size={size} strokeWidth={strokeWidth}>
+      <path d="M18 6L6 18" />
+      <path d="M6 6l12 12" />
+    </FeatherIcon>
+  );
+}
+
 export function ArrowRightIcon({ size = 14, strokeWidth = 2.25 }: IconProps) {
   return (
     <FeatherIcon size={size} strokeWidth={strokeWidth}>

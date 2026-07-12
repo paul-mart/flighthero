@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { apiFetch, apiUrl } from '../api';
+import { CloseIcon } from '../icons';
 
 export interface PlaceSuggestion {
   id: string;
@@ -278,9 +279,22 @@ export function AirportAutocomplete({
     }
   };
 
+  const canClear = variant === 'route' && !disabled && value.trim().length > 0 && !loading;
   const inputClassName = variant === 'profile'
     ? `profile-home-airport-input${loading ? ' profile-home-airport-input--loading' : ''}`
-    : `route-airport-input${loading ? ' route-airport-input--loading' : ''}`;
+    : `route-airport-input${loading ? ' route-airport-input--loading' : ''}${canClear ? ' route-airport-input--clearable' : ''}`;
+
+  const clearValue = () => {
+    suppressFetchRef.current = true;
+    abortRef.current?.abort();
+    requestIdRef.current += 1;
+    onChange('');
+    setOpen(false);
+    setSuggestions([]);
+    setHighlightIndex(-1);
+    setLoading(false);
+    inputRef.current?.focus();
+  };
 
   return (
     <div ref={rootRef} className="airport-autocomplete">
@@ -309,6 +323,17 @@ export function AirportAutocomplete({
         <div className="airport-autocomplete-loader" aria-hidden>
           <PlacesSearchLoader size={26} />
         </div>
+      )}
+      {canClear && (
+        <button
+          type="button"
+          className="airport-autocomplete-clear"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={clearValue}
+          aria-label={`Clear ${ariaLabel.toLowerCase()}`}
+        >
+          <CloseIcon size={15} />
+        </button>
       )}
       {(open || loading) &&
         createPortal(
