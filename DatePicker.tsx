@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDownIcon } from './icons';
+import { useMediaQuery } from './lib/useMediaQuery';
 
 const POPOVER_WIDTH = 248;
+const MOBILE_POPOVER_WIDTH = 360;
 const POPOVER_GAP = 6;
 const POPOVER_MARGIN = 16;
+const MOBILE_POPOVER_MARGIN = 20;
 
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as const;
 
@@ -125,6 +128,7 @@ export default function DatePicker({
   const [popoverPosition, setPopoverPosition] = useState<React.CSSProperties>({});
   const [triggerHovered, setTriggerHovered] = useState(false);
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
+  const isMobilePopover = useMediaQuery('(max-width: 767px)');
   const [viewMonth, setViewMonth] = useState(() => {
     const initial = parseIsoDate(value) ?? startOfDay(new Date());
     return new Date(initial.getFullYear(), initial.getMonth(), 1);
@@ -152,6 +156,19 @@ export default function DatePicker({
 
   const updatePopoverPosition = useCallback(() => {
     if (!triggerRef.current) return;
+
+    if (isMobilePopover) {
+      const width = Math.min(MOBILE_POPOVER_WIDTH, window.innerWidth - MOBILE_POPOVER_MARGIN * 2);
+      setPopoverPosition({
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        width,
+        transform: 'translate(-50%, -50%)',
+      });
+      return;
+    }
+
     const rect = triggerRef.current.getBoundingClientRect();
 
     let left = rect.left + rect.width / 2 - POPOVER_WIDTH / 2;
@@ -164,7 +181,7 @@ export default function DatePicker({
       width: POPOVER_WIDTH,
       transform: 'none',
     });
-  }, []);
+  }, [isMobilePopover]);
 
   useLayoutEffect(() => {
     if (!open || disabled) return;
@@ -178,6 +195,15 @@ export default function DatePicker({
       window.removeEventListener('resize', updatePopoverPosition);
     };
   }, [open, disabled, updatePopoverPosition]);
+
+  useEffect(() => {
+    if (!open || !isMobilePopover) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open, isMobilePopover]);
 
   useEffect(() => {
     if (disabled) setOpen(false);
@@ -306,13 +332,26 @@ export default function DatePicker({
 
       {open && !disabled &&
         createPortal(
-          <div
-            ref={popoverRef}
-            className="date-picker-popover"
-            style={{ ...styles.popover, ...popoverPosition }}
-            role="dialog"
-            aria-label={ariaLabel}
-          >
+          <>
+            {isMobilePopover && (
+              <button
+                type="button"
+                className="date-picker-backdrop"
+                aria-label="Close calendar"
+                onClick={() => {
+                  setOpen(false);
+                  triggerRef.current?.blur();
+                }}
+              />
+            )}
+            <div
+              ref={popoverRef}
+              className={`date-picker-popover${isMobilePopover ? ' date-picker-popover--mobile' : ''}`}
+              style={{ ...styles.popover, ...popoverPosition }}
+              role="dialog"
+              aria-label={ariaLabel}
+              aria-modal={isMobilePopover}
+            >
             <div style={styles.header}>
               <button
                 type="button"
@@ -331,7 +370,7 @@ export default function DatePicker({
               >
                 <ChevronLeftIcon />
               </button>
-              <span style={styles.monthLabel}>{monthLabel}</span>
+              <span className="date-picker-month-label" style={styles.monthLabel}>{monthLabel}</span>
               <button
                 type="button"
                 className="date-picker-nav"
@@ -344,9 +383,9 @@ export default function DatePicker({
               </button>
             </div>
 
-            <div style={styles.weekdayRow}>
+            <div className="date-picker-weekday-row" style={styles.weekdayRow}>
               {WEEKDAYS.map((weekday) => (
-                <span key={weekday} style={styles.weekdayCell}>{weekday}</span>
+                <span key={weekday} className="date-picker-weekday" style={styles.weekdayCell}>{weekday}</span>
               ))}
             </div>
 
@@ -383,7 +422,8 @@ export default function DatePicker({
                 );
               })}
             </div>
-          </div>,
+          </div>
+          </>,
           document.body
         )}
     </div>

@@ -1742,6 +1742,59 @@ html {
   position: fixed;
 }
 
+.date-picker-backdrop {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .date-picker-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 290;
+    border: none;
+    padding: 0;
+    background: rgba(15, 23, 42, 0.52);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .date-picker-popover--mobile {
+    z-index: 300 !important;
+    padding: 20px 18px 18px !important;
+    border-radius: 18px !important;
+    box-shadow:
+      0 24px 56px rgba(15, 23, 42, 0.28),
+      0 8px 24px rgba(99, 102, 241, 0.12) !important;
+    max-width: min(360px, calc(100vw - 40px)) !important;
+  }
+
+  .date-picker-popover--mobile .date-picker-month-label {
+    font-size: 1.0625rem !important;
+  }
+
+  .date-picker-popover--mobile .date-picker-nav {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+  }
+
+  .date-picker-popover--mobile .date-picker-weekday-row {
+    margin-bottom: 8px !important;
+  }
+
+  .date-picker-popover--mobile .date-picker-weekday {
+    font-size: 0.6875rem !important;
+    padding: 4px 0 !important;
+  }
+
+  .date-picker-popover--mobile .date-picker-day {
+    min-height: 44px !important;
+    font-size: 1rem !important;
+    border-radius: 10px !important;
+  }
+}
+
 .filter-menu,
 .passenger-menu,
 .bank-programs-menu {
