@@ -1518,14 +1518,6 @@ button.trending-deal-tag {
     margin-bottom: 16px;
   }
 
-  .hero-inner--landing .hero-headline {
-    display: none;
-  }
-
-  .hero-inner--landing .hero-copy {
-    margin-bottom: 12px;
-  }
-
   .hero-subheadline {
     font-size: 0.875rem;
   }
@@ -2268,19 +2260,35 @@ html {
   }
 
   .search-panel-wrap--refined {
-    --search-panel-inline-padding: 1rem;
+    --search-panel-inline-padding: 0.875rem;
+  }
+
+  .home-dashboard-search .search-panel-wrap,
+  .home-dashboard-search .search-panel-wrap.search-panel-wrap--full,
+  .hero-search--landing .search-panel-wrap,
+  .hero-search--compact .search-panel-wrap {
+    width: min(1040px, 94%) !important;
+    max-width: min(1040px, calc(100% - 16px)) !important;
+  }
+
+  .airport-autocomplete-clear {
+    display: none !important;
+  }
+
+  .route-block .route-field .route-airport-input--clearable {
+    padding-right: 0 !important;
   }
 
   .search-panel-wrap--refined .filter-bar {
     flex-direction: column !important;
     align-items: stretch !important;
-    padding: 1rem var(--search-panel-inline-padding, 1rem) 0.75rem !important;
-    margin-bottom: 0.5rem !important;
+    padding: 0.75rem var(--search-panel-inline-padding, 0.875rem) 0.5rem !important;
+    margin-bottom: 0.35rem !important;
     gap: 0 !important;
   }
 
   .search-panel-wrap--refined .main-bar--refined {
-    padding: 0 var(--search-panel-inline-padding, 1rem) 1.25rem !important;
+    padding: 0 var(--search-panel-inline-padding, 0.875rem) 1rem !important;
   }
 
   .filter-bar-options {
@@ -2291,7 +2299,7 @@ html {
     gap: 0;
     width: 100%;
     min-width: 0;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.45rem;
     overflow-x: visible;
   }
 
@@ -2796,7 +2804,7 @@ html {
   }
 
   .filter-bar-options {
-    margin-bottom: 1rem;
+    margin-bottom: 0.45rem;
   }
 
   .date-picker-nav:hover:not(:disabled) {
