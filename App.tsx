@@ -2872,15 +2872,13 @@ const styles: { [key: string]: React.CSSProperties } = {
     background: '#f5f5f5',
     borderRadius: '9px',
     padding: '5px 13px',
-    gap: 0,
+    gap: '10px',
     position: 'relative',
   },
   dateArrow: {
     color: '#999',
     fontSize: '16px',
     flexShrink: 0,
-    marginLeft: '10.5px',
-    marginRight: '10.2px',
   },
   dateHidden: {
     visibility: 'hidden',
