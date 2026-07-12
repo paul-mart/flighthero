@@ -1,23 +1,24 @@
 # FlightHero
 
-A flight search web app for award travelers. Compare **cash fares** (Google Flights via SerpAPI) and **award availability** (Seats.aero), track routes, and get context on transfer partners and cents-per-point value.
+A flight search web app for award travelers. Search **award availability** (Seats.aero), compare value with matched cash fares (SerpAPI), track routes, and get context on transfer partners and cents-per-point value.
 
-The UI is a React SPA; the backend is a FastAPI service that proxies flight search, serves local airport autocomplete, and runs optional daily price-alert jobs.
+The UI is a React SPA; the backend is a FastAPI service that proxies award search, serves local airport autocomplete, powers Ask Hero, and runs optional daily price-alert jobs.
 
 ## Features
 
 ### Search (no account required)
 
-- **One-way and round-trip** flight search
-- **Cash vs. points** toggle — cash uses SerpAPI; points uses Seats.aero cached award data
+- **One-way and round-trip** award search (points mode in the UI)
 - **Airport autocomplete** with instant local search (~5 ms) over ~7,900 IATA-coded airports
-- **Filters and sorting** — stops, price, duration, max taxes (points)
+- **Filters and sorting** — stops, price, duration, max taxes
 - **Round-trip details** — outbound and return leg times, flight numbers, and stop counts
 - **Cabin class** — economy, premium economy, business, first
 - **Transfer partner badges** and transfer-bonus hints on award results
-- **Cents-per-point (CPP)** display using your saved valuations or defaults
-- **Booking links** — cash bookings via Google Flights redirect; award bookings via airline program and Seats.aero links
+- **Cents-per-point (CPP)** display using your saved valuations or defaults (cash fares from SerpAPI enrich award results when configured)
+- **Booking links** — award bookings via airline program and Seats.aero links
 - **Trending deals** — curated award routes on the home page; click to search live
+
+> The web UI is points-only today. The backend still supports `search_type=cash` for SerpAPI Google Flights (used for CPP enrichment and the cash booking-redirect endpoint).
 
 ### Accounts (Firebase)
 
@@ -26,15 +27,25 @@ Sign-in is optional for search, but required for cloud-synced features:
 - **Email/password and Google** sign-in
 - **Profile** — display name, home airport, military/Zulu time, custom CPP valuations per transfer partner
 - **Tracked deals** — save award routes from search results (up to 20 per user)
-- **Price-drop alerts** — one free alert per account (bell icon on tracked routes); emails when award points drop
+- **Price-drop alerts** — one free alert per account (bell icon on tracked routes); emails when award points drop from the saved baseline
 - **Continue searching** — recent searches shown on the home page for signed-in users
+- **Premium** — subscription upsell is shown in the UI (coming soon; no billing yet)
+
+### Ask Hero (sign-in required)
+
+AI travel advisor for routes, redemptions, and deal ideas. Uses your home airport and CPP valuations when available. Backed by Google Gemini (optional Groq fallback).
 
 ### Content pages
 
-- **FAQ** — transfers, award booking, valuation
+- **Deals** — curated award routes by region; click to search live
+- **Points Guide** — destination guides for award travelers (where to transfer, what to expect)
 - **Points News** — manually curated card offers and transfer bonuses
+- **FAQ** — transfers, award booking, valuation
+- **About** — product overview
 - **Contact** — messages saved to Firestore (optional email via Firebase Trigger Email extension)
 - **Legal** — trademark and third-party notice
+
+Content (guides, deals, offers, bonuses) is curated in TypeScript data files under `data/` and ships with the frontend build.
 
 ## Architecture
 
@@ -50,6 +61,7 @@ flowchart LR
     Places[airport_places.py]
     Cash[serpapi_client.py]
     Awards[seats_aero_client.py]
+    Hero[ask_hero.py]
     Alerts[tracked_deal_alerts.py]
     Data[(data/airports.json)]
   end
@@ -57,36 +69,41 @@ flowchart LR
   subgraph external [External APIs]
     SerpAPI[SerpAPI Google Flights]
     SeatsAero[Seats.aero Cached Search]
+    Gemini[Gemini / Groq]
   end
 
-  UI -->|GET /api/*| API
+  UI -->|GET/POST /api/*| API
   UI <-->|auth + user data| FB
   API --> Places
   Places --> Data
   API --> Cash
   API --> Awards
+  API --> Hero
   Cash --> SerpAPI
   Awards --> SeatsAero
+  Hero --> Gemini
   Alerts --> FB
   Alerts --> Awards
 ```
 
 | Layer | Technology | Role |
 |-------|------------|------|
-| Frontend | React 19, TypeScript, Vite, React Router | Search UI, profile, tracked deals, content pages |
-| Auth & data | Firebase Auth, Firestore | Users, preferences, tracked deals, contact messages, alert emails |
-| Backend | FastAPI, httpx | Flight search API, booking redirect, alert cron endpoint |
+| Frontend | React 19, TypeScript, Vite, React Router | Search UI, Ask Hero, profile, deals, guides, content pages |
+| Auth & data | Firebase Auth, Firestore | Users, preferences, tracked deals, Hero chats, contact messages, alert emails |
+| Backend | FastAPI, httpx | Award search API, cash enrichment, Ask Hero, booking redirect, alert cron |
 | Airport data | [mwgg/Airports](https://github.com/mwgg/Airports) | Local JSON autocomplete (MIT) |
-| Cash fares | [SerpAPI Google Flights](https://serpapi.com/google-flights-api) | Live cash prices and booking tokens |
 | Award data | [Seats.aero](https://developers.seats.aero/reference/cached-search) | Cached award availability and program metadata |
+| Cash fares | [SerpAPI Google Flights](https://serpapi.com/google-flights-api) | Matched cash prices for CPP; cash booking redirect |
+| Ask Hero | Gemini (primary), Groq (optional fallback) | AI advisor chat |
 
 ## Prerequisites
 
 - **Node.js** 18+ (npm or pnpm)
 - **Python** 3.11+
-- **SerpAPI** API key — required for cash search ([dashboard](https://serpapi.com/manage-api-key))
 - **Seats.aero Pro** API key — required for points search ([seats.aero](https://seats.aero/) → Settings → API)
-- **Firebase project** — optional for local search-only use; required for sign-in, tracked deals, contact form, and price alerts
+- **SerpAPI** API key — optional but recommended for cash-price enrichment / CPP ([dashboard](https://serpapi.com/manage-api-key))
+- **Gemini** API key — required for Ask Hero ([AI Studio](https://aistudio.google.com/apikey)); optional **Groq** key as rate-limit fallback
+- **Firebase project** — optional for local search-only use; required for sign-in, tracked deals, Ask Hero (client gate), contact form, and price alerts
 
 ## Quick start
 
@@ -108,14 +125,24 @@ Copy the example env file and add your API keys:
 cp .env.example .env
 ```
 
-Minimum for search:
+Minimum for award search:
 
 ```env
-SERPAPI_API_KEY=your_api_key_here
 SEATS_AERO_API_KEY=your_seats_aero_key
+SERPAPI_API_KEY=your_api_key_here
 SERPAPI_CURRENCY=USD
 SERPAPI_GL=us
 SERPAPI_HL=en
+```
+
+For Ask Hero:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.5-flash-lite
+# Optional fallback when Gemini is rate-limited
+# GROQ_API_KEY=your_groq_api_key_here
+# GROQ_MODEL=llama-3.3-70b-versatile
 ```
 
 If you set `APP_API_KEY` in `.env`, you must also set the same value as `VITE_APP_API_KEY` in `.env.local` (see below). A mismatch causes **403 Forbidden** on API calls.
@@ -142,7 +169,7 @@ VITE_FIREBASE_APP_ID=your_app_id
 # VITE_CONTACT_TO_EMAIL=you@example.com
 ```
 
-Deploy `firestore.rules` to your Firebase project. Without Firebase configured, search still works; sign-in, tracking, and contact will show a configuration message.
+Deploy `firestore.rules` to your Firebase project. Without Firebase configured, search still works; sign-in, tracking, Ask Hero, and contact will show a configuration message.
 
 ### 4. Airport dataset
 
@@ -182,11 +209,15 @@ Open **http://localhost:5173** in your browser.
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `SERPAPI_API_KEY` | Cash search | — | SerpAPI key for Google Flights (**backend only**) |
 | `SEATS_AERO_API_KEY` | Points search | — | Seats.aero Pro API key (**backend only**) |
+| `SERPAPI_API_KEY` | Cash enrichment | — | SerpAPI key for Google Flights (**backend only**) |
 | `SERPAPI_CURRENCY` | No | `USD` | Currency for displayed prices |
 | `SERPAPI_GL` | No | `us` | Google country code (market) |
 | `SERPAPI_HL` | No | `en` | Language code |
+| `GEMINI_API_KEY` | Ask Hero | — | Google Gemini API key (**backend only**) |
+| `GEMINI_MODEL` | No | `gemini-2.5-flash-lite` | Gemini model id |
+| `GROQ_API_KEY` | No | — | Optional Groq fallback when Gemini is rate-limited |
+| `GROQ_MODEL` | No | `llama-3.3-70b-versatile` | Groq model id |
 | `ALLOWED_ORIGINS` | No | `http://localhost:5173,...` | Comma-separated browser origins (CORS + origin check) |
 | `APP_API_KEY` | No | — | Optional shared secret sent as `X-App-Key` header |
 | `RATE_LIMIT_REQUESTS` | No | `60` | Max API requests per IP per window |
@@ -214,7 +245,7 @@ Open **http://localhost:5173** in your browser.
 
 ## Price-drop alerts
 
-Users can enable a bell on one tracked route. A daily job compares current award pricing to the saved baseline and queues an email when points drop.
+Users can enable a bell on one tracked route (free tier). A daily job compares current award pricing to the saved baseline and queues an email when points drop.
 
 **Requirements:**
 
@@ -235,7 +266,7 @@ curl -X POST -H "X-Alerts-Cron-Secret: $ALERTS_CRON_SECRET" https://your-api.exa
 
 ## Hosting & security
 
-**GitHub Pages serves static files only.** SerpAPI and Seats.aero keys must stay on a separate backend (Railway, Render, Fly.io, a VPS, etc.). The frontend never receives those keys.
+**GitHub Pages serves static files only.** SerpAPI, Seats.aero, and Gemini/Groq keys must stay on a separate backend (Railway, Render, Fly.io, a VPS, etc.). The frontend never receives those keys.
 
 Backend safety net (stops casual abuse, not determined scraping):
 
@@ -245,7 +276,7 @@ Backend safety net (stops casual abuse, not determined scraping):
 
 `APP_API_KEY` is visible in the JavaScript bundle. Use it together with rate limits and provider-side spending caps, not as sole protection.
 
-**Do not** put `SERPAPI_API_KEY` or `SEATS_AERO_API_KEY` in GitHub Actions variables for the Pages build — only for backend deployment.
+**Do not** put `SERPAPI_API_KEY`, `SEATS_AERO_API_KEY`, `GEMINI_API_KEY`, or `GROQ_API_KEY` in GitHub Actions variables for the Pages build — only for backend deployment.
 
 ## API reference
 
@@ -272,7 +303,7 @@ Uses the local airport dataset when `data/airports.json` exists; otherwise falls
 | `departure_date` | Yes | `YYYY-MM-DD` |
 | `return_date` | Round-trip | `YYYY-MM-DD` |
 | `trip_type` | No | `round-trip` (default) or `one-way` |
-| `search_type` | No | `cash` (default) or `points` |
+| `search_type` | No | `cash` (default) or `points` — the web UI always sends `points` |
 | `adults` | No | 1–9 (default 1) |
 | `children` | No | 0–8 (default 0) |
 | `cabin_class` | No | `economy`, `premium-economy`, `business`, `first` |
@@ -281,11 +312,30 @@ When `search_type=points`, each result includes `award_details` (mileage cost, t
 
 ### `POST /api/search/return-legs`
 
-Loads return flight details for round-trip cash results (called in the background by the UI).
+Loads return flight details for round-trip cash results. Available for API/`search_type=cash` clients; the points-only web UI does not call this.
 
 ### `GET /api/booking-redirect`
 
 Auto-post redirect to a cash booking partner via SerpAPI `booking_token`. Falls back to a Google Flights search URL on failure.
+
+### `POST /api/ask-hero`
+
+Chat with the Ask Hero advisor.
+
+Request body:
+
+```json
+{
+  "messages": [{ "role": "user", "content": "Best business class to Tokyo in October?" }],
+  "userContext": {
+    "homeAirport": "BOS",
+    "homeAirportLabel": "Boston (BOS)",
+    "cppValuations": { "chase": 1.8 }
+  }
+}
+```
+
+Requires `GEMINI_API_KEY` and/or `GROQ_API_KEY` on the server. Returns `{ "content": "...", "title": "..." }`.
 
 ### `POST /api/internal/check-tracked-deals`
 
@@ -302,24 +352,20 @@ Runs the daily price-alert job. Requires `X-Alerts-Cron-Secret` header matching 
 | `410` | No flights for the selected dates |
 | `429` | Rate limit or upstream quota |
 | `502` | Upstream API failure |
-| `503` | Missing API key, Firebase Admin, or airport dataset |
+| `503` | Missing API key, Firebase Admin, Ask Hero config, or airport dataset |
 
 ## How flight search works
 
-### Cash — one-way
+### Points (web UI)
 
-A single SerpAPI `google_flights` request with `type=2`.
+Queries Seats.aero cached search. Round-trip combines outbound and return when the same mileage program has seats on both dates. When SerpAPI is configured, award results are enriched with matched cash prices for CPP. Award data may be a few hours old — always verify on the airline or Seats.aero before booking.
 
-### Cash — round-trip
+### Cash (API / enrichment)
 
-Two-phase so the initial response stays fast:
+Still available via `search_type=cash` on the backend:
 
-1. **Outbound search** (`GET /api/search`) — one SerpAPI request; returns outbound flights and round-trip prices.
-2. **Return leg details** (`POST /api/search/return-legs`) — background load for up to 15 unique `departure_token` values.
-
-### Points
-
-Queries Seats.aero cached search. Round-trip combines outbound and return when the same mileage program has seats on both dates. Award data may be a few hours old — always verify on the airline or Seats.aero before booking.
+- **One-way** — a single SerpAPI `google_flights` request with `type=2`
+- **Round-trip** — outbound search plus background `POST /api/search/return-legs` for up to 15 unique `departure_token` values
 
 ### Airport autocomplete
 
@@ -332,6 +378,7 @@ flight-app/
 ├── App.tsx                 # Home page — search, results, trending deals
 ├── main.tsx                # Router and providers
 ├── main.py                 # FastAPI app and routes
+├── ask_hero.py             # Ask Hero Gemini/Groq chat
 ├── api_security.py         # CORS, rate limits, app key middleware
 ├── serpapi_client.py       # Cash search, booking redirect, fallback autocomplete
 ├── seats_aero_client.py    # Award/points search
@@ -339,12 +386,12 @@ flight-app/
 ├── flight_matching.py      # Enrich award results with cash prices
 ├── tracked_deal_alerts.py  # Daily price-drop email job
 ├── firebase_admin_client.py
-├── components/             # UI components (navbar, deals, autocomplete, …)
-├── pages/                  # Auth, profile, FAQ, legal, contact, points news
+├── components/             # UI components (navbar, deals, autocomplete, Hero chat, …)
+├── pages/                  # Auth, profile, Ask Hero, deals, guides, FAQ, legal, contact
 ├── context/                # Auth and tracked-deals React context
-├── lib/                    # Firebase, auth, API helpers, tracked deals
-├── data/                   # airports.json, trending deals, transfer bonuses, FAQ
-├── scripts/                # Alert cron helper, deal image fetcher
+├── lib/                    # Firebase, auth, API helpers, Ask Hero, tracked deals
+├── data/                   # airports.json, guides, deals, card offers, transfer bonuses, FAQ
+├── scripts/                # Alert cron helper, deal image/price helpers, icon generator
 ├── firestore.rules         # Firestore security rules
 ├── .env.example
 ├── requirements.txt
@@ -355,13 +402,18 @@ flight-app/
 
 | Path | Page |
 |------|------|
-| `/` | Flight search |
+| `/` | Award flight search |
+| `/deals` | Regional curated deals |
+| `/ask-hero` | Ask Hero AI advisor (sign-in required) |
+| `/points-guide` | Destination points guides |
+| `/points-guide/:guideId` | Single destination guide |
+| `/points-news` | Card offers and transfer bonuses |
+| `/about` | About FlightHero |
 | `/auth/sign-in` | Sign in |
 | `/auth/sign-up` | Create account |
 | `/auth/forgot-password` | Password reset |
-| `/profile` | Settings, preferences, tracked deals |
+| `/profile` | Settings, preferences, tracked deals, Alert Hub |
 | `/faq` | FAQ |
-| `/points-news` | Card offers and transfer bonuses |
 | `/contact` | Contact form |
 | `/legal` | Legal notice |
 
@@ -382,11 +434,15 @@ SerpAPI or Seats.aero quota exhausted. Round-trip cash searches use multiple Ser
 
 ### Search returns 410
 
-No flights found for those dates/route on Google Flights. Try different dates or airports.
+No flights found for those dates/route. Try different dates or airports.
 
 ### `Could not reach the flight search server`
 
 The Python backend is not running. Start it with `py main.py` on port 8000.
+
+### Ask Hero is not configured / 503
+
+Set `GEMINI_API_KEY` (and optionally `GROQ_API_KEY`) in `.env`, then restart `py main.py`. Sign in on the frontend — Ask Hero is gated behind an account.
 
 ### Firebase / sign-in errors
 
@@ -403,5 +459,6 @@ Restart `py main.py` after editing Python files or `.env`.
 ## Credits
 
 - Airport data: [mwgg/Airports](https://github.com/mwgg/Airports) (MIT License)
-- Cash fares: [SerpAPI](https://serpapi.com/) Google Flights API
 - Award data: [Seats.aero](https://seats.aero/)
+- Cash fares: [SerpAPI](https://serpapi.com/) Google Flights API
+- Ask Hero: [Google Gemini](https://ai.google.dev/) (optional [Groq](https://groq.com/) fallback)
