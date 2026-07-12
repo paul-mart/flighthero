@@ -2231,6 +2231,15 @@ html {
   height: 18px;
 }
 
+.date-block > .form-field-icon {
+  margin-right: 11px;
+}
+
+.date-block-arrow {
+  margin-left: 10.5px;
+  margin-right: 10.2px;
+}
+
 @media (max-width: 768px) {
   body {
     background-attachment: scroll;
@@ -2451,14 +2460,14 @@ html {
     width: 100%;
     flex-wrap: nowrap !important;
     padding: 6px 8px 6px 12px !important;
-    gap: 4px !important;
+    gap: 0 !important;
   }
 
   .date-block .form-field-icon {
     flex-shrink: 0;
     width: 16px;
     margin-left: 3px;
-    margin-right: 2px;
+    margin-right: 6.6px;
   }
 
   .date-block .date-picker {
@@ -2480,6 +2489,8 @@ html {
     font-size: calc(14px * 0.99);
     padding: 0;
     line-height: 1;
+    margin-left: 4.2px !important;
+    margin-right: 4.08px !important;
   }
 
   .date-block .date-picker-trigger {
