@@ -1,7 +1,7 @@
 /**
  * Manually maintained transfer bonus list.
  * Source snapshot: https://frequentmiler.com/current-point-transfer-bonuses/
- * Last synced: July 5, 2026
+ * Last synced: July 17, 2026
  *
  * To update: edit ACTIVE_TRANSFER_BONUSES below (current/upcoming only).
  */
@@ -26,40 +26,10 @@ export interface TransferBonus {
 export const TRANSFER_BONUS_SOURCE = {
   name: 'Frequent Miler',
   url: 'https://frequentmiler.com/current-point-transfer-bonuses/',
-  lastUpdated: '2026-07-05',
+  lastUpdated: '2026-07-17',
 } as const;
 
 export const ACTIVE_TRANSFER_BONUSES: TransferBonus[] = [
-  {
-    transferFrom: 'Chase Ultimate Rewards',
-    transferTo: 'Virgin Atlantic Flying Club',
-    bonusPercent: 30,
-    summary: '30% transfer bonus to Virgin Atlantic Flying Club',
-    baseTransferRatio: { fromPoints: 1_000, toPoints: 1_000 },
-    detailsUrl: 'https://frequentmiler.com/chase-ultimate-rewards-virgin-atlantic-30-percent-transfer-bonus/',
-    startDate: '2026-06-09',
-    endDate: '2026-07-14',
-  },
-  {
-    transferFrom: 'Amex Membership Rewards',
-    transferTo: 'Hilton Honors',
-    bonusPercent: 20,
-    summary: '20% transfer bonus to Hilton Honors',
-    baseTransferRatio: { fromPoints: 1_000, toPoints: 2_000 },
-    detailsUrl: 'https://frequentmiler.com/20-percent-transfer-bonus-american-express-membership-rewards-hilton-honors/',
-    startDate: '2026-07-01',
-    endDate: '2026-07-14',
-  },
-  {
-    transferFrom: 'Amex Membership Rewards',
-    transferTo: 'Avianca LifeMiles',
-    bonusPercent: 15,
-    summary: '15% transfer bonus to Avianca LifeMiles',
-    baseTransferRatio: { fromPoints: 1_000, toPoints: 1_000 },
-    detailsUrl: 'https://frequentmiler.com/15-transfer-bonus-from-amex-membership-rewards-to-avianca-lifemiles/',
-    startDate: '2026-06-15',
-    endDate: '2026-07-15',
-  },
   {
     transferFrom: 'Citi ThankYou Rewards',
     transferTo: 'ALL Accor',
@@ -69,6 +39,16 @@ export const ACTIVE_TRANSFER_BONUSES: TransferBonus[] = [
     detailsUrl: 'https://frequentmiler.com/50-percent-transfer-bonus-citi-thankyou-accor-all/',
     startDate: '2026-06-14',
     endDate: '2026-07-18',
+  },
+  {
+    transferFrom: 'Chase Ultimate Rewards',
+    transferTo: 'IHG One Rewards',
+    bonusPercent: 100,
+    summary: '100% transfer bonus to IHG One Rewards',
+    baseTransferRatio: { fromPoints: 1_000, toPoints: 1_000 },
+    detailsUrl: 'https://frequentmiler.com/chase-is-offering-a-70-100-transfer-bonus-to-ihg-one-rewards-give-it-a-miss/',
+    startDate: '2026-07-15',
+    endDate: '2026-07-30',
   },
   {
     transferFrom: 'Rove Miles',
@@ -99,6 +79,16 @@ export const ACTIVE_TRANSFER_BONUSES: TransferBonus[] = [
     detailsUrl: 'https://frequentmiler.com/30-percent-transfer-bonus-american-express-membership-rewards-virgin-atlantic/',
     startDate: '2026-07-01',
     endDate: '2026-07-31',
+  },
+  {
+    transferFrom: 'Rove Miles',
+    transferTo: 'Qantas Frequent Flyer',
+    bonusPercent: 50,
+    summary: '50% transfer bonus to Qantas Frequent Flyer',
+    baseTransferRatio: { fromPoints: 1_000, toPoints: 1_000 },
+    detailsUrl: 'https://frequentmiler.com/rove-adds-qantas-as-transfer-partner-launches-with-50-transfer-bonus/',
+    startDate: '2026-07-15',
+    endDate: '2026-08-14',
   },
 ];
 
