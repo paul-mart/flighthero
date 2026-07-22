@@ -9,7 +9,7 @@ export default defineConfig({
     {
       name: 'inject-site-url',
       transformIndexHtml(html) {
-        return html.replaceAll('__SITE_URL__', SITE_URL);
+        return html.replace(/__SITE_URL__/g, SITE_URL);
       },
     },
   ],
