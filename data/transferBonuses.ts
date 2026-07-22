@@ -1,7 +1,7 @@
 /**
  * Manually maintained transfer bonus list.
  * Source snapshot: https://frequentmiler.com/current-point-transfer-bonuses/
- * Last synced: July 17, 2026
+ * Last synced: July 21, 2026
  *
  * To update: edit ACTIVE_TRANSFER_BONUSES below (current/upcoming only).
  */
@@ -26,20 +26,10 @@ export interface TransferBonus {
 export const TRANSFER_BONUS_SOURCE = {
   name: 'Frequent Miler',
   url: 'https://frequentmiler.com/current-point-transfer-bonuses/',
-  lastUpdated: '2026-07-17',
+  lastUpdated: '2026-07-21',
 } as const;
 
 export const ACTIVE_TRANSFER_BONUSES: TransferBonus[] = [
-  {
-    transferFrom: 'Citi ThankYou Rewards',
-    transferTo: 'ALL Accor',
-    bonusPercent: 50,
-    summary: '50% transfer bonus to ALL Accor',
-    baseTransferRatio: { fromPoints: 1_000, toPoints: 1_000 },
-    detailsUrl: 'https://frequentmiler.com/50-percent-transfer-bonus-citi-thankyou-accor-all/',
-    startDate: '2026-06-14',
-    endDate: '2026-07-18',
-  },
   {
     transferFrom: 'Chase Ultimate Rewards',
     transferTo: 'IHG One Rewards',
@@ -89,6 +79,16 @@ export const ACTIVE_TRANSFER_BONUSES: TransferBonus[] = [
     detailsUrl: 'https://frequentmiler.com/rove-adds-qantas-as-transfer-partner-launches-with-50-transfer-bonus/',
     startDate: '2026-07-15',
     endDate: '2026-08-14',
+  },
+  {
+    transferFrom: 'Citi ThankYou Rewards',
+    transferTo: 'Air France KLM Flying Blue',
+    bonusPercent: 20,
+    summary: '20% transfer bonus to Air France KLM Flying Blue',
+    baseTransferRatio: { fromPoints: 1_000, toPoints: 1_000 },
+    detailsUrl: 'https://frequentmiler.com/citi-thankyou-air-france-klm-flying-blue-20-percent-transfer-bonus/',
+    startDate: '2026-07-19',
+    endDate: '2026-08-22',
   },
 ];
 
