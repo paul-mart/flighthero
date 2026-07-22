@@ -2,7 +2,6 @@ import json
 import os
 import re
 import time
-from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 from typing import Any
 
@@ -30,18 +29,6 @@ GEMINI_FALLBACK_MODELS = (
 )
 
 TITLE_CHAR_MAX = 48
-
-TITLE_SYSTEM_PROMPT = """You label travel advisor chats for a sidebar. Reply with ONLY a short label (max 6 words). No quotes or trailing punctuation. Focus on destination, points amount, cabin class, or trip goal.
-
-Examples:
-User: Is 70k points for Japan a good deal?
-Label: 70k points to Japan
-
-User: Find me a business class deal from Boston
-Label: BOS business class deals
-
-User: anywhere in europe anytime in february
-Label: Europe in February"""
 
 
 def _default_departure_date() -> str:
@@ -247,6 +234,23 @@ def _is_retryable_gemini_error(exc: RuntimeError) -> bool:
     )
 
 
+def _resolve_hero_primary(api_key: str, groq_key: str) -> str:
+    explicit = (os.getenv("ASK_HERO_PRIMARY") or "").strip().lower()
+    if explicit in ("gemini", "groq"):
+        return explicit
+    if groq_key and not api_key:
+        return "groq"
+    if api_key and not groq_key:
+        return "gemini"
+    # Both keys: prefer Groq so Gemini free-tier RPM is not exhausted on every message.
+    return "groq"
+
+
+def _is_groq_auth_error(exc: RuntimeError) -> bool:
+    msg = str(exc).lower()
+    return "401" in msg or "403" in msg or "invalid api key" in msg
+
+
 def _raise_combined_fallback_error(
     primary_error: RuntimeError,
     fallback_error: RuntimeError,
@@ -286,6 +290,18 @@ def _raise_gemini_exhausted(
     raise last_error
 
 
+def _normalize_groq_model(model: str) -> str:
+    normalized = (model or "llama-3.3-70b-versatile").strip()
+    if not normalized:
+        return "llama-3.3-70b-versatile"
+    if normalized.startswith(("llama-", "openai/", "meta-llama/", "whisper")):
+        return normalized
+    # Common copy/paste mistake: "3.3-70b-versatile" instead of "llama-3.3-70b-versatile"
+    if normalized[0].isdigit() or normalized.startswith("3."):
+        return f"llama-{normalized}"
+    return normalized
+
+
 def _call_groq(
     api_key: str,
     model: str,
@@ -323,6 +339,16 @@ def _call_groq(
         if response.status_code == 429:
             raise RuntimeError(
                 "Ask Hero hit Groq's rate limit. Wait a minute and try again."
+            )
+        if response.status_code in (401, 403):
+            raise RuntimeError(
+                "Groq API key is invalid or lacks access. "
+                "Check GROQ_API_KEY in Railway Variables and redeploy."
+            )
+        if response.status_code == 404 or "model_not_found" in detail:
+            raise RuntimeError(
+                f"Groq model not found ({model}). "
+                "Set GROQ_MODEL=llama-3.3-70b-versatile in Railway Variables."
             )
         raise RuntimeError(f"Groq API error ({response.status_code}): {detail}")
 
@@ -401,9 +427,6 @@ def _call_gemini_with_fallback(
             except RuntimeError as exc:
                 last_error = exc
                 if _is_rate_limit_error(exc):
-                    if attempt == 0:
-                        time.sleep(2.0)
-                        continue
                     if groq_key:
                         try:
                             return _call_groq(
@@ -411,6 +434,9 @@ def _call_gemini_with_fallback(
                             )
                         except RuntimeError as groq_exc:
                             _raise_combined_fallback_error(exc, groq_exc)
+                    if attempt == 0:
+                        time.sleep(2.0)
+                        continue
                     break
                 if not _is_retryable_gemini_error(exc):
                     raise
@@ -433,7 +459,28 @@ def _call_hero_llm(
     system_instruction: str,
     messages: list[dict[str, str]],
 ) -> str:
-    gemini_error: RuntimeError | None = None
+    primary = _resolve_hero_primary(api_key, groq_key)
+
+    if primary == "groq":
+        if not groq_key:
+            raise RuntimeError(
+                "ASK_HERO_PRIMARY=groq but GROQ_API_KEY is not set on the server."
+            )
+        try:
+            return _call_groq(groq_key, groq_model, system_instruction, messages)
+        except RuntimeError as groq_exc:
+            if api_key and not _is_groq_auth_error(groq_exc):
+                try:
+                    return _call_gemini_with_fallback(
+                        api_key,
+                        model,
+                        system_instruction,
+                        messages,
+                        groq_key="",
+                    )
+                except RuntimeError as gemini_exc:
+                    _raise_combined_fallback_error(groq_exc, gemini_exc)
+            raise
 
     if api_key:
         try:
@@ -446,8 +493,7 @@ def _call_hero_llm(
                 groq_model=groq_model,
             )
         except RuntimeError as exc:
-            gemini_error = exc
-            if groq_key and _is_retryable_gemini_error(exc) and not _is_rate_limit_error(exc):
+            if groq_key and _is_retryable_gemini_error(exc):
                 try:
                     return _call_groq(groq_key, groq_model, system_instruction, messages)
                 except RuntimeError as groq_exc:
@@ -457,8 +503,6 @@ def _call_hero_llm(
     if groq_key:
         return _call_groq(groq_key, groq_model, system_instruction, messages)
 
-    if gemini_error:
-        raise gemini_error
     raise RuntimeError(
         "Ask Hero is not configured. Set GEMINI_API_KEY or GROQ_API_KEY on the server."
     )
@@ -504,19 +548,9 @@ def generate_chat_title(
     model: str,
     groq_model: str,
 ) -> str:
-    messages = [{"role": "user", "content": user_message.strip()}]
-    try:
-        raw = _call_hero_llm(
-            api_key,
-            groq_key,
-            model,
-            groq_model,
-            TITLE_SYSTEM_PROMPT,
-            messages,
-        )
-        return _sanitize_chat_title(raw.split("\n")[0])
-    except RuntimeError:
-        return _fallback_chat_title(user_message)
+    # Avoid a second LLM call on the first message — saves quota and prevents
+    # parallel Gemini/Groq requests from tripping rate limits.
+    return _fallback_chat_title(user_message)
 
 
 def _run_hero_chat(
@@ -570,35 +604,27 @@ def chat_with_hero(
         )
 
     model = (os.getenv("GEMINI_MODEL") or "gemini-2.5-flash-lite").strip()
-    groq_model = (os.getenv("GROQ_MODEL") or "llama-3.3-70b-versatile").strip()
+    groq_model = _normalize_groq_model(os.getenv("GROQ_MODEL") or "")
 
     is_first_message = len(messages) == 1 and messages[0].get("role") == "user"
     first_user_message = messages[0]["content"] if is_first_message else ""
 
     if is_first_message:
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            content_future = executor.submit(
-                _run_hero_chat,
-                messages,
-                user_context,
-                api_key,
-                groq_key,
-                model,
-                groq_model,
-            )
-            title_future = executor.submit(
-                generate_chat_title,
-                first_user_message,
-                api_key,
-                groq_key,
-                model,
-                groq_model,
-            )
-            content = content_future.result()
-            try:
-                title = title_future.result()
-            except Exception:
-                title = _fallback_chat_title(first_user_message)
+        content = _run_hero_chat(
+            messages,
+            user_context,
+            api_key,
+            groq_key,
+            model,
+            groq_model,
+        )
+        title = generate_chat_title(
+            first_user_message,
+            api_key,
+            groq_key,
+            model,
+            groq_model,
+        )
     else:
         content = _run_hero_chat(
             messages,
