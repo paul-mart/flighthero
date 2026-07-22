@@ -247,6 +247,21 @@ def _is_retryable_gemini_error(exc: RuntimeError) -> bool:
     )
 
 
+def _raise_combined_fallback_error(
+    primary_error: RuntimeError,
+    fallback_error: RuntimeError,
+) -> None:
+    if _is_rate_limit_error(primary_error):
+        raise RuntimeError(
+            "Ask Hero hit Gemini's rate limit and the Groq fallback also failed. "
+            "Wait a minute and try again."
+        ) from fallback_error
+    raise RuntimeError(
+        "Ask Hero couldn't complete your request. Gemini failed, and the Groq fallback "
+        "also failed. Wait a minute and try again."
+    ) from fallback_error
+
+
 def _raise_gemini_exhausted(
     last_error: RuntimeError,
     *,
@@ -390,7 +405,12 @@ def _call_gemini_with_fallback(
                         time.sleep(2.0)
                         continue
                     if groq_key:
-                        return _call_groq(groq_key, groq_model, system_instruction, messages)
+                        try:
+                            return _call_groq(
+                                groq_key, groq_model, system_instruction, messages,
+                            )
+                        except RuntimeError as groq_exc:
+                            _raise_combined_fallback_error(exc, groq_exc)
                     break
                 if not _is_retryable_gemini_error(exc):
                     raise
@@ -428,7 +448,10 @@ def _call_hero_llm(
         except RuntimeError as exc:
             gemini_error = exc
             if groq_key and _is_retryable_gemini_error(exc) and not _is_rate_limit_error(exc):
-                return _call_groq(groq_key, groq_model, system_instruction, messages)
+                try:
+                    return _call_groq(groq_key, groq_model, system_instruction, messages)
+                except RuntimeError as groq_exc:
+                    _raise_combined_fallback_error(exc, groq_exc)
             raise
 
     if groq_key:
