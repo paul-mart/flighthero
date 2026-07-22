@@ -197,6 +197,11 @@ def _build_gemini_contents(messages: list[dict[str, str]]) -> list[dict[str, Any
     return contents
 
 
+def _is_rate_limit_error(exc: RuntimeError) -> bool:
+    msg = str(exc).lower()
+    return "rate limit" in msg or "429" in msg
+
+
 def _format_gemini_error(status_code: int, detail: str) -> str:
     if status_code == 429:
         return (
@@ -242,11 +247,26 @@ def _is_retryable_gemini_error(exc: RuntimeError) -> bool:
     )
 
 
-def _raise_gemini_exhausted(last_error: RuntimeError) -> None:
+def _raise_gemini_exhausted(
+    last_error: RuntimeError,
+    *,
+    groq_configured: bool,
+) -> None:
+    if groq_configured and _is_rate_limit_error(last_error):
+        raise RuntimeError(
+            "Ask Hero hit Gemini's rate limit and the Groq fallback also failed. "
+            "Wait a minute and try again."
+        ) from last_error
     if _is_transient_overload(last_error):
         raise RuntimeError(
             "Ask Hero couldn't reach Gemini right now — Google's servers are busy. "
             "Wait a minute and try again, or add a free GROQ_API_KEY in .env for backup."
+        ) from last_error
+    if _is_rate_limit_error(last_error) and not groq_configured:
+        raise RuntimeError(
+            "Ask Hero hit Gemini's rate limit. Wait a minute and try again, "
+            "or add GROQ_API_KEY on the server for automatic fallback. "
+            "Free key: https://console.groq.com"
         ) from last_error
     raise last_error
 
@@ -349,6 +369,9 @@ def _call_gemini_with_fallback(
     model: str,
     system_instruction: str,
     messages: list[dict[str, str]],
+    *,
+    groq_key: str = "",
+    groq_model: str = "llama-3.3-70b-versatile",
 ) -> str:
     models: list[str] = []
     for candidate in (model, *GEMINI_FALLBACK_MODELS):
@@ -356,18 +379,66 @@ def _call_gemini_with_fallback(
             models.append(candidate)
 
     last_error: RuntimeError | None = None
-    for candidate in models:
-        try:
-            return _call_gemini(api_key, candidate, system_instruction, messages)
-        except RuntimeError as exc:
-            last_error = exc
-            if not _is_retryable_gemini_error(exc):
-                raise
-            if _is_transient_overload(exc):
-                time.sleep(1.0)
+    for index, candidate in enumerate(models):
+        for attempt in range(2):
+            try:
+                return _call_gemini(api_key, candidate, system_instruction, messages)
+            except RuntimeError as exc:
+                last_error = exc
+                if _is_rate_limit_error(exc):
+                    if attempt == 0:
+                        time.sleep(2.0)
+                        continue
+                    if groq_key:
+                        return _call_groq(groq_key, groq_model, system_instruction, messages)
+                    break
+                if not _is_retryable_gemini_error(exc):
+                    raise
+                if _is_transient_overload(exc):
+                    time.sleep(1.0)
+                break
+        if last_error and _is_rate_limit_error(last_error):
+            break
+
     if last_error:
-        _raise_gemini_exhausted(last_error)
+        _raise_gemini_exhausted(last_error, groq_configured=bool(groq_key))
     raise RuntimeError("Gemini request failed.")
+
+
+def _call_hero_llm(
+    api_key: str,
+    groq_key: str,
+    model: str,
+    groq_model: str,
+    system_instruction: str,
+    messages: list[dict[str, str]],
+) -> str:
+    gemini_error: RuntimeError | None = None
+
+    if api_key:
+        try:
+            return _call_gemini_with_fallback(
+                api_key,
+                model,
+                system_instruction,
+                messages,
+                groq_key=groq_key,
+                groq_model=groq_model,
+            )
+        except RuntimeError as exc:
+            gemini_error = exc
+            if groq_key and _is_retryable_gemini_error(exc) and not _is_rate_limit_error(exc):
+                return _call_groq(groq_key, groq_model, system_instruction, messages)
+            raise
+
+    if groq_key:
+        return _call_groq(groq_key, groq_model, system_instruction, messages)
+
+    if gemini_error:
+        raise gemini_error
+    raise RuntimeError(
+        "Ask Hero is not configured. Set GEMINI_API_KEY or GROQ_API_KEY on the server."
+    )
 
 
 def _sanitize_chat_title(raw: str) -> str:
@@ -412,12 +483,14 @@ def generate_chat_title(
 ) -> str:
     messages = [{"role": "user", "content": user_message.strip()}]
     try:
-        if api_key:
-            raw = _call_gemini_with_fallback(api_key, model, TITLE_SYSTEM_PROMPT, messages)
-        elif groq_key:
-            raw = _call_groq(groq_key, groq_model, TITLE_SYSTEM_PROMPT, messages)
-        else:
-            return _fallback_chat_title(user_message)
+        raw = _call_hero_llm(
+            api_key,
+            groq_key,
+            model,
+            groq_model,
+            TITLE_SYSTEM_PROMPT,
+            messages,
+        )
         return _sanitize_chat_title(raw.split("\n")[0])
     except RuntimeError:
         return _fallback_chat_title(user_message)
@@ -444,16 +517,14 @@ def _run_hero_chat(
     if search_results:
         system_prompt = f"{system_prompt}\n\n{_format_search_context(search_results)}"
 
-    try:
-        if api_key:
-            content = _call_gemini_with_fallback(api_key, model, system_prompt, messages)
-        else:
-            content = _call_groq(groq_key, groq_model, system_prompt, messages)
-    except RuntimeError as exc:
-        if api_key and groq_key and _is_retryable_gemini_error(exc):
-            content = _call_groq(groq_key, groq_model, system_prompt, messages)
-        else:
-            raise
+    content = _call_hero_llm(
+        api_key,
+        groq_key,
+        model,
+        groq_model,
+        system_prompt,
+        messages,
+    )
 
     if search_results and "<results>" not in content.lower():
         content = (
